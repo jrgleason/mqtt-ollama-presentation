@@ -146,10 +146,52 @@ mqtt-ollama-presentation/
 - `docs/requirements.md` if requirements change
 - `docs/tasks.md` ALWAYS for completed tasks
 - `docs/questions.md` when decisions are made
+- `docs/network-dependencies.md` when adding network/internet dependencies
 
 ---
 
-### 7. Technology Stack
+### 7. Network Dependencies
+**ALL network/internet dependencies must be documented and justified**
+
+This project prioritizes **local-first architecture** - all AI processing, device control, and data storage happens locally without cloud dependencies (except for Auth0 authentication).
+
+**📍 Central Documentation:** `docs/network-dependencies.md`
+
+**When adding ANY code that requires network access:**
+
+1. **Check if it's truly necessary**
+   - Can this be done locally instead?
+   - Is there a local-first alternative?
+
+2. **Document in `docs/network-dependencies.md`**
+   - What service/endpoint is accessed?
+   - Why is network access required?
+   - What is the mitigation if network fails?
+   - Is it required during demo or just setup?
+
+3. **Defend the decision**
+   - Every network dependency must have a clear rationale
+   - Consider impact on demo reliability
+   - Document backup plan for network failures
+
+**Current network dependencies:**
+- ☁️ **Auth0** - Authentication (internet required during demo)
+- 🔽 **Ollama models** - One-time download (pre-cache before demo)
+- 📦 **npm packages** - One-time install (pre-install before demo)
+- 🏠 **MQTT broker** - Local network only
+- 🤖 **Ollama runtime** - Local network only
+- 📡 **Z-Wave devices** - Local radio (not even WiFi)
+
+**Design principle:**
+- ✅ Local processing > Cloud processing
+- ✅ Offline-capable > Internet-required
+- ✅ Demo reliability > Feature complexity
+
+See `docs/network-dependencies.md` for complete list and rationale.
+
+---
+
+### 8. Technology Stack
 
 ### Core Technologies
 - **Language:** TypeScript (strict mode)

@@ -110,20 +110,44 @@ ollama pull gemma2:2b
 
 ### 3. Setup Environment Variables
 
+Create a `.env.local` file in the `langchain-service` directory:
+
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+cd langchain-service
+cp .env.example .env.local
+# Edit .env.local with your configuration
 ```
 
 Required variables:
 ```bash
-AUTH0_SECRET=your_auth0_secret
-AUTH0_CLIENT_ID=your_auth0_client_id
-AUTH0_CLIENT_SECRET=your_auth0_client_secret
-MQTT_BROKER_URL=mqtt://localhost:1883
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+# Auth0 Configuration (Next.js SDK v4)
+AUTH0_SECRET='<generate-with-openssl-rand-hex-32>'
+APP_BASE_URL='http://localhost:3000'
+AUTH0_DOMAIN='your-tenant.auth0.com'
+AUTH0_CLIENT_ID='your_auth0_client_id'
+AUTH0_CLIENT_SECRET='your_auth0_client_secret'
+
+# MQTT Configuration
+MQTT_BROKER_URL='mqtt://localhost:1883'
+MQTT_USERNAME=''
+MQTT_PASSWORD=''
+
+# Ollama Configuration
+OLLAMA_BASE_URL='http://localhost:11434'
+OLLAMA_MODEL='qwen2.5:3b'
+
+# Database
+DATABASE_URL='file:./dev.db'
 ```
+
+**Generate AUTH0_SECRET:**
+```bash
+openssl rand -hex 32
+```
+
+**Auth0 Dashboard Setup:**
+- Allowed Callback URLs: `http://localhost:3000/auth/callback`
+- Allowed Logout URLs: `http://localhost:3000`
 
 ### 4. Start with Docker Compose
 
@@ -156,7 +180,44 @@ Navigate to http://localhost:3000
 - **[Requirements](docs/requirements.md)** - Detailed technical requirements
 - **[Tasks](docs/tasks.md)** - Implementation task list with progress tracking
 - **[Questions](docs/questions.md)** - Architecture decisions and clarifying questions
+- **[Architecture Decision: Next.js vs React Native](docs/architecture-decision-nextjs-vs-react-native.md)** - Detailed comparison and rationale
+- **[Network Dependencies](docs/network-dependencies.md)** - Complete list of network/internet requirements and mitigation strategies
 - **[CLAUDE.md](CLAUDE.md)** - Guidelines for AI-assisted development
+
+## 🏛️ Architecture Decisions
+
+Key architectural decisions have been documented in [docs/questions.md](docs/questions.md):
+
+### Frontend: Next.js with App Router ✅
+After evaluating Next.js vs React Native Web, **Next.js with App Router** was chosen because:
+- Browser-based demo preference (simpler for live presentation)
+- Superior web dashboard performance and UX
+- Native LangChain.js integration via Server Components
+- First-class Auth0 Next.js SDK support
+- Lower complexity and risk for one-hour live demo
+- No mobile app requirement in project scope
+
+See [detailed comparison](docs/architecture-decision-nextjs-vs-react-native.md) for full analysis.
+
+### Authentication: Auth0 Next.js SDK v4 ✅
+Using Auth0's official Next.js SDK for authentication:
+- **Universal Login** - Auth0 hosted login page
+- **Automatic session management** - Server-side sessions with cookies
+- **Middleware-based auth** - Protect routes via Next.js middleware
+- **React hooks** - Client-side auth state access
+- Single demo tenant (internet required)
+
+### Z-Wave Integration: zwave-js-ui MQTT ✅
+Using zwave-js-ui's built-in MQTT support (no fork needed):
+- Native MQTT gateway functionality
+- Well-maintained and documented
+- Supports comprehensive Z-Wave device types
+
+### LLM: Ollama with Qwen2.5 or Gemma2 ✅
+Running locally on Raspberry Pi 5 or development machine:
+- **Recommended models**: Qwen2.5:3b or Gemma2:2b
+- Models under 3B parameters for Pi 5 compatibility
+- Q5/Q6 quantization, low temperature (~0.1) for deterministic responses
 
 ## 🎭 Demo Commands
 
@@ -191,19 +252,52 @@ Try these natural language commands:
 
 ```
 mqtt-ollama-presentation/
-├── langchain-service/        # Main Next.js application
+├── langchain-service/              # Main Next.js application (App Router)
 │   ├── src/
-│   │   ├── app/             # Next.js App Router
-│   │   ├── lib/             # Shared libraries
-│   │   │   ├── langchain/   # LangChain agent & tools
-│   │   │   ├── mqtt/        # MQTT client
-│   │   │   └── db/          # Database client
-│   │   └── components/      # React components
-│   ├── prisma/              # Database schema
+│   │   ├── app/                   # Next.js App Router
+│   │   │   ├── page.tsx           # Landing page (login/dashboard)
+│   │   │   ├── layout.tsx         # Root layout
+│   │   │   ├── dashboard/         # Dashboard pages
+│   │   │   ├── devices/           # Device control pages
+│   │   │   └── api/               # API routes
+│   │   │       ├── auth/[auth0]/  # Auth0 callback routes
+│   │   │       ├── chat/          # LangChain chat endpoint
+│   │   │       ├── devices/       # Device control API
+│   │   │       └── mqtt/          # MQTT WebSocket handler
+│   │   ├── lib/                   # Shared libraries
+│   │   │   ├── auth0.ts           # Auth0 SDK client
+│   │   │   ├── langchain/         # LangChain agent & tools
+│   │   │   │   ├── agent.ts       # Agent configuration
+│   │   │   │   ├── tools/         # Custom tools
+│   │   │   │   │   ├── mqtt-tool.ts
+│   │   │   │   │   └── device-tool.ts
+│   │   │   │   └── prompts.ts     # System prompts
+│   │   │   ├── mqtt/              # MQTT client
+│   │   │   │   ├── client.ts      # MQTT singleton
+│   │   │   │   └── topics.ts      # Topic mappings
+│   │   │   └── db/                # Database client (Prisma)
+│   │   ├── components/            # React components
+│   │   │   ├── DeviceCard.tsx
+│   │   │   ├── ChatInterface.tsx
+│   │   │   └── VoiceInput.tsx
+│   │   ├── hooks/                 # Custom React hooks
+│   │   │   ├── useMQTT.ts
+│   │   │   ├── useDevices.ts
+│   │   │   └── useChat.ts
+│   │   └── middleware.ts          # Auth0 middleware
+│   ├── prisma/                    # Database schema
+│   │   └── schema.prisma
+│   ├── .env.local                 # Environment variables (not in git)
 │   └── package.json
-├── docs/                    # Project documentation
-├── deployment/              # Docker & Kubernetes configs
-└── presentation/            # Slide deck & demo materials
+├── docs/                          # Project documentation
+│   ├── requirements.md
+│   ├── tasks.md
+│   ├── questions.md
+│   └── architecture-decision-nextjs-vs-react-native.md
+├── deployment/                    # Docker & Kubernetes configs
+│   ├── docker-compose.yml
+│   └── helm/
+└── presentation/                  # Slide deck & demo materials
 ```
 
 ### Available Scripts
@@ -357,19 +451,34 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## 🐛 Known Issues
 
-- Voice recognition may have latency on slower hardware
+- Voice recognition may have latency on slower hardware (stretch goal)
 - Some Z-Wave devices require polling for state updates
-- Auth0 requires internet connection (local mock available)
+- **Auth0 requires internet connection** - See [Network Dependencies](docs/network-dependencies.md) for mitigation strategies
+  - Backup options: Pre-authenticated session, phone hotspot, or temporary mock auth
 
 See [Issues](https://github.com/yourusername/mqtt-ollama-presentation/issues) for full list
 
+**Note:** This project prioritizes local-first architecture. Only Auth0 authentication requires internet during demo. All AI processing, device control, and data storage happens locally. See [docs/network-dependencies.md](docs/network-dependencies.md) for complete network requirements and offline mitigation strategies.
+
 ## 📊 Project Status
 
-**Current Phase:** Phase 1 - Documentation Complete ✅
+**Current Phase:** Phase 1 - Documentation & Planning ✅
+
+**Recent Updates:**
+- ✅ Next.js vs React Native architectural decision ([detailed analysis](docs/architecture-decision-nextjs-vs-react-native.md))
+- ✅ Auth0 Next.js SDK v4 configuration documented
+- ✅ Network dependencies tracked and justified
+- ✅ Complete project documentation structure
 
 **Next Up:** Phase 2 - Next.js + LangChain Setup
 
 See [docs/tasks.md](docs/tasks.md) for detailed progress tracking.
+
+**Key Decisions Made:**
+1. **Frontend:** Next.js with App Router (vs React Native Web)
+2. **Authentication:** Auth0 Next.js SDK v4
+3. **LLM:** Ollama with Qwen2.5:3b or Gemma2:2b
+4. **Architecture:** Local-first with minimal cloud dependencies
 
 ---
 

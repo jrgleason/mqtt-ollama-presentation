@@ -1,0 +1,126 @@
+# Workspace .gitignore for mqtt-ollama-presentation
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.rej
+
+# pnpm / cache
+.pnpm-store/
+.pnp.cjs
+.pnp.js
+.pnp.loader.mjs
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/versions
+
+# Builds / outputs
+dist/
+build/
+out/
+.next/
+.next/cache/
+.next/static/
+.vercel/
+.vercel_build_output/
+.public/.cache/
+public/.cache/
+
+# Tailwind / PostCSS artifacts
+*.css.map
+.postcss-cache
+
+# Environment files and secrets
+.env
+.env.*.local
+.env.local
+.secrets/
+.envrc
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+package-lock.log*
+.yarn-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+# next-env.d.ts is intentionally committed in this repo
+
+# Coverage
+coverage/
+.nyc_output/
+coverage-final.json
+
+# Editor / IDE
+.vscode/
+.vscode-test/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# macOS Finder files
+.AppleDouble
+.LSOverride
+
+# React Native / mobile
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/build/
+.expo/
+.expo-shared/
+
+# Docker
+docker-compose.override.yml
+*.env.docker
+Dockerfile.dev
+
+# Raspberry Pi / deployment local files
+deployment/**/secrets.env
+deployment/**/.localenv
+
+# Misc
+*.swp
+*~
+.project
+.classpath
+.cache/
+.parcel-cache/
+.turbo/
+.turbo-cache/
+
+# Databases / local storage
+*.sqlite3
+*.db
+*.db-journal
+/*.sqlite
+
+# SSH keys
+id_rsa
+id_rsa.pub
+
+# Python
+venv/
+.envvenv/
+__pycache__/
+
+# Package artifacts
+*.tgz
+
+# Allow checking in example env files
+!.env.example
+
+# End of file

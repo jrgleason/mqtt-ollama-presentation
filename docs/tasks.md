@@ -7,7 +7,142 @@
 - ❌ Blocked
 - 🎯 Stretch Goal
 
-**Last Updated:** [Date]
+**Last Updated:** 2025-09-29
+
+---
+
+## Phase 0: Infrastructure Setup
+
+**Goal:** Set up the foundational infrastructure components that the Next.js app will interact with.
+
+### 0.1 MQTT Broker Setup
+- [ ] ⏳ Create Mosquitto Docker configuration
+  - [ ] Create `deployment/mqtt/mosquitto.conf`
+  - [ ] Configure authentication (username/password)
+  - [ ] Configure topic ACLs (if needed)
+  - [ ] Configure logging
+- [ ] ⏳ Create Mosquitto Dockerfile (if custom config needed)
+- [ ] ⏳ Add Mosquitto to docker-compose.yml
+  - Port: 1883 (MQTT)
+  - Port: 9001 (WebSocket, optional)
+- [ ] ⏳ Test MQTT broker connection
+  - [ ] Use MQTT.js CLI or MQTT Explorer
+  - [ ] Publish test message
+  - [ ] Subscribe to test topic
+  - [ ] Verify authentication works
+
+### 0.2 zwave-js-ui Setup
+- [ ] ⏳ Document recommended deployment method: use the official zwave-js-ui Docker image on the Raspberry Pi (no need to build or run a separate full app)
+  - [ ] Document Pi prerequisites: Docker/Podman installed, correct CPU image (arm64 vs armv7), active cooling, NVMe/SSD storage recommendations
+  - [ ] Create `docs/raspberry-pi-setup.md` with step-by-step Pi prep (OS image, Docker install, users/permissions, device access rules)
+- [ ] ⏳ Create `deployment/zwave-js-ui/` directory for compose/notes (NOT a custom app repository)
+  - [ ] Add sample `docker-compose.pi.yml` that:
+    - Maps host Z‑Wave USB device (e.g., `--device /dev/ttyUSB0` or device path) into the container
+    - Mounts a named volume or host path for persistent zwave-js-ui data
+    - Exposes port 8091 to the host
+    - Places container on the same Docker network as the MQTT broker (or points to broker address)
+  - [ ] Add notes on selecting the correct image tag for Pi CPU architecture
+- [ ] ⏳ Document persistence & backups
+  - [ ] How to mount/backup the zwave-js-ui data directory
+  - [ ] How to snapshot or export the zwave-js-ui state before upgrades
+- [ ] ⏳ Document device access and permissions
+  - [ ] udev rules or group membership to allow Docker to access serial devices
+  - [ ] Example `--device` and `privileged` considerations
+- [ ] ⏳ Document MQTT integration for zwave-js-ui
+  - [ ] How to configure the MQTT gateway in the zwave-js-ui UI
+  - [ ] Example MQTT settings (broker URL, username, password, topic prefix)
+  - [ ] Add `docs/zwave-js-ui-deploy.md` that includes sample config and troubleshooting (connecting to remote broker vs local broker)
+- [ ] ⏳ Test zwave-js-ui on Pi
+  - [ ] Bring up container with `docker compose -f docker-compose.pi.yml up -d`
+  - [ ] Ensure web UI reachable on `http://<pi-host>:8091`
+  - [ ] Confirm zwave-js identifies the Z‑Wave stick and persists node info
+  - [ ] Configure MQTT gateway and verify that Z‑Wave events are published to the broker
+- [ ] ⏳ Acceptance criteria
+  - [ ] Pi runs zwave-js-ui container and UI is reachable
+  - [ ] Z‑Wave stick is accessible from container and devices show up
+  - [ ] MQTT messages are emitted for device events and can be subscribed to by other services
+
+### 0.3 Ollama Setup
+- [ ] ⏳ Install Ollama on target device (Pi 5 or laptop)
+  ```bash
+  # Linux/Mac
+  curl -fsSL https://ollama.com/install.sh | sh
+  ```
+- [ ] ⏳ Download recommended models
+  - [ ] `ollama pull qwen2.5:3b`
+  - [ ] `ollama pull gemma2:2b` (alternative)
+  - [ ] Test model inference: `ollama run qwen2.5:3b "Hello"`
+- [ ] ⏳ Configure Ollama API endpoint
+  - [ ] Set OLLAMA_HOST if needed
+  - [ ] Test API: `curl http://localhost:11434/api/tags`
+  - [ ] Document API endpoint for Next.js
+- [ ] ⏳ Benchmark model performance
+  - [ ] Measure inference time on target hardware
+  - [ ] Test with typical home automation queries
+  - [ ] Document expected latency
+
+### 0.4 Docker Compose Integration
+- [ ] ⏳ Create master `docker-compose.yml` in project root
+  ```yaml
+  services:
+    mosquitto:
+      # MQTT broker
+    zwave-js-ui:
+      # Z-Wave gateway
+    # Note: Ollama runs natively, not in Docker
+  ```
+- [ ] ⏳ Create `.env.example` for Docker Compose
+  - MQTT credentials
+  - Z-Wave USB device path
+  - Network configuration
+- [ ] ⏳ Add health checks for all services
+- [ ] ⏳ Test full infrastructure stack
+  - [ ] `docker-compose up -d`
+  - [ ] Verify all services start
+  - [ ] Check MQTT broker is reachable
+  - [ ] Check zwave-js-ui web UI is accessible
+  - [ ] Test MQTT → zwave-js-ui integration
+
+### 0.5 Helm Charts (for production/demo deployment)
+- [ ] ⏳ Create Helm chart structure
+  ```
+  deployment/helm/mqtt-ollama-chart/
+  ├── Chart.yaml
+  ├── values.yaml
+  ├── templates/
+  │   ├── mosquitto-deployment.yaml
+  │   ├── mosquitto-service.yaml
+  │   ├── zwave-js-ui-deployment.yaml
+  │   ├── zwave-js-ui-service.yaml
+  │   └── configmaps.yaml
+  ```
+- [ ] ⏳ Create Mosquitto Helm templates
+  - Deployment
+  - Service (ClusterIP)
+  - ConfigMap for mosquitto.conf
+  - PersistentVolumeClaim (optional)
+- [ ] ⏳ Create zwave-js-ui Helm templates
+  - Deployment with USB device access
+  - Service (ClusterIP + NodePort for web UI)
+  - PersistentVolumeClaim for data
+- [ ] ⏳ Document Helm installation
+  ```bash
+  cd deployment/helm
+  helm install mqtt-ollama ./mqtt-ollama-chart
+  ```
+- [ ] ⏳ Test Helm deployment on local K8s (minikube/kind)
+
+### 0.6 Infrastructure Documentation
+- [ ] ⏳ Create `docs/infrastructure-setup.md`
+  - MQTT broker setup
+  - zwave-js-ui configuration
+  - Ollama installation
+  - Docker Compose usage
+  - Helm deployment
+  - Troubleshooting guide
+- [ ] ⏳ Create network diagram showing infrastructure components
+- [ ] ⏳ Document MQTT topic structure and conventions
+- [ ] ⏳ Create testing checklist for infrastructure
 
 ---
 
@@ -24,23 +159,135 @@
 - [x] ✅ Create docs/questions.md
 - [x] ✅ Create docs/requirements.md
 - [x] ✅ Create docs/tasks.md
-- [ ] ⏳ Create docs/architecture.md
-- [ ] ⏳ Create README.md
-- [ ] ⏳ Create CLAUDE.md
-- [ ] ⏳ Create CONTRIBUTING.md
+- [x] ✅ Create docs/architecture-decision-nextjs-vs-react-native.md (architectural decision doc)
+- [x] ✅ Create docs/network-dependencies.md (track all network requirements)
+- [x] ✅ Create README.md (with architecture decisions, setup instructions)
+- [x] ✅ Create CLAUDE.md (AI development guidelines)
+- [ ] ⏳ Create CONTRIBUTING.md (not needed for demo project)
 
 ### 1.3 Development Environment
 - [ ] ⏳ Create Docker Compose file for local development
-- [ ] ⏳ Document local setup process
+- [ ] ⏳ Document local setup process (partially done in README)
 - [ ] ⏳ Create VS Code workspace settings
 - [ ] ⏳ Create .editorconfig
 - [ ] ⏳ Setup ESLint + Prettier configuration
 
+### 1.3.a Upgrade Tailwind in int-server (remove PostCSS)
+**Goal:** Migrate the int-server project so Tailwind CSS is produced without relying on a PostCSS runtime configuration (postcss.config.*). This uses the Tailwind CLI to generate the CSS as part of the build/dev workflow so PostCSS can be removed from the runtime build.
+
+Checklist:
+- [ ] ⏳ Inventory current setup
+  - [ ] Note Next.js and Tailwind versions in `int-server/package.json`.
+  - [ ] Confirm `postcss.config.mjs` exists and is currently used; note any PostCSS plugins (autoprefixer, etc.).
+- [ ] ⏳ Decide approach
+  - Option A (recommended): Use Tailwind CLI to compile a single generated CSS file during dev/build and serve/import that file from the app.
+  - Option B (alternative): Replace PostCSS runtime only with a minimal PostCSS build step (keeps autoprefixer) — useful if you must support older browsers.
+- [ ] ⏳ Add Tailwind CLI scripts to `int-server/package.json`
+  - Add a dev watch script (e.g., `tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --watch`) and a build script to produce the final CSS before Next.js build.
+- [ ] ⏳ Create an entry input CSS file (if not present): `int-server/src/styles/tailwind.css` with the Tailwind directives (`@tailwind base; @tailwind components; @tailwind utilities;`).
+- [ ] ⏳ Update imports in the app to use the generated CSS (`public/tailwind.css` or another chosen output path). Replace any import of a PostCSS-processed file if present.
+- [ ] ⏳ Update `int-server/tailwind.config.*` content paths to include all app directories (src, pages, components, app) so the CLI tree-shakes correctly.
+- [ ] ⏳ Remove PostCSS runtime files and dependencies
+  - [ ] Delete `int-server/postcss.config.mjs` (after ensuring build works).
+  - [ ] Remove `postcss` and `postcss-loader`/`autoprefixer` from `int-server/package.json` if not needed (keep note if autoprefixer required).
+- [ ] ⏳ Wire build scripts into CI and developer workflows
+  - [ ] Ensure `npm run build` runs the CSS generation step before `next build` (or add it as part of a combined script: `npm run build:css && next build`).
+  - [ ] For local dev, ensure dev script starts Tailwind CLI `--watch` alongside Next.js (using `concurrently`, npm-run-all, or two-terminal instructions).
+- [ ] ⏳ Test
+  - [ ] Run dev: CSS updates should reflect immediately.
+  - [ ] Run production build: `npm run build` should produce the generated CSS and `next build` should succeed without PostCSS config.
+  - [ ] Verify no Tailwind directives remain unprocessed in final output.
+- [ ] ⏳ Acceptance criteria
+  - [ ] `int-server` runs locally in dev and production without a `postcss.config.*` file.
+  - [ ] `postcss` and related packages are removed from `int-server/package.json` (unless autoprefixer is explicitly kept).
+  - [ ] Generated CSS file exists in the chosen output path and is imported successfully by the app.
+  - [ ] CI/build scripts include CSS generation step and pass.
+
+Notes / Caveats:
+- Removing PostCSS also removes autoprefixer. If you need automatic vendor prefixes for older browsers, keep autoprefixer in the build step or run a small PostCSS pass as a build-time step.
+- Tailwind CLI-based generation means you must ensure the CLI runs in CI and during production build; that is handled by adding the CSS build step to the `build` script.
+- If you prefer a fully integrated solution, keep a minimal `postcss.config.*` but move it to a build-only step (not required at runtime).
+
 ### 1.4 Decision Making
-- [ ] ⏳ Answer all questions in docs/questions.md
-- [ ] ⏳ Document architecture decisions
+- [x] ✅ Answer key questions in docs/questions.md (Q2: Next.js, Q8: Auth0)
+- [x] ✅ Document architecture decisions (Next.js vs React Native - 20-page analysis)
+- [x] ✅ Document network dependencies and justifications
+- [ ] ⏳ Answer remaining questions (Q3-Q7, Q9-Q15)
 - [ ] ⏳ Create sequence diagrams
 - [ ] ⏳ Create component diagrams
+
+### 1.5 Project Initialization
+- [ ] ⏳ Create Next.js app with TypeScript
+  ```bash
+  npx create-next-app@latest langchain-service --typescript --tailwind --app
+  ```
+- [ ] ⏳ Install core dependencies:
+  - langchain
+  - @langchain/community
+  - @langchain/core
+  - ollama
+  - mqtt
+  - @auth0/nextjs-auth0
+  - prisma or drizzle-orm
+  - zod
+
+### 1.6 Project Structure
+- [ ] ⏳ Create folder structure:
+  ```
+  src/
+  ├── app/
+  │   ├── api/
+  │   │   ├── auth/
+  │   │   ├── chat/
+  │   │   ├── devices/
+  │   │   ├── voice/
+  │   │   └── health/
+  │   ├── (dashboard)/
+  │   └── layout.tsx
+  ├── lib/
+  │   ├── langchain/
+  │   │   ├── tools/
+  │   │   ├── agents/
+  │   │   └── prompts/
+  │   ├── mqtt/
+  │   ├── db/
+  │   └── utils/
+  ├── components/
+  ├── types/
+  └── middleware.ts
+  ```
+
+### 1.7 Database Setup
+- [ ] ⏳ Choose ORM (Prisma vs Drizzle)
+- [ ] ⏳ Create Prisma schema or Drizzle schema
+- [ ] ⏳ Generate initial migration
+- [ ] ⏳ Create database client
+- [ ] ⏳ Create seed data script
+
+**Schema includes:**
+- [ ] ⏳ Users table
+- [ ] ⏳ Devices table
+- [ ] ⏳ User preferences table
+- [ ] ⏳ Conversations table (optional)
+- [ ] ⏳ Shortcuts table
+
+### 1.8 Auth0 Integration
+- [ ] ⏳ Create Auth0 account/tenant
+- [ ] ⏳ Configure Auth0 application (SPA)
+- [ ] ⏳ Setup Auth0 SDK in Next.js
+- [ ] ⏳ Create login/logout routes
+- [ ] ⏳ Create protected API middleware
+- [ ] ⏳ Implement JWT validation
+- [ ] ⏳ Create user profile page
+- [ ] ⏳ Handle token refresh
+
+### 1.9 Ollama Integration
+- [ ] ⏳ Create Ollama client wrapper
+- [ ] ⏳ Implement model selection logic
+- [ ] ⏳ Create prompt templates
+- [ ] ⏳ Implement streaming responses
+- [ ] ⏳ Add error handling and retries
+- [ ] ⏳ Create model configuration (temperature, max tokens, etc.)
 
 ---
 
@@ -263,11 +510,14 @@ home/
 ## Phase 4: Z-Wave Integration
 
 ### 4.1 zwave-js-ui Setup
-- [ ] ⏳ Decide: fork or use as-is
-- [ ] ⏳ If forking: clone repository
-- [ ] ⏳ If as-is: add as submodule or document setup
-- [ ] ⏳ Configure MQTT gateway in zwave-js-ui
-- [ ] ⏳ Document Z-Wave controller setup
+- [ ] ⏳ Use official zwave-js-ui Docker image on Pi or other host; do NOT plan to build a custom full app unless there is a specific requirement
+- [ ] ⏳ If forking is considered, document reason and migration path; otherwise document 'run official image' steps
+- [ ] ⏳ Create deployment docs (see `docs/zwave-js-ui-deploy.md`) with:
+  - [ ] Sample docker-compose for Pi (`docker-compose.pi.yml`) including device mapping and volume mounts
+  - [ ] Steps to configure MQTT gateway via UI and sample JSON/env example for automation
+  - [ ] Backup and upgrade procedure for zwave-js-ui data
+- [ ] ⏳ Add troubleshooting checklist (device permissions, device not found, wrong architecture image, MQTT auth failures)
+- [ ] ⏳ Document integration test steps to validate end-to-end (publish/subscribe, command flow)
 
 ### 4.2 Z-Wave Controller
 - [ ] ⏳ Obtain USB Z-Wave controller
@@ -562,28 +812,53 @@ home/
 
 ### Summary
 - **Total Tasks:** ~200+
-- **Completed:** 6
-- **In Progress:** 1
-- **Not Started:** ~190
+- **Completed:** 12 ✅
+- **In Progress:** 0
+- **Not Started:** ~185
 - **Stretch Goals:** ~40
 
+### Phase Progress
+- **Phase 1:** 12/24 completed (50%) - Core documentation ✅
+  - Repository setup: 2/5
+  - Documentation: 7/8 ✅
+  - Development environment: 0/5
+  - Decision making: 3/6
+- **Phase 2:** 0/~60 (Not started)
+- **Phase 3:** 0/~30 (Not started)
+- **Phase 4:** 0/~20 (Not started)
+- **Phase 5:** 0/~20 (Stretch goals)
+- **Phase 6:** 0/~15 (Stretch goals)
+- **Phase 7:** 0/~25 (Not started)
+- **Phase 8:** 0/~30 (Not started)
+
 ### Weekly Goals
-**Week 1-2:** Phase 1 complete
+**Week 1-2:** Phase 1 documentation complete ✅ (DONE)
 **Week 3-4:** Phase 2 complete
 **Week 5-6:** Phase 3-4 complete
 **Week 7-8:** Phase 5-6 (stretch goals)
 **Week 9-10:** Phase 7 complete
 **Week 11-12:** Phase 8 + rehearsal
 
-### Current Sprint (Update Weekly)
-**Sprint Goals:**
-1. Complete Phase 1 documentation
-2. Begin Next.js project setup
-3. Answer all clarifying questions
+### Current Sprint
+**Status:** Phase 1 core documentation COMPLETE ✅
+
+**Completed This Sprint:**
+1. ✅ Next.js vs React Native architectural decision (20-page analysis)
+2. ✅ Auth0 Next.js SDK v4 configuration documented
+3. ✅ Network dependencies tracking system created
+4. ✅ README.md with architecture decisions
+5. ✅ CLAUDE.md with development guidelines
+6. ✅ Answered key questions (Q2: Next.js, Q8: Auth0)
+
+**Next Sprint Goals:**
+1. Complete remaining Phase 1 tasks (Docker Compose, .gitignore, .env.example)
+2. Begin Phase 2: Initialize Next.js project
+3. Answer remaining questions in docs/questions.md
 
 **Blockers:**
 - None currently
 
 **Notes:**
-- All initial documentation files created
-- Ready to begin implementation
+- Core architectural decisions made and documented
+- Network dependencies tracked with mitigation strategies
+- Ready to begin implementation phase

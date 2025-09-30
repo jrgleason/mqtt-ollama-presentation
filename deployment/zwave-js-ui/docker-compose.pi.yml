@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  zwave-js-ui:
+    image: zwavejs/zwave-js-ui:latest
+    container_name: zwave-js-ui
+    restart: unless-stopped
+    devices:
+      # Prefer stable path under /dev/serial/by-id/ when available
+      - /dev/serial/by-id/:/dev/serial/by-id/:ro
+      - /dev/serial/by-id/usb-*: /dev/serial/by-id/:ro
+    environment:
+      - TZ=UTC
+      # Optional: configure MQTT via environment or configure via UI
+      # MQTT_BROKER_URL, MQTT_USERNAME, MQTT_PASSWORD can be set here if supported
+    volumes:
+      - zwavejs-data:/usr/src/app/data
+    ports:
+      - "8091:8091"
+    networks:
+      - mqtt-network
+
+volumes:
+  zwavejs-data:
+
+networks:
+  mqtt-network:
+    external: false
+
+# Notes:
+# - Replace the image tag with an ARM-specific tag if necessary (check upstream for arm64 builds).
+# - Use the stable /dev/serial/by-id/ path to avoid device renaming issues.
+# - Ensure the host user/group has permissions to access the serial device (dialout group).
+# - For production, consider using a named external Docker network shared with your MQTT broker service.
+
