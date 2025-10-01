@@ -123,4 +123,7 @@ __pycache__/
 # Allow checking in example env files
 !.env.example
 
+# Generated Tailwind CSS (int-server / oracle)
+/oracle/public/tailwind.css
+
 # End of file

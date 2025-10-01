@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Import generated Tailwind CSS (built to public/tailwind.css by build:css/dev:css) */
+@import url('/tailwind.css');
 
 :root {
   --background: #ffffff;
