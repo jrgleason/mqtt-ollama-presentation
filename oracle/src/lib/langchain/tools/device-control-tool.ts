@@ -5,76 +5,52 @@
  * Supports turning devices on/off and dimming.
  */
 
-import { DynamicTool } from '@langchain/core/tools';
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
 
-interface DeviceControlInput {
-  deviceName: string;
-  action: 'on' | 'off' | 'dim';
-  level?: number;
-}
+// Define the input schema using Zod
+const DeviceControlSchema = z.object({
+  deviceName: z.string().describe("The name of the device to control (e.g. 'living room light')"),
+  action: z.enum(['on', 'off', 'dim']).describe("The action to perform: 'on', 'off', or 'dim'"),
+  level: z.number().min(0).max(100).optional().describe("For dimming, brightness level 0-100")
+});
 
 export function createDeviceControlTool() {
-  return new DynamicTool({
-    name: 'control_device',
-    description: `
-      Controls a smart home device by name.
+    return new DynamicStructuredTool({
+        name: 'control_device',
+        description: 'Controls a smart home device by turning it on/off or dimming it',
+        schema: DeviceControlSchema,
+        func: async ({ deviceName, action, level }) => {
+            try {
+                console.log(`[device-control-tool] Received params:`, { deviceName, action, level });
 
-      Parameters (as JSON string):
-      - deviceName: The friendly name of the device (e.g., "living room light", "bedroom light")
-      - action: "on", "off", or "dim"
-      - level: (optional) For dimming, specify brightness 0-100
+                // Validate input
+                if (!deviceName || !action) {
+                    return 'Error: deviceName and action are required';
+                }
 
-      Examples:
-      - Turn on: {"deviceName": "living room light", "action": "on"}
-      - Turn off: {"deviceName": "bedroom light", "action": "off"}
-      - Dim: {"deviceName": "kitchen light", "action": "dim", "level": 50}
+                if (action === 'dim' && (level === undefined || level < 0 || level > 100)) {
+                    return 'Error: For dimming, level must be between 0 and 100';
+                }
 
-      The device name is case-insensitive and supports partial matching.
-    `,
-    func: async (input: string) => {
-      try {
-        const params: DeviceControlInput = JSON.parse(input);
-        const { deviceName, action, level } = params;
+                // TODO: Replace with actual device lookup and MQTT publish
+                // Mock response for now
+                let response = '';
 
-        // Validate input
-        if (!deviceName || !action) {
-          return 'Error: deviceName and action are required';
-        }
+                if (action === 'on') {
+                    response = `Turned on ${deviceName}`;
+                } else if (action === 'off') {
+                    response = `Turned off ${deviceName}`;
+                } else if (action === 'dim') {
+                    response = `Set ${deviceName} to ${level}% brightness`;
+                }
 
-        if (action === 'dim' && (level === undefined || level < 0 || level > 100)) {
-          return 'Error: For dimming, level must be between 0 and 100';
-        }
-
-        // TODO: Replace with actual device lookup and MQTT publish
-        // 1. Find device by name (fuzzy match)
-        // const device = await findDeviceByName(deviceName);
-        //
-        // 2. Build MQTT message
-        // const topic = `home/device/${device.id}/set`;
-        // const payload = { action, value: level };
-        //
-        // 3. Publish to MQTT
-        // await mqttClient.publish(topic, JSON.stringify(payload));
-
-        // Mock response for now
-        const deviceNameLower = deviceName.toLowerCase();
-        let response = '';
-
-        if (action === 'on') {
-          response = `Turned on ${deviceName}`;
-        } else if (action === 'off') {
-          response = `Turned off ${deviceName}`;
-        } else if (action === 'dim') {
-          response = `Set ${deviceName} to ${level}% brightness`;
-        }
-
-        return response;
-      } catch (error) {
-        if (error instanceof SyntaxError) {
-          return 'Error: Invalid JSON format. Please provide parameters as a JSON string.';
-        }
-        return `Error controlling device: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      }
-    },
-  });
+                console.log(`[device-control-tool] Returning response:`, response);
+                return response;
+            } catch (error) {
+                console.error(`[device-control-tool] Error:`, error);
+                return `Error controlling device: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            }
+        },
+    });
 }
