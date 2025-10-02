@@ -172,31 +172,357 @@
 - [ ] ⏳ Create .editorconfig
 - [ ] ⏳ Setup ESLint + Prettier configuration
 
-### 1.3.a Upgrade Tailwind in int-server (remove PostCSS)
-**Goal:** Migrate the int-server project so Tailwind CSS is produced without relying on a PostCSS runtime configuration (postcss.config.*). This uses the Tailwind CLI to generate the CSS as part of the build/dev workflow so PostCSS can be removed from the runtime build.
+---
 
-Checklist:
-- [ ] ⏳ Inventory current setup
-  - [ ] Note Next.js and Tailwind versions in `int-server/package.json`.
-  - [ ] Confirm `postcss.config.mjs` exists and is currently used; note any PostCSS plugins (autoprefixer, etc.).
-- [ ] ⏳ Decide approach
-  - Option A (recommended): Use Tailwind CLI to compile a single generated CSS file during dev/build and serve/import that file from the app.
-  - Option B (alternative): Replace PostCSS runtime only with a minimal PostCSS build step (keeps autoprefixer) — useful if you must support older browsers.
-- [ ] ⏳ Add Tailwind CLI scripts to `int-server/package.json`
-  - Add a dev watch script (e.g., `tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --watch`) and a build script to produce the final CSS before Next.js build.
-- [ ] ⏳ Create an entry input CSS file (if not present): `int-server/src/styles/tailwind.css` with the Tailwind directives (`@tailwind base; @tailwind components; @tailwind utilities;`).
-- [ ] ⏳ Update imports in the app to use the generated CSS (`public/tailwind.css` or another chosen output path). Replace any import of a PostCSS-processed file if present.
-- [ ] ⏳ Update `int-server/tailwind.config.*` content paths to include all app directories (src, pages, components, app) so the CLI tree-shakes correctly.
-- [ ] ⏳ Remove PostCSS runtime files and dependencies
-  - [ ] Delete `int-server/postcss.config.mjs` (after ensuring build works).
-  - [ ] Remove `postcss` and `postcss-loader`/`autoprefixer` from `int-server/package.json` if not needed (keep note if autoprefixer required).
-- [ ] ⏳ Wire build scripts into CI and developer workflows
-  - [ ] Ensure `npm run build` runs the CSS generation step before `next build` (or add it as part of a combined script: `npm run build:css && next build`).
-  - [ ] For local dev, ensure dev script starts Tailwind CLI `--watch` alongside Next.js (using `concurrently`, npm-run-all, or two-terminal instructions).
-- [ ] ⏳ Test
-  - [ ] Run dev: CSS updates should reflect immediately.
-  - [ ] Run production build: `npm run build` should produce the generated CSS and `next build` should succeed without PostCSS config.
-  - [ ] Verify no Tailwind directives remain unprocessed in final output.
+## Phase 3: AI Chatbot Implementation
+
+**Goal:** Build the core chatbot interface for natural language device control using LangChain.js + Ollama.
+
+### 3.1 Backend Setup
+
+#### 3.1.1 LangChain.js Installation
+- [ ] ⏳ Install LangChain dependencies
+  ```bash
+  npm install @langchain/ollama @langchain/core langchain
+  ```
+- [ ] ⏳ Install HTTP response parser
+  ```bash
+  npm install langchain/output_parsers
+  ```
+- [ ] ⏳ Configure TypeScript types for LangChain
+
+#### 3.1.2 Ollama Integration
+- [ ] ⏳ Create Ollama client wrapper (`lib/ollama/client.ts`)
+  - [ ] Initialize ChatOllama with environment variables
+  - [ ] Set model: `qwen2.5:3b`
+  - [ ] Set temperature: `0.1` (for consistent responses)
+  - [ ] Configure timeout: 5 seconds
+- [ ] ⏳ Test Ollama connection
+  - [ ] Create test script to verify model availability
+  - [ ] Test basic inference
+  - [ ] Measure response time on target hardware
+
+#### 3.1.3 Chat API Route Handler
+- [ ] ⏳ Create `/app/api/chat/route.ts`
+- [ ] ⏳ Implement POST handler with:
+  - [ ] Auth0 session validation
+  - [ ] Request body parsing (messages array)
+  - [ ] LangChain agent initialization
+  - [ ] Streaming response via TransformStream
+  - [ ] Error handling with user-friendly messages
+- [ ] ⏳ Configure Server-Sent Events (SSE) headers
+  ```typescript
+  headers: {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  }
+  ```
+- [ ] ⏳ Implement rate limiting (10 requests/minute per user)
+
+### 3.2 LangChain Tools Implementation
+
+#### 3.2.1 MQTT Tool
+- [ ] ⏳ Create `lib/langchain/tools/mqtt-tool.ts`
+- [ ] ⏳ Implement DynamicTool with:
+  - [ ] Name: `mqtt_publish`
+  - [ ] Description: Clear instructions for AI about MQTT topics and payloads
+  - [ ] Function: Publish to MQTT broker
+  - [ ] Input validation: JSON schema for topic + payload
+  - [ ] Error handling: Catch and return user-friendly errors
+- [ ] ⏳ Test MQTT tool independently
+  - [ ] Mock MQTT client
+  - [ ] Test valid topic/payload
+  - [ ] Test invalid inputs
+  - [ ] Verify error messages
+
+#### 3.2.2 Device Control Tool
+- [ ] ⏳ Create `lib/langchain/tools/device-tool.ts`
+- [ ] ⏳ Implement DynamicTool with:
+  - [ ] Name: `control_device`
+  - [ ] Description: Instructions for controlling devices by name/room
+  - [ ] Function: Query database for device, publish MQTT command
+  - [ ] Support actions: `on`, `off`, `dim` (with level 0-100)
+  - [ ] Fuzzy matching for device names (case-insensitive, partial match)
+- [ ] ⏳ Create device lookup service (`lib/services/device-service.ts`)
+  - [ ] Query devices by friendly name
+  - [ ] Query devices by room
+  - [ ] Query devices by type
+  - [ ] Return device with MQTT topic
+- [ ] ⏳ Test device control tool
+  - [ ] Test exact device name match
+  - [ ] Test fuzzy device name match
+  - [ ] Test room-based queries
+  - [ ] Test device not found errors
+
+#### 3.2.3 Device List Tool
+- [ ] ⏳ Create `lib/langchain/tools/device-list-tool.ts`
+- [ ] ⏳ Implement DynamicTool with:
+  - [ ] Name: `list_devices`
+  - [ ] Description: Returns all available devices
+  - [ ] Function: Query database, return JSON array
+  - [ ] Include: device ID, name, type, room, current state
+- [ ] ⏳ Optimize response format for AI consumption
+- [ ] ⏳ Test device listing with various device states
+
+### 3.3 Frontend Components
+
+#### 3.3.1 shadcn/ui Setup
+- [ ] ⏳ Initialize shadcn/ui
+  ```bash
+  npx shadcn-ui@latest init
+  ```
+- [ ] ⏳ Install base components:
+  - [ ] `npx shadcn-ui@latest add button`
+  - [ ] `npx shadcn-ui@latest add input`
+  - [ ] `npx shadcn-ui@latest add scroll-area`
+  - [ ] `npx shadcn-ui@latest add avatar`
+  - [ ] `npx shadcn-ui@latest add card`
+- [ ] ⏳ Configure Tailwind for shadcn/ui theme
+- [ ] ⏳ Test dark mode toggle
+
+#### 3.3.2 Chat Interface Component
+- [ ] ⏳ Create `components/ChatInterface.tsx`
+- [ ] ⏳ Implement features:
+  - [ ] Message state management (useState)
+  - [ ] Input field with auto-focus
+  - [ ] Send button with loading state
+  - [ ] Auto-scroll to bottom on new messages
+  - [ ] Streaming response handling
+  - [ ] Error message display
+- [ ] ⏳ Add keyboard shortcuts:
+  - [ ] Enter to send
+  - [ ] Shift+Enter for new line
+  - [ ] Escape to clear input
+
+#### 3.3.3 Chat Message Component
+- [ ] ⏳ Create `components/ChatMessage.tsx`
+- [ ] ⏳ Implement features:
+  - [ ] User vs Assistant styling
+  - [ ] Avatar display
+  - [ ] Timestamp formatting
+  - [ ] Message content rendering
+  - [ ] Device action badges (optional)
+  - [ ] Copy message button
+- [ ] ⏳ Add markdown support for AI responses (optional)
+- [ ] ⏳ Style with Tailwind CSS
+
+#### 3.3.4 Chat Page
+- [ ] ⏳ Create `app/chat/page.tsx`
+- [ ] ⏳ Implement layout:
+  - [ ] Full-height chat container
+  - [ ] Header with title and settings button
+  - [ ] ChatInterface component
+  - [ ] Responsive design (mobile-first)
+- [ ] ⏳ Add auth protection (require login)
+- [ ] ⏳ Test on mobile, tablet, desktop
+
+### 3.4 Conversation History
+
+#### 3.4.1 Database Schema
+- [ ] ⏳ Add `Conversation` model to Prisma schema (already exists)
+- [ ] ⏳ Run migration: `npx prisma migrate dev`
+- [ ] ⏳ Verify table created in SQLite
+
+#### 3.4.2 Conversation Service
+- [ ] ⏳ Create `lib/services/conversation-service.ts`
+- [ ] ⏳ Implement functions:
+  - [ ] `saveMessage(userId, role, content)` - Save to DB
+  - [ ] `getHistory(userId, limit=50)` - Retrieve recent messages
+  - [ ] `clearHistory(userId)` - Delete all user messages
+- [ ] ⏳ Test conversation persistence
+  - [ ] Save messages during chat
+  - [ ] Load history on page refresh
+  - [ ] Clear history function
+
+#### 3.4.3 Session Storage Fallback
+- [ ] ⏳ Implement client-side session storage
+  ```typescript
+  useEffect(() => {
+    const saved = sessionStorage.getItem('chat-history');
+    if (saved) setMessages(JSON.parse(saved));
+  }, []);
+  ```
+- [ ] ⏳ Sync with database on important messages
+- [ ] ⏳ Handle storage limits gracefully
+
+### 3.5 Streaming Implementation
+
+#### 3.5.1 Server-Side Streaming
+- [ ] ⏳ Implement TransformStream in API route
+  ```typescript
+  const encoder = new TextEncoder();
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+
+  // Write chunks
+  await writer.write(encoder.encode(token));
+  ```
+- [ ] ⏳ Handle backpressure
+- [ ] ⏳ Implement timeout (5 seconds max)
+- [ ] ⏳ Close stream on completion or error
+
+#### 3.5.2 Client-Side Streaming
+- [ ] ⏳ Implement ReadableStream reader in ChatInterface
+  ```typescript
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader!.read();
+    if (done) break;
+    const chunk = decoder.decode(value);
+    // Update message
+  }
+  ```
+- [ ] ⏳ Update UI on each chunk
+- [ ] ⏳ Handle stream interruption
+- [ ] ⏳ Show typing indicator
+
+### 3.6 Error Handling
+
+#### 3.6.1 API Error Responses
+- [ ] ⏳ Create error response format
+  ```typescript
+  interface ErrorResponse {
+    error: {
+      code: string;
+      message: string;
+      details?: any;
+    }
+  }
+  ```
+- [ ] ⏳ Implement error categories:
+  - [ ] `OLLAMA_TIMEOUT` - AI model too slow
+  - [ ] `DEVICE_OFFLINE` - Device unavailable
+  - [ ] `NETWORK_ERROR` - Connection lost
+  - [ ] `AUTH_ERROR` - Authentication failed
+  - [ ] `RATE_LIMIT` - Too many requests
+
+#### 3.6.2 User-Friendly Error Messages
+- [ ] ⏳ Map error codes to friendly messages:
+  ```typescript
+  {
+    OLLAMA_TIMEOUT: "I'm taking too long to respond. Try a simpler command?",
+    DEVICE_OFFLINE: "That device seems to be offline. Check if it's powered on.",
+    // etc.
+  }
+  ```
+- [ ] ⏳ Add retry button for recoverable errors
+- [ ] ⏳ Log errors for debugging (server-side only)
+
+### 3.7 Testing
+
+#### 3.7.1 Unit Tests
+- [ ] ⏳ Test LangChain tools
+  ```bash
+  npm test lib/langchain/tools/mqtt-tool.test.ts
+  ```
+  - [ ] MQTT tool with valid/invalid inputs
+  - [ ] Device control tool with fuzzy matching
+  - [ ] Device list tool response format
+- [ ] ⏳ Test conversation service
+  - [ ] Save message
+  - [ ] Retrieve history
+  - [ ] Clear history
+
+#### 3.7.2 Integration Tests
+- [ ] ⏳ Test chat API route
+  - [ ] Mock Ollama responses
+  - [ ] Mock MQTT client
+  - [ ] Test streaming flow
+  - [ ] Test authentication
+- [ ] ⏳ Test end-to-end chat flow
+  - [ ] User sends message → AI responds
+  - [ ] Device command → MQTT published
+  - [ ] Error handling → Friendly message
+
+#### 3.7.3 Manual Testing
+- [ ] ⏳ Test on target hardware (Pi 5)
+  - [ ] Measure response time (target: <3s)
+  - [ ] Test with real Z-Wave devices
+  - [ ] Test network resilience
+- [ ] ⏳ Test edge cases:
+  - [ ] Very long messages
+  - [ ] Rapid-fire commands
+  - [ ] Device offline scenarios
+  - [ ] Network disconnection
+- [ ] ⏳ Browser compatibility:
+  - [ ] Chrome
+  - [ ] Firefox
+  - [ ] Safari
+  - [ ] Mobile browsers
+
+### 3.8 Performance Optimization
+
+#### 3.8.1 Ollama Optimization
+- [ ] ⏳ Benchmark current performance
+  - [ ] Measure tokens/second
+  - [ ] Measure end-to-end latency
+  - [ ] Compare Qwen2.5:3b vs Gemma2:2b
+- [ ] ⏳ Optimize prompt engineering
+  - [ ] Shorter system prompts
+  - [ ] Clear tool descriptions
+  - [ ] Examples for tool usage
+- [ ] ⏳ Implement response caching (optional)
+  - [ ] Cache common device queries
+  - [ ] LRU cache with 5-minute TTL
+
+#### 3.8.2 Frontend Optimization
+- [ ] ⏳ Implement virtual scrolling for long chats
+  ```bash
+  npm install react-window
+  ```
+- [ ] ⏳ Debounce input (300ms)
+- [ ] ⏳ Memoize message components
+  ```typescript
+  const MemoizedChatMessage = memo(ChatMessage);
+  ```
+- [ ] ⏳ Lazy load chat history on scroll
+
+#### 3.8.3 Network Optimization
+- [ ] ⏳ Enable gzip compression
+- [ ] ⏳ Keep-alive connections for streaming
+- [ ] ⏳ Batch message history fetches
+- [ ] ⏳ Optimize JSON payloads (remove unnecessary fields)
+
+### 3.9 Documentation
+
+#### 3.9.1 Code Documentation
+- [ ] ⏳ Add JSDoc comments to all tools
+- [ ] ⏳ Document API route parameters
+- [ ] ⏳ Add inline comments for complex logic
+- [ ] ⏳ Create API documentation in `docs/api.md`
+
+#### 3.9.2 User Documentation
+- [ ] ⏳ Create `docs/chatbot-usage.md`
+  - [ ] Example commands
+  - [ ] Supported device actions
+  - [ ] Troubleshooting guide
+  - [ ] FAQ
+- [ ] ⏳ Add tooltips to UI for guidance
+- [ ] ⏳ Create demo video/GIF
+
+#### 3.9.3 Developer Documentation
+- [ ] ⏳ Update `docs/architecture.md` with chatbot flow
+- [ ] ⏳ Document LangChain tool creation process
+- [ ] ⏳ Add streaming implementation guide
+- [ ] ⏳ Create troubleshooting checklist
+
+### 3.10 Acceptance Criteria
+
+- [ ] ⏳ User can send natural language commands
+- [ ] ⏳ AI responds within 3 seconds (95th percentile)
+- [ ] ⏳ Device commands are executed via MQTT
+- [ ] ⏳ Streaming responses update UI in real-time
+- [ ] ⏳ Conversation history persists across sessions
+- [ ] ⏳ Errors are handled gracefully with retry options
+- [ ] ⏳ UI works on mobile, tablet, and desktop
+- [ ] ⏳ Authentication is enforced on all chat routes
+- [ ] ⏳ Rate limiting prevents abuse
+- [ ] ⏳ Tests achieve 70%+ code coverage
+
+---
 - [ ] ⏳ Acceptance criteria
   - [ ] `int-server` runs locally in dev and production without a `postcss.config.*` file.
   - [ ] `postcss` and related packages are removed from `int-server/package.json` (unless autoprefixer is explicitly kept).
