@@ -352,8 +352,8 @@ interface ErrorResponse {
 
 ### Test Environment Setup
 ```bash
-# Test MQTT broker
-docker run -p 1883:1883 eclipse-mosquitto
+# Test MQTT broker (HiveMQ CE)
+docker run -p 1883:1883 -p 8080:8080 hivemq/hivemq-ce:latest
 
 # Test database
 DATABASE_URL="file:./test.db"
@@ -419,18 +419,61 @@ OLLAMA_BASE_URL="http://localhost:11435" # Mock server
 
 ## Deployment Architecture
 
+## MQTT Broker Selection: Eclipse Mosquitto vs HiveMQ
+
+### Decision: Use HiveMQ Community Edition
+
+**Rationale:**
+Given your existing HiveMQ experience and codebase, **HiveMQ Community Edition** is the better choice for this project:
+
+1. **Leverage Existing Knowledge**: Your familiarity with HiveMQ reduces implementation risk and development time
+2. **Proven Integration**: Your existing code already works with HiveMQ, reducing integration complexity
+3. **Performance**: HiveMQ generally offers better performance and scalability than Mosquitto
+4. **Enterprise Features**: Even the Community Edition includes better monitoring and management tools
+5. **Demo Reliability**: Using a broker you're already familiar with reduces potential demo failures
+
+### Comparison Analysis
+
+| Factor | HiveMQ CE | Eclipse Mosquitto | Winner |
+|--------|-----------|-------------------|--------|
+| **Your Experience** | ✅ Existing codebase | ❌ New learning curve | **HiveMQ** |
+| **Performance** | ✅ Higher throughput | ⚠️ Good for small scale | **HiveMQ** |
+| **Docker Support** | ✅ Official images | ✅ Official images | Tie |
+| **License** | ✅ Apache 2.0 (free) | ✅ EPL 2.0 (free) | Tie |
+| **Resource Usage** | ⚠️ Higher memory | ✅ Lightweight | **Mosquitto** |
+| **Management UI** | ✅ Control Center | ❌ Third-party only | **HiveMQ** |
+| **Documentation** | ✅ Excellent | ✅ Good | **HiveMQ** |
+| **Home Automation** | ✅ Widely used | ✅ Very popular | Tie |
+
+### Architecture Decision: HiveMQ Community Edition
+
+**Selected: HiveMQ Community Edition**
+- Leverages your existing expertise and codebase
+- Better performance characteristics for the demo
+- Built-in monitoring and management interface
+- Reduces implementation and demo risk
+- Apache 2.0 license suitable for presentation and distribution
+
 ### Development Environment
 ```yaml
 # docker-compose.yml
 services:
-  mosquitto:
-    image: eclipse-mosquitto:2.0
-    ports: ["1883:1883"]
-    volumes: ["./mosquitto.conf:/mosquitto/config/mosquitto.conf"]
+  hivemq:
+    image: hivemq/hivemq-ce:latest
+    ports: 
+      - "1883:1883"      # MQTT port
+      - "8080:8080"      # Management interface
+    volumes: 
+      - "./hivemq-config:/opt/hivemq/conf"
+    environment:
+      - HIVEMQ_LOG_LEVEL=INFO
   
   zwave-js-ui:
     image: zwavejs/zwave-js-ui:latest
     ports: ["8091:8091"]
+    depends_on: ["hivemq"]
+    environment:
+      - MQTT_SERVER=hivemq
     devices: ["/dev/ttyUSB0:/dev/ttyUSB0"]
     volumes: ["zwave-data:/usr/src/app/store"]
 ```
@@ -438,9 +481,36 @@ services:
 ### Production Deployment (Raspberry Pi 5)
 - **Ollama**: Native installation on Pi 5
 - **Next.js**: Docker container or native Node.js
-- **MQTT**: Docker container (Mosquitto)
+- **MQTT**: HiveMQ CE Docker container
 - **zwave-js-ui**: Docker container with USB device access
 - **Database**: SQLite file on persistent storage
+
+### Licensing Considerations
+
+**HiveMQ Community Edition License:**
+- **License**: Apache License 2.0 (fully open source)
+- **Commercial Use**: ✅ Permitted for commercial applications
+- **Distribution**: ✅ Can be redistributed and modified
+- **Limitations**: 
+  - Limited to 25 concurrent connections (sufficient for demo)
+  - No enterprise features (clustering, monitoring extensions)
+  - Community support only
+
+**For Production/Enterprise:**
+- HiveMQ Professional/Enterprise for advanced features and unlimited connections
+- 25 connection limit of CE version is typically sufficient for home automation
+
+**Demo Impact:**
+- 25 connection limit is more than sufficient for CodeMash demo
+- Apache 2.0 license allows unrestricted use in presentation
+- Attendees can replicate the exact setup using HiveMQ CE
+
+### Sources and References
+- [HiveMQ Community Edition](https://github.com/hivemq/hivemq-community-edition) - Apache 2.0 licensed
+- [HiveMQ CE License Details](https://www.hivemq.com/downloads/community/) - Connection limits and terms
+- [HiveMQ vs Mosquitto Performance Comparison](https://www.hivemq.com/blog/mqtt-broker-comparison/)
+- [Home Assistant MQTT Broker Recommendations](https://www.home-assistant.io/integrations/mqtt/) - Lists both as popular choices
+- [MQTT Broker Benchmarks](https://github.com/krylovsk/mqtt-benchmark) - Performance comparisons
 
 ### Kubernetes Deployment (Optional)
 - Helm charts for each service

@@ -4,7 +4,11 @@
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_type",
       "mcp__playwright__browser_snapshot",
-      "mcp__github__get_file_contents"
+      "mcp__github__get_file_contents",
+      "WebSearch",
+      "Bash(cat:*)",
+      "mcp__github__list_releases",
+      "mcp__github__search_code"
     ],
     "deny": [],
     "ask": []

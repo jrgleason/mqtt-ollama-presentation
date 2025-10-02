@@ -1,6 +1,12 @@
 // postcss.config.mjs
-// PostCSS configuration intentionally removed. Tailwind CSS is built via the Tailwind CLI
-// as part of the project's build/dev scripts (see package.json scripts: build:css / dev:css).
-// If you later require PostCSS for autoprefixer or other plugins, recreate this file.
+// Configure PostCSS to use the Tailwind CSS PostCSS plugin so that
+// `@import "tailwindcss"` in `globals.css` is handled by Next.js'
+// PostCSS pipeline.
 
-export default {};
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;

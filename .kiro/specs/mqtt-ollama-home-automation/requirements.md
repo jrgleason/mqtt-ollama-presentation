@@ -5,9 +5,10 @@
 This feature implements a local AI-powered home automation system for the CodeMash 2026 presentation (January 12, 2026). The system demonstrates how to build intelligent home automation using MQTT + Ollama that runs entirely on local infrastructure without cloud dependencies, providing natural language control of Z-Wave devices through a conversational AI interface.
 
 **Project Deadline:** January 1, 2026
+**Presentation Constraint:** Maximum 45 minutes total presentation time
 **Deliverables:** 
 - Functional demo application for live presentation
-- Presentation materials and slide deck
+- Presentation materials and slide deck (optimized for 45-minute format)
 - Complete working system that can be deployed and demonstrated
 
 ## Requirements
@@ -91,12 +92,14 @@ This feature implements a local AI-powered home automation system for the CodeMa
 #### Acceptance Criteria
 
 1. WHEN the demo application is deployed THEN it SHALL be ready for live presentation by January 1, 2026
-2. WHEN demonstrating the system THEN it SHALL include a working Next.js web interface with authentication
-3. WHEN showing device control THEN the demo SHALL control at least 2-3 physical Z-Wave devices (switches, dimmers, sensors)
-4. WHEN demonstrating AI capabilities THEN the system SHALL respond to natural language commands with configurable personality
-5. WHEN presenting the architecture THEN the demo SHALL show MQTT communication, Ollama integration, and real-time device updates
-6. WHEN the presentation concludes THEN attendees SHALL have access to complete source code and deployment instructions
-7. WHEN technical issues occur THEN the demo SHALL have backup mechanisms (recorded video, mock devices) to ensure presentation success
+2. WHEN the presentation is delivered THEN it SHALL be completed within 45 minutes total time including demo and Q&A
+3. WHEN demonstrating the system THEN it SHALL include a working Next.js web interface with authentication
+4. WHEN showing device control THEN the demo SHALL control at least 2-3 physical Z-Wave devices (switches, dimmers, sensors)
+5. WHEN demonstrating AI capabilities THEN the system SHALL respond to natural language commands with configurable personality
+6. WHEN presenting the architecture THEN the demo SHALL show MQTT communication, Ollama integration, and real-time device updates
+7. WHEN the presentation concludes THEN attendees SHALL have access to complete source code and deployment instructions
+8. WHEN technical issues occur THEN the demo SHALL have backup mechanisms (recorded video, mock devices) to ensure presentation success
+9. WHEN timing the presentation THEN the live demo portion SHALL be limited to 10-15 minutes maximum to allow time for architecture explanation and Q&A
 
 ### Requirement 8: ESP32 Integration (Stretch Goal)
 

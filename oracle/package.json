@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --watch",
-    "dev:next": "next dev --turbopack",
-    "dev": "concurrently \"npm:dev:css\" \"npm:dev:next\"",
+    "dev:next": "next dev",
+    "dev": "next dev",
     "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --minify",
-    "build": "npm run build:css && next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -17,6 +17,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "langchain": "^0.3.35",
+    "lucide-react": "^0.468.0",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -32,6 +33,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4.1.14",
-    "typescript": "^5"
+    "typescript": "^5",
+    "postcss": "^8.4.27",
+    "@tailwindcss/postcss": "latest"
   }
 }
