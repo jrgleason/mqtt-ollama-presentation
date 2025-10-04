@@ -5,24 +5,26 @@
  * Supports turning devices on/off and dimming.
  */
 
-import { DynamicStructuredTool } from '@langchain/core/tools';
-import { z } from 'zod';
+import {DynamicStructuredTool} from '@langchain/core/tools';
+import {z} from 'zod';
 
 // Define the input schema using Zod
 const DeviceControlSchema = z.object({
-  deviceName: z.string().describe("The name of the device to control (e.g. 'living room light')"),
-  action: z.enum(['on', 'off', 'dim']).describe("The action to perform: 'on', 'off', or 'dim'"),
-  level: z.number().min(0).max(100).optional().describe("For dimming, brightness level 0-100")
+    deviceName: z.string().describe("The name of the device to control (e.g. 'living room light')"),
+    action: z.enum(['on', 'off', 'dim']).describe("The action to perform: 'on', 'off', or 'dim'"),
+    level: z.number().min(0).max(100).optional().describe("For dimming, brightness level 0-100")
 });
 
 export function createDeviceControlTool() {
     return new DynamicStructuredTool({
         name: 'control_device',
-        description: 'Controls a smart home device by turning it on/off or dimming it',
+        description: `
+        Controls a smart home device by turning it on/off or dimming it
+        `,
         schema: DeviceControlSchema,
-        func: async ({ deviceName, action, level }) => {
+        func: async ({deviceName, action, level}) => {
             try {
-                console.log(`[device-control-tool] Received params:`, { deviceName, action, level });
+                console.log(`[device-control-tool] Received params:`, {deviceName, action, level});
 
                 // Validate input
                 if (!deviceName || !action) {

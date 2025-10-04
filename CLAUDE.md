@@ -225,11 +225,42 @@ See `docs/network-dependencies.md` for complete list and rationale.
 - **Integration:** Subscribe to MQTT topics published by zwave-js-ui
 - **Documentation:** https://github.com/zwave-js/zwave-js-ui
 
-### MQTT Broker
-- **Broker:** Mosquitto
-- **Client:** MQTT.js
-- **Pattern:** Pub/Sub with topic-based routing
+### MQTT Integration (Dual Approach for Presentation)
+
+**Presentation Strategy:** Demonstrate BOTH simple custom tools AND enterprise MCP architecture
+
+**Part 1: Custom Tool (5 minutes)**
+- Build simple MQTT tool live on stage (~15 lines)
+- Show: User request → Tool call → Physical device responds
+- Highlight limitations: code duplication, no reusability across AI clients
+
+**Part 2: MCP Server (5 minutes)**
+- Introduce ezhuk/mqtt-mcp (Anthropic's Model Context Protocol)
+- Demo same functionality with better architecture
+- Show: MCP Inspector, Claude Desktop integration, separation of concerns
+
+**Implementation Requirements:**
+- **Week 1-2:** Implement custom mqtt.js tool (for demo Part 1)
+- **Week 3:** Add ezhuk/mqtt-mcp server (for demo Part 2)
+- **Week 4:** Practice switching between approaches live
+
+**Technical Details:**
+- **Broker:** HiveMQ (existing setup at https://github.com/jrgleason/home-infra/tree/main/mqtt)
+  - MQTT Port: 1883 (TCP)
+  - WebSocket Port: 8000 (path: /mqtt)
+  - Control Center: 8080 (HTTP)
+  - RBAC Extension: hivemq-file-rbac-extension v4.5.3
+  - Authentication: Username/password (credentials in credentials.xml)
+- **Custom Tool:** MQTT.js + LangChain tool decorator
+- **MCP Server:** ezhuk/mqtt-mcp (FastMCP 2.0)
 - **Authentication:** Basic username/password minimum
+- **Note:** Using existing HiveMQ broker instead of Mosquitto. ezhuk/mqtt-mcp is broker-agnostic and works with any MQTT broker.
+
+**When to Use Each:**
+- Custom Tools: Prototypes, learning, simple integrations
+- MCP Servers: Production, multiple AI clients, enterprise systems
+
+See `docs/notes.md` "MQTT Integration - Dual Approach Strategy" for complete implementation guide.
 
 ### Auth0
 - **Type:** OIDC SPA authentication
@@ -263,10 +294,12 @@ AUTH0_CLIENT_SECRET=
 # Database
 DATABASE_URL=file:./dev.db
 
-# MQTT
+# MQTT (HiveMQ - see https://github.com/jrgleason/home-infra/tree/main/mqtt)
 MQTT_BROKER_URL=mqtt://localhost:1883
-MQTT_USERNAME=
+MQTT_USERNAME=jrg
 MQTT_PASSWORD=
+# Optional: WebSocket URL for browser clients
+MQTT_WEBSOCKET_URL=ws://localhost:8000/mqtt
 
 # Ollama
 OLLAMA_BASE_URL=http://localhost:11434

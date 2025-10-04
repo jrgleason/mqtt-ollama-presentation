@@ -8,7 +8,11 @@
       "WebSearch",
       "Bash(cat:*)",
       "mcp__github__list_releases",
-      "mcp__github__search_code"
+      "mcp__github__search_code",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_evaluate",
+      "Bash(mkdir:*)",
+      "mcp__playwright__browser_close"
     ],
     "deny": [],
     "ask": []

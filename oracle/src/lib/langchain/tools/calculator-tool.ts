@@ -10,14 +10,13 @@ import {DynamicTool} from '@langchain/core/tools';
 export function createCalculatorTool() {
     return new DynamicTool({
         name: 'calculator',
-        description: `Evaluates a basic arithmetic expression. Allowed tokens: digits, + - * / ( ) . % and ^ for exponent.
-
-Example inputs:
-- 2+2*3
-- (4+6)/2
-- 2^8
-
-Returns a plain text result or an error message if the input is invalid.`,
+        description: `
+        Evaluates a basic arithmetic expression. Allowed tokens: digits, + - * / ( ) . % and ^ for exponent.
+        Example inputs:
+        - 2+2*3
+        - (4+6)/2
+        - 2^8
+        Returns a plain text result or an error message if the input is invalid.`,
         func: async (input: string) => {
             try {
                 let expr: string;
