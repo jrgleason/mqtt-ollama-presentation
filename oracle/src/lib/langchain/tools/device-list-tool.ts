@@ -1,73 +1,68 @@
 /**
  * Device List Tool
  *
- * LangChain tool that returns a list of all available smart home devices.
- * This is a mock implementation that will be replaced with actual database queries.
+ * LangChain tool that returns a list of all available smart home devices from the database.
  */
 
 import {DynamicTool} from '@langchain/core/tools';
-
-// Mock device data for initial testing
-const MOCK_DEVICES = [
-    {
-        id: '1',
-        name: 'Living Room Light',
-        type: 'dimmer',
-        room: 'Living Room',
-        state: {isOn: true, level: 75},
-    },
-    {
-        id: '2',
-        name: 'Bedroom Light',
-        type: 'switch',
-        room: 'Bedroom',
-        state: {isOn: false},
-    },
-    {
-        id: '3',
-        name: 'Kitchen Light',
-        type: 'dimmer',
-        room: 'Kitchen',
-        state: {isOn: true, level: 100},
-    },
-    {
-        id: '4',
-        name: 'Garage Door',
-        type: 'switch',
-        room: 'Garage',
-        state: {isOn: false},
-    },
-];
+import {prisma} from '../../db/client';
 
 export function createDeviceListTool() {
     return new DynamicTool({
         name: 'list_devices',
         description: `
-      Lists all available smart home devices.
+      Lists all available smart home devices from the database.
 
-      Returns a JSON array of devices with:
+      Returns a formatted list of devices with:
       - id: Device unique identifier
       - name: Friendly device name
       - type: Device type (switch, dimmer, sensor)
-      - room: Room location
-      - state: Current device state (isOn, level, etc.)
+      - location: Room location
+      - state: Current device state
+      - nodeId: Z-Wave node ID (if applicable)
 
       Use this tool when the user asks what devices are available or wants to see all devices.
     `,
         func: async () => {
             try {
-                // TODO: Replace with actual database query
-                // const devices = await prisma.device.findMany();
+                // Query all devices from database
+                const devices = await prisma.device.findMany({
+                    orderBy: [
+                        {location: 'asc'},
+                        {name: 'asc'},
+                    ],
+                });
 
-                const deviceList = MOCK_DEVICES.map(
-                    (device) =>
-                        `${device.id}: ${device.name} (${device.type}) in ${device.room} - ${
-                            device.state.isOn ? 'ON' : 'OFF'
-                        }${device.state.level !== undefined ? ` at ${device.state.level}%` : ''}`
-                ).join('\n');
+                if (devices.length === 0) {
+                    return 'No devices found in the database. Please pair some Z-Wave devices first.';
+                }
 
-                return `Available devices:\n${deviceList}`;
+                // Format device list for AI consumption
+                const deviceList = devices.map((device) => {
+                    const parts = [
+                        `ID: ${device.id}`,
+                        `Name: ${device.name}`,
+                        `Type: ${device.type}`,
+                    ];
+
+                    if (device.location) {
+                        parts.push(`Location: ${device.location}`);
+                    }
+
+                    if (device.state) {
+                        parts.push(`State: ${device.state}`);
+                    }
+
+                    if (device.nodeId) {
+                        parts.push(`Node ID: ${device.nodeId}`);
+                    }
+
+                    return parts.join(', ');
+                }).join('\n');
+
+                return `Available devices (${devices.length} total):\n${deviceList}`;
             } catch (error) {
+                console.error('[device-list-tool] Error listing devices:', error);
                 return `Error listing devices: ${error instanceof Error ? error.message : 'Unknown error'}`;
             }
         },

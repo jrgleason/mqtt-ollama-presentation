@@ -110,10 +110,10 @@ ollama pull gemma2:2b
 
 ### 3. Setup Environment Variables
 
-Create a `.env.local` file in the `langchain-service` directory:
+Create a `.env.local` file in the `oracle` directory:
 
 ```bash
-cd langchain-service
+cd oracle
 cp .env.example .env.local
 # Edit .env.local with your configuration
 ```
@@ -163,7 +163,7 @@ This starts:
 ### 5. Install Dependencies & Run
 
 ```bash
-cd langchain-service
+cd oracle
 pnpm install
 pnpm run build
 ```
@@ -177,8 +177,13 @@ Navigate to http://localhost:3000
 
 ## 📚 Documentation
 
+### Task Tracking
+- **[Tasks Overview](docs/tasks.md)** - Current sprint and progress summary
+- **[Active Tasks](docs/tasks-active.md)** - Detailed remaining work by phase
+- **[Delivered Features](docs/delivered.md)** - Completed work and achievements
+
+### Technical Documentation
 - **[Requirements](docs/requirements.md)** - Detailed technical requirements
-- **[Tasks](docs/tasks.md)** - Implementation task list with progress tracking
 - **[Questions](docs/questions.md)** - Architecture decisions and clarifying questions
 - **[Architecture Decision: Next.js vs React Native](docs/architecture-decision-nextjs-vs-react-native.md)** - Detailed comparison and rationale
 - **[Network Dependencies](docs/network-dependencies.md)** - Complete list of network/internet requirements and mitigation strategies
@@ -252,7 +257,7 @@ Try these natural language commands:
 
 ```
 mqtt-ollama-presentation/
-├── langchain-service/              # Main Next.js application (App Router)
+├── oracle/              # Main Next.js application (App Router)
 │   ├── src/
 │   │   ├── app/                   # Next.js App Router
 │   │   │   ├── page.tsx           # Landing page (login/dashboard)

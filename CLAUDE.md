@@ -61,7 +61,7 @@ mqtt-ollama-presentation/
 │   ├── requirements.md        # Technical requirements
 │   ├── tasks.md               # Implementation task list
 │   └── architecture.md        # System architecture
-├── langchain-service/         # Next.js + LangChain module
+├── oracle/                    # Next.js + LangChain module (main app)
 │   ├── src/
 │   ├── package.json
 │   ├── Dockerfile

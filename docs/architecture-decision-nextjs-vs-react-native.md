@@ -366,7 +366,7 @@ React Native Web's cross-platform benefits are valuable when you **need** mobile
 
 ```bash
 # Create Next.js project with App Router
-npx create-next-app@latest langchain-service --typescript --tailwind --app --eslint
+npx create-next-app@latest oracle --typescript --tailwind --app --eslint
 
 # Key dependencies
 npm install @auth0/nextjs-auth0
@@ -381,7 +381,7 @@ npm install zustand  # or jotai for state management
 ### Project Structure:
 
 ```
-langchain-service/
+oracle/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx                    # Root layout with Auth0 provider

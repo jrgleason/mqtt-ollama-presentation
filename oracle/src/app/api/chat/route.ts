@@ -22,7 +22,7 @@ export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
     try {
         // Parse request body
-        const { messages } = await req.json();
+        const { messages, model: selectedModel } = await req.json();
 
         if (!messages || !Array.isArray(messages)) {
             return new Response(
@@ -34,122 +34,68 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Create Ollama client (replace with actual version if needed)
-        const model = createOllamaClient(0.1);
+        // Create Ollama client with optional model override
+        const model = createOllamaClient(0.1, selectedModel);
 
-        // Create LangChain tools (typed for better clarity)
-        const tools: DynamicTool[] = [
-            createDeviceListTool(),
-            createDeviceControlTool(),
-            createCalculatorTool(),
-        ];
+        // ═══════════════════════════════════════════════════════════════════════
+        // 🔴 TECH DEBT: TOOLS TEMPORARILY DISABLED FOR PERFORMANCE TESTING
+        // ═══════════════════════════════════════════════════════════════════════
+        //
+        // Current state: Direct model invocation (no agent, no tools)
+        // Reason: Testing raw llama3.2:1b performance without agent overhead
+        //
+        // TODO: Re-enable tools with selective calling via system prompt:
+        //
+        // const tools: DynamicTool[] = [
+        //     createDeviceListTool(),
+        //     createDeviceControlTool(),
+        //     createCalculatorTool(),
+        // ];
+        //
+        // const prompt = ChatPromptTemplate.fromMessages([
+        //     SystemMessagePromptTemplate.fromTemplate(`You are a helpful home automation assistant.
+        //
+        //     Only use tools when the user explicitly asks to:
+        //     - List devices or check device status
+        //     - Control devices (turn on/off, adjust settings)
+        //     - Perform calculations
+        //
+        //     For general conversation, greetings, or questions that don't require device interaction
+        //     or calculations, respond directly without using any tools.`),
+        //     new MessagesPlaceholder('chat_history'),
+        //     HumanMessagePromptTemplate.fromTemplate('{input}'),
+        //     new MessagesPlaceholder('agent_scratchpad'),
+        // ]);
+        //
+        // const agent = createToolCallingAgent({ llm: model, tools, prompt });
+        // const agentExecutor = AgentExecutor.fromAgentAndTools({ agent, tools });
+        //
+        // Test criteria when re-enabling:
+        // ✅ "Hi how are you" should NOT call tools
+        // ✅ "Turn on the living room light" SHOULD call device_control tool
+        // ✅ "What devices do I have?" SHOULD call list_devices tool
+        //
+        // See: docs/tasks-active.md section 2.2.0
+        // ═══════════════════════════════════════════════════════════════════════
 
-        // Wrap tools with logging and type-safe function wrapping
-        const wrappedTools = tools.map((tool) => {
-            const originalFunc = tool.func as (input: string) => Promise<unknown>;
-
-            tool.func = async (input: string) => {
-                try {
-                    console.log(`[tool] CALL ${tool.name} input:`, input);
-                    const out = await originalFunc(input);
-                    console.log(`[tool] RESULT ${tool.name} output:`, out);
-                    return out;
-                } catch (err) {
-                    const message = err instanceof Error ? err.message : String(err);
-                    console.error(`[tool] ERROR ${tool.name}:`, message);
-                    throw err;
-                }
-            };
-
-            return tool;
-        });
-
-        // Build a chat prompt for the tool-calling agent with better system instructions
-        const prompt = ChatPromptTemplate.fromMessages([
-            SystemMessagePromptTemplate.fromTemplate(`You are a helpful home automation assistant. 
-            
-Only use tools when the user explicitly asks to:
-- List devices or check device status
-- Control devices (turn on/off, adjust settings)
-- Perform calculations
-
-For general conversation, greetings, or questions that don't require device interaction or calculations, respond directly without using any tools.`),
-            new MessagesPlaceholder('chat_history'),
-            HumanMessagePromptTemplate.fromTemplate('{input}'),
-            new MessagesPlaceholder('agent_scratchpad'),
-        ]);
-
-        // Create the agent using the new tool-calling agent helper
-        const agent = createToolCallingAgent({
-            llm: model,
-            tools: wrappedTools,
-            prompt,
-        });
-
-        // Create an AgentExecutor from agent+tools
-        const agentExecutor = AgentExecutor.fromAgentAndTools({
-            agent,
-            tools: wrappedTools,
-            returnIntermediateSteps: false,
-            verbose: true,
-        });
-
-        // Prepare input shape: pass chat history and use last message content as input
-        const inputForChain = {
-            input: messages[messages.length - 1]?.content ?? '',
-            chat_history: messages.slice(0, -1),
-        };
+        // Direct model invocation without agent
+        const inputForChain = messages[messages.length - 1]?.content ?? '';
 
         // Create a streaming response with proper SSE format
         const encoder = new TextEncoder();
         const readableStream = new ReadableStream({
             async start(controller) {
                 try {
-                    // Stream the agent response
-                    const stream = await agentExecutor.streamEvents(inputForChain, {
-                        version: "v2",
-                    });
+                    // Direct model streaming (no agent)
+                    const stream = await model.stream(inputForChain);
 
-                    let hasContent = false;
-
-                    for await (const event of stream) {
-                        // Handle LLM streaming tokens
-                        if (event.event === "on_llm_stream" && event.data?.chunk?.content) {
-                            hasContent = true;
-                            const chunk = `data: ${JSON.stringify({ 
-                                type: "content", 
-                                content: event.data.chunk.content 
+                    for await (const chunk of stream) {
+                        if (chunk.content) {
+                            const data = `data: ${JSON.stringify({
+                                type: "content",
+                                content: chunk.content
                             })}\n\n`;
-                            controller.enqueue(encoder.encode(chunk));
-                        }
-                        // Handle tool calls
-                        else if (event.event === "on_tool_start") {
-                            const chunk = `data: ${JSON.stringify({ 
-                                type: "tool_start", 
-                                tool: event.name,
-                                content: `\n🔧 Using ${event.name}...\n` 
-                            })}\n\n`;
-                            controller.enqueue(encoder.encode(chunk));
-                        }
-                        // Handle tool results
-                        else if (event.event === "on_tool_end") {
-                            const chunk = `data: ${JSON.stringify({ 
-                                type: "tool_end", 
-                                tool: event.name,
-                                content: "" 
-                            })}\n\n`;
-                            controller.enqueue(encoder.encode(chunk));
-                        }
-                        // Handle final agent output if no streaming occurred
-                        else if (event.event === "on_chain_end" && event.name === "AgentExecutor" && !hasContent) {
-                            const output = event.data?.output?.output || event.data?.output || "";
-                            if (output) {
-                                const chunk = `data: ${JSON.stringify({ 
-                                    type: "content", 
-                                    content: output 
-                                })}\n\n`;
-                                controller.enqueue(encoder.encode(chunk));
-                            }
+                            controller.enqueue(encoder.encode(data));
                         }
                     }
 
@@ -158,9 +104,9 @@ For general conversation, greetings, or questions that don't require device inte
                     controller.close();
                 } catch (error) {
                     console.error('Streaming error:', error);
-                    const errorChunk = `data: ${JSON.stringify({ 
-                        type: "error", 
-                        content: "Sorry, I encountered an error. Please try again." 
+                    const errorChunk = `data: ${JSON.stringify({
+                        type: "error",
+                        content: "Sorry, I encountered an error. Please try again."
                     })}\n\n`;
                     controller.enqueue(encoder.encode(errorChunk));
                     controller.close();

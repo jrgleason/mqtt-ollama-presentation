@@ -19,27 +19,45 @@
 - Why this project matters: Building systems that work offline and respect privacy
 - Connection to the audience: Developers who want control over their smart homes
 
-## 3. Ollama & Local LLM Models (8 minutes)
+## 3. Ollama & Local LLM Models (10 minutes)
 
 ### 3.1 What is Ollama? (3 minutes)
 - Local LLM runtime that runs models on your hardware
 - No API keys, no cloud calls, complete privacy
 - Supports multiple model formats (GGUF, etc.)
 
-### 3.2 Hardware Comparison Demo (5 minutes)
+### 3.2 The Tool Calling Compatibility Trap (3 minutes)
+- **The Problem:** Not all models support function calling!
+- **Real-world discovery:** Tried multiple "recommended" models that failed
+- **The error message:** `"model does not support tools"`
+- **Critical requirement:** Our LangChain ToolCallingAgent NEEDS tool support
+- **Models that failed:**
+  - ❌ qwen2.5:3b (despite initial research suggesting support)
+  - ❌ gemma2:2b
+  - ❌ phi3:3.8b
+- **Models that work:**
+  - ✅ llama3.2:1b (RECOMMENDED for Raspberry Pi)
+  - ✅ llama3.2:3b
+  - ✅ mistral
+- **Key Lesson:** Always test models with your specific use case - documentation can be misleading!
+- **How to verify:** Look for log messages like "Using list_devices..." when testing
+
+### 3.3 Hardware Comparison Demo (4 minutes)
 - **Raspberry Pi 5 Setup:**
-  - Model: Qwen2.5:1.5b (optimized for edge devices)
+  - Model: llama3.2:1b (UPDATED from Qwen2.5:1.5b)
   - Performance: ~20 tokens/second, <1 second response time
-  - Memory usage: ~5.4GB out of 8GB available
+  - Memory usage: ~1.3GB out of 8GB available
+  - Tool support: ✅ Confirmed working
   - Use case: Edge deployment, always-on home automation
 
 - **Mac Studio Setup:**
   - Model: DeepSeek-R1 70B or Llama 3.3 70B
   - Performance: ~8 tokens/second, richer reasoning
   - Memory usage: ~42GB out of 96GB available
+  - Tool support: ✅ Excellent
   - Use case: Development, complex reasoning, demo showcase
 
-- **Key Insight:** Model selection based on hardware constraints and use case requirements
+- **Key Insight:** Model selection based on THREE factors: hardware constraints, use case requirements, AND tool calling support
 
 ## 4. Next.js + LangChain Integration (10 minutes)
 
@@ -205,9 +223,9 @@
 
 ### Timing Breakdown
 - **Setup/Introduction:** 7 minutes
-- **Technical Deep Dive:** 26 minutes  
+- **Technical Deep Dive:** 28 minutes (includes tool calling compatibility section)
 - **Live Demo:** 7 minutes
-- **Q&A:** 10 minutes
+- **Q&A:** 8 minutes
 - **Total:** 45 minutes (with 5-minute buffer)
 
 ---

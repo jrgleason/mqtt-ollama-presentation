@@ -2,21 +2,52 @@
 
 ## Lightest Model (Raspberry Pi 5)
 
-### Recommended: Qwen2.5:1.5b
+### ⚠️ CRITICAL UPDATE: Tool Calling Compatibility
 
-**Why it would work:**
+**IMPORTANT DISCOVERY (October 2025):** Not all small models support tool calling!
 
-1. **Performance Metrics**
-   - Achieves ~20 tokens/second on Raspberry Pi 5 (0.5B variant)
-   - 1.5B variant offers high throughput with low memory consumption
-   - Significantly faster than 3B+ models (4-6 tokens/sec range)
-   - Uses approximately 5.4GB RAM out of 8GB available on Pi 5
+After real-world testing, we discovered that **Qwen 2.5 series does NOT support tool/function calling** despite initial research suggesting otherwise. This is a critical requirement for our LangChain ToolCallingAgent architecture.
 
-2. **Tool Calling Support**
-   - Qwen2.5 has the most robust tool calling support in Ollama
-   - Native support for Ollama's OpenAI-compatible function calling API
-   - Chat template includes dedicated tool calling template
-   - Well-documented support for external tools and APIs
+**Models Confirmed to WORK with Tool Calling:**
+- ✅ `llama3.2:1b` (1.3GB) - **RECOMMENDED** for Raspberry Pi
+- ✅ `llama3.2:3b` (2GB) - Better accuracy, acceptable speed
+- ✅ `qwen3:1.7b` (1.9GB) - Note: Qwen**3**, not Qwen 2.5
+- ✅ `mistral` (4.1GB) - Best accuracy but slow on Pi
+- ✅ `smollm2:1.7b` (1.7GB) - Experimental, fast
+
+**Models Confirmed to FAIL with Tool Calling:**
+- ❌ `qwen2.5:3b` - Does not support tools
+- ❌ `qwen2.5:1.5b` - Does not support tools
+- ❌ `gemma2:2b` - No function calling support
+- ❌ `phi3:3.8b` - Does not support tools
+- ❌ `phi3.5:3.8b` - No tool calling capability
+
+**Error Message When Using Incompatible Model:**
+```
+Error: registry.ollama.ai/library/qwen2.5:3b does not support tools
+```
+
+### Recommended: llama3.2:1b (UPDATED)
+
+**Why this is now the recommended model:**
+
+1. **Tool Calling Support** (CRITICAL)
+   - ✅ Confirmed working with LangChain ToolCallingAgent
+   - Designed by Meta specifically for function calling on edge devices
+   - Native support for Ollama's tool calling API
+   - Produces proper tool call messages like "Using list_devices..."
+
+2. **Performance Metrics**
+   - Achieves ~20+ tokens/second on Raspberry Pi 5
+   - <1 second response time for simple commands
+   - Memory usage: ~1.3GB (leaves more headroom than Qwen 2.5)
+   - Optimized for ARM architecture (Raspberry Pi's Cortex-A76)
+
+3. **Model Design**
+   - Part of Llama 3.2 family optimized for edge deployment
+   - Balances speed and accuracy for home automation commands
+   - Excellent at command parsing and structured outputs
+   - Lightweight enough to run alongside other services
 
 3. **Model Design**
    - Optimized for structured tasks and command parsing

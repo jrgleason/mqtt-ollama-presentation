@@ -11,13 +11,49 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
+    duration?: number; // Time taken in milliseconds
+}
+
+// Browser-compatible UUID generator
+function generateId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
 export function ChatInterface() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedModel, setSelectedModel] = useState<string>('');
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Fetch available models on mount and load saved model from localStorage
+    useEffect(() => {
+        // Load saved model from localStorage
+        const savedModel = localStorage.getItem('selectedModel');
+
+        fetch('/api/models')
+            .then(res => res.json())
+            .then(data => {
+                const modelNames = data.models?.map((m: any) => m.name) || [];
+                setAvailableModels(modelNames);
+
+                // Use saved model if it exists in available models, otherwise use first
+                if (savedModel && modelNames.includes(savedModel)) {
+                    setSelectedModel(savedModel);
+                } else if (modelNames.length > 0) {
+                    setSelectedModel(modelNames[0]);
+                }
+            })
+            .catch(err => console.error('Failed to fetch models:', err));
+    }, []);
+
+    // Save selected model to localStorage when it changes
+    useEffect(() => {
+        if (selectedModel) {
+            localStorage.setItem('selectedModel', selectedModel);
+        }
+    }, [selectedModel]);
 
     // Auto-scroll to bottom on new messages
     useEffect(() => {
@@ -31,7 +67,7 @@ export function ChatInterface() {
         if (!input.trim() || isLoading) return;
 
         const userMessage: Message = {
-            id: crypto.randomUUID(),
+            id: generateId(),
             role: 'user',
             content: input,
             timestamp: new Date(),
@@ -40,6 +76,8 @@ export function ChatInterface() {
         setMessages((prev) => [...prev, userMessage]);
         setInput('');
         setIsLoading(true);
+
+        const startTime = Date.now();
 
         try {
             const response = await fetch('/api/chat', {
@@ -50,6 +88,7 @@ export function ChatInterface() {
                         role: m.role,
                         content: m.content,
                     })),
+                    model: selectedModel || undefined,
                 }),
             });
 
@@ -62,7 +101,7 @@ export function ChatInterface() {
             let assistantContent = '';
 
             const assistantMessage: Message = {
-                id: crypto.randomUUID(),
+                id: generateId(),
                 role: 'assistant',
                 content: '',
                 timestamp: new Date(),
@@ -72,6 +111,9 @@ export function ChatInterface() {
 
             // Stream response
             if (reader) {
+                let streamComplete = false;
+                let hasStartedStreaming = false;
+
                 while (true) {
                     const {done, value} = await reader.read();
                     if (done) break;
@@ -94,6 +136,18 @@ export function ChatInterface() {
                                                 : m
                                         )
                                     );
+
+                                    // Hide loading spinner once we have actual content (not just thinking tags)
+                                    // Check if there's content after removing thinking tags
+                                    const hasRealContent = assistantContent
+                                        .replace(/<think>[\s\S]*?<\/think>/g, '')
+                                        .replace(/<think>[\s\S]*$/g, '')
+                                        .trim().length > 0;
+
+                                    if (!hasStartedStreaming && hasRealContent) {
+                                        hasStartedStreaming = true;
+                                        setIsLoading(false);
+                                    }
                                 } else if (data.type === 'tool_start') {
                                     assistantContent += data.content;
 
@@ -105,6 +159,16 @@ export function ChatInterface() {
                                         )
                                     );
                                 } else if (data.type === 'done') {
+                                    // Calculate duration and update message
+                                    const duration = Date.now() - startTime;
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantMessage.id
+                                                ? {...m, duration}
+                                                : m
+                                        )
+                                    );
+                                    streamComplete = true;
                                     break;
                                 } else if (data.type === 'error') {
                                     assistantContent = data.content;
@@ -116,6 +180,7 @@ export function ChatInterface() {
                                                 : m
                                         )
                                     );
+                                    streamComplete = true;
                                     break;
                                 }
                             } catch (parseError) {
@@ -124,6 +189,9 @@ export function ChatInterface() {
                             }
                         }
                     }
+
+                    // Break from outer loop if streaming is complete
+                    if (streamComplete) break;
                 }
             }
         } catch (error) {
@@ -147,12 +215,36 @@ export function ChatInterface() {
             {/* Header */}
             <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm">
                 <div className="max-w-4xl mx-auto px-6 py-4">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        Home Automation Assistant
-                    </h1>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Control your smart home with AI
-                    </p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                Home Automation Assistant
+                            </h1>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Control your smart home with AI
+                            </p>
+                        </div>
+                        {/* Model Selector */}
+                        {availableModels.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="model-select" className="text-sm text-gray-600 dark:text-gray-400">
+                                    Model:
+                                </label>
+                                <select
+                                    id="model-select"
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    {availableModels.map((model) => (
+                                        <option key={model} value={model}>
+                                            {model}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 

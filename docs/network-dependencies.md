@@ -310,7 +310,7 @@ The project prioritizes **local-first architecture**:
 
 3. **npm packages installed:**
    ```bash
-   cd langchain-service && npm list --depth=0
+   cd oracle && npm list --depth=0
    # Should show all dependencies
    ```
 
