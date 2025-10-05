@@ -16,22 +16,29 @@
 **Goal:** Set up the foundational infrastructure components that the Next.js app will interact with.
 
 ### 0.1 MQTT Broker Setup
-- [ ] ⏳ Create Mosquitto Docker configuration
-  - [ ] Create `deployment/mqtt/mosquitto.conf`
-  - [ ] Configure authentication (username/password)
-  - [ ] Configure topic ACLs (if needed)
-  - [ ] Configure logging
-- [ ] ⏳ Create Mosquitto Dockerfile (if custom config needed)
-- [ ] ⏳ Add Mosquitto to docker-compose.yml
-  - Port: 1883 (MQTT)
-  - Port: 9001 (WebSocket, optional)
-- [ ] ⏳ Test MQTT broker connection
-  - [ ] Use MQTT.js CLI or MQTT Explorer
-  - [ ] Publish test message
-  - [ ] Subscribe to test topic
-  - [ ] Verify authentication works
+- [x] ✅ HiveMQ broker running in Kubernetes (existing infrastructure)
+  - Namespace: `communications`
+  - MQTT Port: 31883 (NodePort)
+  - Control Center: http://10.0.0.58:30080
+  - WebSocket Port: 30000
+  - Anonymous access enabled (demo mode)
+- [ ] ⏳ Document HiveMQ configuration
+  - [ ] Create `docs/hivemq-setup.md`
+  - [ ] Document Kubernetes deployment
+  - [ ] Document anonymous access (temporary for demo)
+- [x] ✅ Test MQTT broker connection
+  - [x] Use MQTT.js to verify connectivity
+  - [x] Publish test message
+  - [x] Subscribe to test topic
+- [ ] 🔴 TECH DEBT: Enable HiveMQ authentication
+  - [ ] Install HiveMQ RBAC extension
+  - [ ] Configure secure credentials
+  - [ ] Update MCP server to use authentication
 
 ### 0.2 zwave-js-ui Setup
+
+**✅ CAN START NOW** - Documentation tasks, not blocked
+
 - [ ] ⏳ Document recommended deployment method: use the official zwave-js-ui Docker image on the Raspberry Pi (no need to build or run a separate full app)
   - [ ] Document Pi prerequisites: Docker/Podman installed, correct CPU image (arm64 vs armv7), active cooling, NVMe/SSD storage recommendations
   - [ ] Create `docs/raspberry-pi-setup.md` with step-by-step Pi prep (OS image, Docker install, users/permissions, device access rules)
@@ -50,8 +57,8 @@
   - [ ] Example `--device` and `privileged` considerations
 - [ ] ⏳ Document MQTT integration for zwave-js-ui
   - [ ] How to configure the MQTT gateway in the zwave-js-ui UI
-  - [ ] Example MQTT settings (broker URL, username, password, topic prefix)
-  - [ ] Add `docs/zwave-js-ui-deploy.md` that includes sample config and troubleshooting (connecting to remote broker vs local broker)
+  - [ ] Example MQTT settings (broker URL: mqtt://10.0.0.58:31883, topic prefix)
+  - [ ] Add `docs/zwave-js-ui-deploy.md` that includes sample config and troubleshooting (connecting to HiveMQ broker)
 - [ ] ⏳ Test zwave-js-ui on Pi
   - [ ] Bring up container with `docker compose -f docker-compose.pi.yml up -d`
   - [ ] Ensure web UI reachable on `http://<pi-host>:8091`
@@ -63,6 +70,9 @@
   - [ ] MQTT messages are emitted for device events and can be subscribed to by other services
 
 ### 0.3 Ollama Setup
+
+**✅ CAN START NOW** - Independent of other tasks, blocks Phase 2
+
 - [ ] ⏳ Install Ollama on target device (Pi 5 or laptop)
   ```bash
   # Linux/Mac
@@ -85,63 +95,66 @@
 - [ ] ⏳ Create master `docker-compose.yml` in project root
   ```yaml
   services:
-    mosquitto:
-      # MQTT broker
     zwave-js-ui:
-      # Z-Wave gateway
+      # Z-Wave gateway (connects to HiveMQ at 10.0.0.58:31883)
     # Note: Ollama runs natively, not in Docker
+    # Note: HiveMQ runs in Kubernetes (not in this compose file)
   ```
 - [ ] ⏳ Create `.env.example` for Docker Compose
-  - MQTT credentials
+  - HiveMQ connection (MQTT_BROKER_URL=mqtt://10.0.0.58:31883)
   - Z-Wave USB device path
   - Network configuration
 - [ ] ⏳ Add health checks for all services
 - [ ] ⏳ Test full infrastructure stack
   - [ ] `docker-compose up -d`
   - [ ] Verify all services start
-  - [ ] Check MQTT broker is reachable
+  - [ ] Check HiveMQ broker is reachable at 10.0.0.58:31883
   - [ ] Check zwave-js-ui web UI is accessible
-  - [ ] Test MQTT → zwave-js-ui integration
+  - [ ] Test MQTT → zwave-js-ui → HiveMQ integration
 
 ### 0.5 Helm Charts (for production/demo deployment)
-- [ ] ⏳ Create Helm chart structure
+- [x] ✅ HiveMQ already deployed via Helm in Kubernetes
+  - Namespace: `communications`
+  - Deployment: `comms-hivemq`
+  - ConfigMap: `hivemq-conf`
+  - Repository: https://github.com/jrgleason/home-infra/tree/main/kubernetes/apps/communications
+- [ ] ⏳ Create Helm chart for Next.js app (Oracle)
   ```
-  deployment/helm/mqtt-ollama-chart/
+  deployment/helm/oracle-chart/
   ├── Chart.yaml
   ├── values.yaml
   ├── templates/
-  │   ├── mosquitto-deployment.yaml
-  │   ├── mosquitto-service.yaml
-  │   ├── zwave-js-ui-deployment.yaml
-  │   ├── zwave-js-ui-service.yaml
+  │   ├── oracle-deployment.yaml
+  │   ├── oracle-service.yaml
   │   └── configmaps.yaml
   ```
-- [ ] ⏳ Create Mosquitto Helm templates
-  - Deployment
-  - Service (ClusterIP)
-  - ConfigMap for mosquitto.conf
-  - PersistentVolumeClaim (optional)
 - [ ] ⏳ Create zwave-js-ui Helm templates
   - Deployment with USB device access
   - Service (ClusterIP + NodePort for web UI)
   - PersistentVolumeClaim for data
+  - ConfigMap pointing to HiveMQ at 10.0.0.58:31883
 - [ ] ⏳ Document Helm installation
   ```bash
   cd deployment/helm
-  helm install mqtt-ollama ./mqtt-ollama-chart
+  helm install oracle ./oracle-chart
   ```
-- [ ] ⏳ Test Helm deployment on local K8s (minikube/kind)
+- [ ] ⏳ Test Helm deployment on existing K8s cluster
 
 ### 0.6 Infrastructure Documentation
+
+**✅ CAN START NOW** - Documentation tasks
+
+- [x] ✅ Create `docs/mqtt-mcp-setup.md` (HiveMQ configuration)
+- [x] ✅ Create `docs/mqtt-mcp-research.md` (MCP integration research)
 - [ ] ⏳ Create `docs/infrastructure-setup.md`
-  - MQTT broker setup
+  - HiveMQ broker (Kubernetes deployment)
   - zwave-js-ui configuration
   - Ollama installation
   - Docker Compose usage
   - Helm deployment
   - Troubleshooting guide
 - [ ] ⏳ Create network diagram showing infrastructure components
-- [ ] ⏳ Document MQTT topic structure and conventions
+- [ ] ⏳ Document MQTT topic structure and conventions (zwave/*, home/*)
 - [ ] ⏳ Create testing checklist for infrastructure
 
 ---
@@ -166,6 +179,9 @@
 - [ ] ⏳ Create CONTRIBUTING.md (not needed for demo project)
 
 ### 1.3 Development Environment
+
+**✅ CAN START NOW** - Not blocked, tooling setup
+
 - [ ] ⏳ Create Docker Compose file for local development
 - [ ] ⏳ Document local setup process (partially done in README)
 - [ ] ⏳ Create VS Code workspace settings
@@ -174,13 +190,15 @@
 
 ---
 
-## Phase 3: AI Chatbot Implementation
+## Phase 2: AI Chatbot Implementation
 
 **Goal:** Build the core chatbot interface for natural language device control using LangChain.js + Ollama.
 
-### 3.1 Backend Setup
+**🔴 BLOCKED BY:** Phase 0.3 (Ollama), Phase 1.5-1.9 (Next.js setup)
 
-#### 3.1.1 LangChain.js Installation
+### 2.1 Backend Setup
+
+#### 2.1.1 LangChain.js Installation
 - [ ] ⏳ Install LangChain dependencies
   ```bash
   npm install @langchain/ollama @langchain/core langchain
@@ -191,7 +209,7 @@
   ```
 - [ ] ⏳ Configure TypeScript types for LangChain
 
-#### 3.1.2 Ollama Integration
+#### 2.1.2 Ollama Integration
 - [ ] ⏳ Create Ollama client wrapper (`lib/ollama/client.ts`)
   - [ ] Initialize ChatOllama with environment variables
   - [ ] Set model: `qwen2.5:3b`
@@ -202,7 +220,7 @@
   - [ ] Test basic inference
   - [ ] Measure response time on target hardware
 
-#### 3.1.3 Chat API Route Handler
+#### 2.1.3 Chat API Route Handler
 - [ ] ⏳ Create `/app/api/chat/route.ts`
 - [ ] ⏳ Implement POST handler with:
   - [ ] Auth0 session validation
@@ -220,9 +238,9 @@
   ```
 - [ ] ⏳ Implement rate limiting (10 requests/minute per user)
 
-### 3.2 LangChain Tools Implementation
+### 2.2 LangChain Tools Implementation
 
-#### 3.2.1 MQTT Tool
+#### 2.2.1 MQTT Tool
 - [ ] ⏳ Create `lib/langchain/tools/mqtt-tool.ts`
 - [ ] ⏳ Implement DynamicTool with:
   - [ ] Name: `mqtt_publish`
@@ -236,7 +254,7 @@
   - [ ] Test invalid inputs
   - [ ] Verify error messages
 
-#### 3.2.2 Device Control Tool
+#### 2.2.2 Device Control Tool
 - [ ] ⏳ Create `lib/langchain/tools/device-tool.ts`
 - [ ] ⏳ Implement DynamicTool with:
   - [ ] Name: `control_device`
@@ -255,7 +273,7 @@
   - [ ] Test room-based queries
   - [ ] Test device not found errors
 
-#### 3.2.3 Device List Tool
+#### 2.2.3 Device List Tool
 - [ ] ⏳ Create `lib/langchain/tools/device-list-tool.ts`
 - [ ] ⏳ Implement DynamicTool with:
   - [ ] Name: `list_devices`
@@ -265,9 +283,9 @@
 - [ ] ⏳ Optimize response format for AI consumption
 - [ ] ⏳ Test device listing with various device states
 
-### 3.3 Frontend Components
+### 2.3 Frontend Components
 
-#### 3.3.1 shadcn/ui Setup
+#### 2.3.1 shadcn/ui Setup
 - [ ] ⏳ Initialize shadcn/ui
   ```bash
   npx shadcn-ui@latest init
@@ -281,7 +299,7 @@
 - [ ] ⏳ Configure Tailwind for shadcn/ui theme
 - [ ] ⏳ Test dark mode toggle
 
-#### 3.3.2 Chat Interface Component
+#### 2.3.2 Chat Interface Component
 - [ ] ⏳ Create `components/ChatInterface.tsx`
 - [ ] ⏳ Implement features:
   - [ ] Message state management (useState)
@@ -295,7 +313,7 @@
   - [ ] Shift+Enter for new line
   - [ ] Escape to clear input
 
-#### 3.3.3 Chat Message Component
+#### 2.3.3 Chat Message Component
 - [ ] ⏳ Create `components/ChatMessage.tsx`
 - [ ] ⏳ Implement features:
   - [ ] User vs Assistant styling
@@ -307,7 +325,7 @@
 - [ ] ⏳ Add markdown support for AI responses (optional)
 - [ ] ⏳ Style with Tailwind CSS
 
-#### 3.3.4 Chat Page
+#### 2.3.4 Chat Page
 - [ ] ⏳ Create `app/chat/page.tsx`
 - [ ] ⏳ Implement layout:
   - [ ] Full-height chat container
@@ -317,14 +335,14 @@
 - [ ] ⏳ Add auth protection (require login)
 - [ ] ⏳ Test on mobile, tablet, desktop
 
-### 3.4 Conversation History
+### 2.4 Conversation History
 
-#### 3.4.1 Database Schema
+#### 2.4.1 Database Schema
 - [ ] ⏳ Add `Conversation` model to Prisma schema (already exists)
 - [ ] ⏳ Run migration: `npx prisma migrate dev`
 - [ ] ⏳ Verify table created in SQLite
 
-#### 3.4.2 Conversation Service
+#### 2.4.2 Conversation Service
 - [ ] ⏳ Create `lib/services/conversation-service.ts`
 - [ ] ⏳ Implement functions:
   - [ ] `saveMessage(userId, role, content)` - Save to DB
@@ -335,7 +353,7 @@
   - [ ] Load history on page refresh
   - [ ] Clear history function
 
-#### 3.4.3 Session Storage Fallback
+#### 2.4.3 Session Storage Fallback
 - [ ] ⏳ Implement client-side session storage
   ```typescript
   useEffect(() => {
@@ -346,9 +364,9 @@
 - [ ] ⏳ Sync with database on important messages
 - [ ] ⏳ Handle storage limits gracefully
 
-### 3.5 Streaming Implementation
+### 2.5 Streaming Implementation
 
-#### 3.5.1 Server-Side Streaming
+#### 2.5.1 Server-Side Streaming
 - [ ] ⏳ Implement TransformStream in API route
   ```typescript
   const encoder = new TextEncoder();
@@ -362,7 +380,7 @@
 - [ ] ⏳ Implement timeout (5 seconds max)
 - [ ] ⏳ Close stream on completion or error
 
-#### 3.5.2 Client-Side Streaming
+#### 2.5.2 Client-Side Streaming
 - [ ] ⏳ Implement ReadableStream reader in ChatInterface
   ```typescript
   const reader = response.body?.getReader();
@@ -379,9 +397,9 @@
 - [ ] ⏳ Handle stream interruption
 - [ ] ⏳ Show typing indicator
 
-### 3.6 Error Handling
+### 2.6 Error Handling
 
-#### 3.6.1 API Error Responses
+#### 2.6.1 API Error Responses
 - [ ] ⏳ Create error response format
   ```typescript
   interface ErrorResponse {
@@ -399,7 +417,7 @@
   - [ ] `AUTH_ERROR` - Authentication failed
   - [ ] `RATE_LIMIT` - Too many requests
 
-#### 3.6.2 User-Friendly Error Messages
+#### 2.6.2 User-Friendly Error Messages
 - [ ] ⏳ Map error codes to friendly messages:
   ```typescript
   {
@@ -411,9 +429,9 @@
 - [ ] ⏳ Add retry button for recoverable errors
 - [ ] ⏳ Log errors for debugging (server-side only)
 
-### 3.7 Testing
+### 2.7 Testing
 
-#### 3.7.1 Unit Tests
+#### 2.7.1 Unit Tests
 - [ ] ⏳ Test LangChain tools
   ```bash
   npm test lib/langchain/tools/mqtt-tool.test.ts
@@ -426,7 +444,7 @@
   - [ ] Retrieve history
   - [ ] Clear history
 
-#### 3.7.2 Integration Tests
+#### 2.7.2 Integration Tests
 - [ ] ⏳ Test chat API route
   - [ ] Mock Ollama responses
   - [ ] Mock MQTT client
@@ -437,7 +455,7 @@
   - [ ] Device command → MQTT published
   - [ ] Error handling → Friendly message
 
-#### 3.7.3 Manual Testing
+#### 2.7.3 Manual Testing
 - [ ] ⏳ Test on target hardware (Pi 5)
   - [ ] Measure response time (target: <3s)
   - [ ] Test with real Z-Wave devices
@@ -453,9 +471,9 @@
   - [ ] Safari
   - [ ] Mobile browsers
 
-### 3.8 Performance Optimization
+### 2.8 Performance Optimization
 
-#### 3.8.1 Ollama Optimization
+#### 2.8.1 Ollama Optimization
 - [ ] ⏳ Benchmark current performance
   - [ ] Measure tokens/second
   - [ ] Measure end-to-end latency
@@ -468,7 +486,7 @@
   - [ ] Cache common device queries
   - [ ] LRU cache with 5-minute TTL
 
-#### 3.8.2 Frontend Optimization
+#### 2.8.2 Frontend Optimization
 - [ ] ⏳ Implement virtual scrolling for long chats
   ```bash
   npm install react-window
@@ -480,21 +498,21 @@
   ```
 - [ ] ⏳ Lazy load chat history on scroll
 
-#### 3.8.3 Network Optimization
+#### 2.8.3 Network Optimization
 - [ ] ⏳ Enable gzip compression
 - [ ] ⏳ Keep-alive connections for streaming
 - [ ] ⏳ Batch message history fetches
 - [ ] ⏳ Optimize JSON payloads (remove unnecessary fields)
 
-### 3.9 Documentation
+### 2.9 Documentation
 
-#### 3.9.1 Code Documentation
+#### 2.9.1 Code Documentation
 - [ ] ⏳ Add JSDoc comments to all tools
 - [ ] ⏳ Document API route parameters
 - [ ] ⏳ Add inline comments for complex logic
 - [ ] ⏳ Create API documentation in `docs/api.md`
 
-#### 3.9.2 User Documentation
+#### 2.9.2 User Documentation
 - [ ] ⏳ Create `docs/chatbot-usage.md`
   - [ ] Example commands
   - [ ] Supported device actions
@@ -503,13 +521,13 @@
 - [ ] ⏳ Add tooltips to UI for guidance
 - [ ] ⏳ Create demo video/GIF
 
-#### 3.9.3 Developer Documentation
+#### 2.9.3 Developer Documentation
 - [ ] ⏳ Update `docs/architecture.md` with chatbot flow
 - [ ] ⏳ Document LangChain tool creation process
 - [ ] ⏳ Add streaming implementation guide
 - [ ] ⏳ Create troubleshooting checklist
 
-### 3.10 Acceptance Criteria
+### 2.10 Acceptance Criteria
 
 - [ ] ⏳ User can send natural language commands
 - [ ] ⏳ AI responds within 3 seconds (95th percentile)
@@ -522,18 +540,6 @@
 - [ ] ⏳ Rate limiting prevents abuse
 - [ ] ⏳ Tests achieve 70%+ code coverage
 
----
-- [ ] ⏳ Acceptance criteria
-  - [ ] `int-server` runs locally in dev and production without a `postcss.config.*` file.
-  - [ ] `postcss` and related packages are removed from `int-server/package.json` (unless autoprefixer is explicitly kept).
-  - [ ] Generated CSS file exists in the chosen output path and is imported successfully by the app.
-  - [ ] CI/build scripts include CSS generation step and pass.
-
-Notes / Caveats:
-- Removing PostCSS also removes autoprefixer. If you need automatic vendor prefixes for older browsers, keep autoprefixer in the build step or run a small PostCSS pass as a build-time step.
-- Tailwind CLI-based generation means you must ensure the CLI runs in CI and during production build; that is handled by adding the CSS build step to the `build` script.
-- If you prefer a fully integrated solution, keep a minimal `postcss.config.*` but move it to a build-only step (not required at runtime).
-
 ### 1.4 Decision Making
 - [x] ✅ Answer key questions in docs/questions.md (Q2: Next.js, Q8: Auth0)
 - [x] ✅ Document architecture decisions (Next.js vs React Native - 20-page analysis)
@@ -543,6 +549,9 @@ Notes / Caveats:
 - [ ] ⏳ Create component diagrams
 
 ### 1.5 Project Initialization
+
+**✅ CAN START NOW** - Critical path starter, blocks Phase 2 and 3
+
 - [ ] ⏳ Create Next.js app with TypeScript
   ```bash
   npx create-next-app@latest langchain-service --typescript --tailwind --app
@@ -558,6 +567,9 @@ Notes / Caveats:
   - zod
 
 ### 1.6 Project Structure
+
+**🔴 BLOCKED BY:** 1.5 (Project Initialization)
+
 - [ ] ⏳ Create folder structure:
   ```
   src/
@@ -584,6 +596,9 @@ Notes / Caveats:
   ```
 
 ### 1.7 Database Setup
+
+**🔴 BLOCKED BY:** 1.5-1.6 (Project Initialization + Structure)
+
 - [ ] ⏳ Choose ORM (Prisma vs Drizzle)
 - [ ] ⏳ Create Prisma schema or Drizzle schema
 - [ ] ⏳ Generate initial migration
@@ -598,6 +613,9 @@ Notes / Caveats:
 - [ ] ⏳ Shortcuts table
 
 ### 1.8 Auth0 Integration
+
+**🔴 BLOCKED BY:** 1.5-1.6 (Project Initialization + Structure)
+
 - [ ] ⏳ Create Auth0 account/tenant
 - [ ] ⏳ Configure Auth0 application (SPA)
 - [ ] ⏳ Setup Auth0 SDK in Next.js
@@ -608,171 +626,30 @@ Notes / Caveats:
 - [ ] ⏳ Handle token refresh
 
 ### 1.9 Ollama Integration
+
+**🔴 BLOCKED BY:** 0.3 (Ollama installed), 1.5-1.6 (Project setup)
+
 - [ ] ⏳ Create Ollama client wrapper
 - [ ] ⏳ Implement model selection logic
 - [ ] ⏳ Create prompt templates
 - [ ] ⏳ Implement streaming responses
 - [ ] ⏳ Add error handling and retries
 - [ ] ⏳ Create model configuration (temperature, max tokens, etc.)
-
----
-
-## Phase 2: Next.js LangChain Service
-
-### 2.1 Project Initialization
-- [ ] ⏳ Create Next.js app with TypeScript
-  ```bash
-  npx create-next-app@latest langchain-service --typescript --tailwind --app
-  ```
-- [ ] ⏳ Install core dependencies:
-  - langchain
-  - @langchain/community
-  - @langchain/core
-  - ollama
-  - mqtt
-  - @auth0/nextjs-auth0
-  - prisma or drizzle-orm
-  - zod
-
-### 2.2 Project Structure
-- [ ] ⏳ Create folder structure:
-  ```
-  src/
-  ├── app/
-  │   ├── api/
-  │   │   ├── auth/
-  │   │   ├── chat/
-  │   │   ├── devices/
-  │   │   ├── voice/
-  │   │   └── health/
-  │   ├── (dashboard)/
-  │   └── layout.tsx
-  ├── lib/
-  │   ├── langchain/
-  │   │   ├── tools/
-  │   │   ├── agents/
-  │   │   └── prompts/
-  │   ├── mqtt/
-  │   ├── db/
-  │   └── utils/
-  ├── components/
-  ├── types/
-  └── middleware.ts
-  ```
-
-### 2.3 Database Setup
-- [ ] ⏳ Choose ORM (Prisma vs Drizzle)
-- [ ] ⏳ Create Prisma schema or Drizzle schema
-- [ ] ⏳ Generate initial migration
-- [ ] ⏳ Create database client
-- [ ] ⏳ Create seed data script
-
-**Schema includes:**
-- [ ] ⏳ Users table
-- [ ] ⏳ Devices table
-- [ ] ⏳ User preferences table
-- [ ] ⏳ Conversations table (optional)
-- [ ] ⏳ Shortcuts table
-
-### 2.4 Auth0 Integration
-- [ ] ⏳ Create Auth0 account/tenant
-- [ ] ⏳ Configure Auth0 application (SPA)
-- [ ] ⏳ Setup Auth0 SDK in Next.js
-- [ ] ⏳ Create login/logout routes
-- [ ] ⏳ Create protected API middleware
-- [ ] ⏳ Implement JWT validation
-- [ ] ⏳ Create user profile page
-- [ ] ⏳ Handle token refresh
-
-### 2.5 Ollama Integration
-- [ ] ⏳ Create Ollama client wrapper
-- [ ] ⏳ Implement model selection logic
-- [ ] ⏳ Create prompt templates
-- [ ] ⏳ Implement streaming responses
-- [ ] ⏳ Add error handling and retries
-- [ ] ⏳ Create model configuration (temperature, max tokens, etc.)
-
-### 2.6 LangChain Agent
-- [ ] ⏳ Create base agent with Ollama
-- [ ] ⏳ Implement conversation memory
-- [ ] ⏳ Create system prompt with personality
-- [ ] ⏳ Add conversation context management
-- [ ] ⏳ Implement tool calling
-
-### 2.7 MQTT Tool for LangChain
-- [ ] ⏳ Create MQTT tool class
-- [ ] ⏳ Implement device discovery from MQTT
-- [ ] ⏳ Implement publish command
-- [ ] ⏳ Implement read device state
-- [ ] ⏳ Implement list all devices
-- [ ] ⏳ Add tool descriptions for LLM
-
-**Tool functions:**
-- `listDevices()` - Get all available devices
-- `getDeviceState(deviceId)` - Get current state
-- `controlDevice(deviceId, action, value)` - Send command
-- `getDevicesByRoom(room)` - Filter by room
-- `getDevicesByType(type)` - Filter by type
-
-### 2.8 Personality System
-- [ ] ⏳ Define personality types (helpful, sarcastic, enthusiastic)
-- [ ] ⏳ Create personality prompts
-- [ ] ⏳ Implement personality selection
-- [ ] ⏳ Store user personality preference
-- [ ] ⏳ Add personality to responses
-
-### 2.9 API Endpoints
-- [ ] ⏳ POST /api/chat - Send command
-- [ ] ⏳ GET /api/chat/history - Get conversation
-- [ ] ⏳ DELETE /api/chat/history - Clear conversation
-- [ ] ⏳ GET /api/devices - List devices
-- [ ] ⏳ GET /api/devices/[id] - Get device
-- [ ] ⏳ POST /api/devices/[id]/command - Control device
-- [ ] ⏳ GET /api/shortcuts - List shortcuts
-- [ ] ⏳ POST /api/shortcuts - Create shortcut
-- [ ] ⏳ PUT /api/shortcuts/[id] - Update shortcut
-- [ ] ⏳ DELETE /api/shortcuts/[id] - Delete shortcut
-- [ ] ⏳ GET /api/health - Health check
-
-### 2.10 Frontend Components
-- [ ] ⏳ Create chat interface component
-- [ ] ⏳ Create device list component
-- [ ] ⏳ Create device card component
-- [ ] ⏳ Create command input component
-- [ ] ⏳ Create shortcuts management
-- [ ] ⏳ Create settings page
-- [ ] ⏳ Add loading states
-- [ ] ⏳ Add error states
-- [ ] ⏳ Implement dark/light theme
-
-### 2.11 Real-time Updates
-- [ ] ⏳ Setup Server-Sent Events or WebSocket
-- [ ] ⏳ Push device state updates to frontend
-- [ ] ⏳ Update UI in real-time
-
-### 2.12 Testing
-- [ ] ⏳ Write unit tests for MQTT tool
-- [ ] ⏳ Write unit tests for database operations
-- [ ] ⏳ Write integration tests for API endpoints
-- [ ] ⏳ Write E2E tests for chat flow
-
-### 2.13 Deployment Preparation
-- [ ] ⏳ Create Dockerfile for Next.js app
-- [ ] ⏳ Create Helm chart
-- [ ] ⏳ Setup environment variables
-- [ ] ⏳ Document deployment process
 
 ---
 
 ## Phase 3: MQTT Integration
 
+**Goal:** Implement MQTT client for device communication and state management.
+
+**🔴 BLOCKED BY:** Phase 1.5-1.7 (Next.js project + Database)
+
 ### 3.1 MQTT Broker Setup
-- [ ] ⏳ Choose broker (Mosquitto recommended)
-- [ ] ⏳ Create Mosquitto Docker image
-- [ ] ⏳ Configure authentication
-- [ ] ⏳ Configure ACLs (if needed)
-- [ ] ⏳ Setup persistence
-- [ ] ⏳ Add to Docker Compose
+- [x] ✅ HiveMQ broker already running (see Phase 0.1)
+- [x] ✅ Anonymous access enabled for demo
+- [ ] 🔴 TECH DEBT: Configure authentication (see Phase 0.1)
+- [ ] ⏳ Document HiveMQ persistence configuration
+- [ ] ⏳ Document HiveMQ ACL setup (when authentication enabled)
 
 ### 3.2 MQTT Client Implementation
 - [ ] ⏳ Create MQTT client singleton
@@ -986,7 +863,7 @@ home/
 ### 7.1 Docker Setup
 - [ ] ⏳ Create Dockerfile for Next.js
 - [ ] ⏳ Create Dockerfile for Ollama (or use official)
-- [ ] ⏳ Create Dockerfile for Mosquitto (or use official)
+- [x] ✅ HiveMQ runs in Kubernetes (no Docker image needed)
 - [ ] ⏳ Optimize image sizes
 - [ ] ⏳ Use multi-stage builds
 
@@ -999,19 +876,19 @@ home/
 - [ ] ⏳ Document usage
 
 **Services:**
-- nextjs-app
+- nextjs-app (Oracle)
 - ollama
-- mosquitto
 - zwave-js-ui (optional)
+- Note: HiveMQ runs separately in Kubernetes
 
 ### 7.3 Helm Charts
-- [ ] ⏳ Create Helm chart for Next.js
+- [ ] ⏳ Create Helm chart for Next.js (Oracle app)
 - [ ] ⏳ Create Helm chart for Ollama
-- [ ] ⏳ Create Helm chart for Mosquitto
-- [ ] ⏳ Define values.yaml
+- [x] ✅ HiveMQ already has Helm chart (existing infrastructure)
+- [ ] ⏳ Define values.yaml for all charts
 - [ ] ⏳ Setup persistent volumes
-- [ ] ⏳ Configure secrets
-- [ ] ⏳ Document deployment
+- [ ] ⏳ Configure secrets (HiveMQ connection, Auth0, etc.)
+- [ ] ⏳ Document deployment to existing Kubernetes cluster
 
 ### 7.4 CI/CD Pipeline
 - [ ] ⏳ Create GitHub Actions workflow
@@ -1138,24 +1015,38 @@ home/
 
 ### Summary
 - **Total Tasks:** ~200+
-- **Completed:** 12 ✅
+- **Completed:** 14 ✅
 - **In Progress:** 0
-- **Not Started:** ~185
+- **Not Started:** ~183
 - **Stretch Goals:** ~40
 
 ### Phase Progress
-- **Phase 1:** 12/24 completed (50%) - Core documentation ✅
-  - Repository setup: 2/5
-  - Documentation: 7/8 ✅
-  - Development environment: 0/5
-  - Decision making: 3/6
-- **Phase 2:** 0/~60 (Not started)
-- **Phase 3:** 0/~30 (Not started)
-- **Phase 4:** 0/~20 (Not started)
-- **Phase 5:** 0/~20 (Stretch goals)
-- **Phase 6:** 0/~15 (Stretch goals)
-- **Phase 7:** 0/~25 (Not started)
-- **Phase 8:** 0/~30 (Not started)
+- **Phase 0:** Infrastructure - 4/23 completed (17%)
+  - 0.1 MQTT Broker: ✅ Complete (HiveMQ running)
+  - 0.2 zwave-js-ui: 0/9 - **✅ CAN START NOW** (documentation)
+  - 0.3 Ollama: 0/5 - **✅ CAN START NOW** (blocks Phase 2)
+  - 0.4 Docker Compose: 0/4
+  - 0.5 Helm Charts: 1/5 (HiveMQ done)
+  - 0.6 Infrastructure Docs: 2/5 - **✅ CAN START NOW**
+
+- **Phase 1:** Project Setup - 14/36 completed (39%)
+  - 1.1 Repository setup: 2/5
+  - 1.2 Documentation: 7/8 ✅
+  - 1.3 Development Environment: 0/5 - **✅ CAN START NOW**
+  - 1.4 Decision Making: 3/6
+  - 1.5 Project Initialization: 0/2 - **✅ CAN START NOW** (CRITICAL PATH)
+  - 1.6 Project Structure: 0/1 - 🔴 BLOCKED BY 1.5
+  - 1.7 Database Setup: 0/6 - 🔴 BLOCKED BY 1.5-1.6
+  - 1.8 Auth0: 0/7 - 🔴 BLOCKED BY 1.5-1.6
+  - 1.9 Ollama Integration: 0/6 - 🔴 BLOCKED BY 0.3, 1.5-1.6
+
+- **Phase 2:** AI Chatbot - 0/~95 - 🔴 BLOCKED BY Phase 0.3, Phase 1.5-1.9
+- **Phase 3:** MQTT Integration - 2/~15 - 🔴 BLOCKED BY Phase 1.5-1.7
+- **Phase 4:** Z-Wave Integration - 0/~20 - 🔴 BLOCKED BY Phase 0.2, Phase 3
+- **Phase 5:** Voice Commands - 0/~20 (Stretch goal) - 🔴 BLOCKED BY Phase 2
+- **Phase 6:** ESP32 Integration - 0/~15 (Stretch goal) - 🔴 BLOCKED BY Phase 3
+- **Phase 7:** Deployment & DevOps - 1/~25 (HiveMQ done) - 🔴 BLOCKED BY Phases 1-4
+- **Phase 8:** Presentation - 0/~30 - 🔴 BLOCKED BY Phases 0-4 (demo must work)
 
 ### Weekly Goals
 **Week 1-2:** Phase 1 documentation complete ✅ (DONE)
@@ -1166,7 +1057,7 @@ home/
 **Week 11-12:** Phase 8 + rehearsal
 
 ### Current Sprint
-**Status:** Phase 1 core documentation COMPLETE ✅
+**Status:** Phase 1 core documentation COMPLETE ✅, Tasks restructured ✅
 
 **Completed This Sprint:**
 1. ✅ Next.js vs React Native architectural decision (20-page analysis)
@@ -1175,16 +1066,32 @@ home/
 4. ✅ README.md with architecture decisions
 5. ✅ CLAUDE.md with development guidelines
 6. ✅ Answered key questions (Q2: Next.js, Q8: Auth0)
+7. ✅ MQTT MCP integration research and TypeScript implementation
+8. ✅ Custom TypeScript MCP server created (mqtt-mcp-server-v2.js)
+9. ✅ Documentation cleanup (removed Python references, updated to TypeScript)
+10. ✅ Tasks.md restructured with correct phases and blocking indicators
 
-**Next Sprint Goals:**
-1. Complete remaining Phase 1 tasks (Docker Compose, .gitignore, .env.example)
-2. Begin Phase 2: Initialize Next.js project
-3. Answer remaining questions in docs/questions.md
+**Next Sprint Goals (Can Start NOW):**
+1. ✅ **Phase 0.3:** Install Ollama (CRITICAL - blocks all AI work)
+2. ✅ **Phase 1.5:** Initialize Next.js project (CRITICAL - blocks Phases 2-3)
+3. ✅ **Phase 1.3:** Development environment setup (.editorconfig, ESLint, VS Code)
+4. ✅ **Phase 0.6:** Infrastructure documentation
+5. ✅ **Phase 0.2:** zwave-js-ui deployment docs
+
+**Critical Path to MVP:**
+```
+Phase 0.3 (Ollama) → Phase 1.5 (Next.js) → Phase 1.6-1.9 (Setup) →
+Phase 2.1-2.2 (AI + Tools) → Phase 3.2-3.6 (MQTT) →
+Phase 4 (Z-Wave) → Phase 8 (Demo)
+```
 
 **Blockers:**
-- None currently
+- 🔴 **Phase 2** (AI Chatbot) - Blocked by Ollama installation (0.3) and Next.js setup (1.5-1.9)
+- 🔴 **Phase 3** (MQTT) - Blocked by Next.js project (1.5-1.7)
+- 🔴 **Phase 4** (Z-Wave) - Blocked by Phase 3 completion
 
 **Notes:**
-- Core architectural decisions made and documented
-- Network dependencies tracked with mitigation strategies
-- Ready to begin implementation phase
+- Task structure now correctly reflects dependencies
+- 6 tasks can be started immediately (marked with ✅ CAN START NOW)
+- Phase 2-8 all blocked until Phase 0.3 and 1.5 complete
+- Documentation cleanup complete - no Python references remaining

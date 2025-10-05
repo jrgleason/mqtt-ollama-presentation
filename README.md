@@ -156,9 +156,9 @@ docker-compose up -d
 ```
 
 This starts:
-- MQTT Broker (Mosquitto) on port 1883
 - zwave-js-ui on port 8091
 - Next.js app on port 3000
+- Note: MQTT Broker (HiveMQ) runs separately in Kubernetes at 10.0.0.58:31883
 
 ### 5. Install Dependencies & Run
 

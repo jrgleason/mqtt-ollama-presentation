@@ -1,8 +1,8 @@
-# MQTT MCP Server Setup Guide
+# MQTT MCP Server Setup Guide (TypeScript)
 
 ## Overview
 
-This guide shows how to configure the **ezhuk/mqtt-mcp** Model Context Protocol (MCP) server to connect to your existing HiveMQ broker running in Kubernetes.
+This guide shows how to configure the **custom TypeScript MCP server** using `@modelcontextprotocol/sdk` and `mqtt.js` to connect to your HiveMQ broker running in Kubernetes.
 
 ## Your HiveMQ Infrastructure
 
@@ -20,10 +20,9 @@ This guide shows how to configure the **ezhuk/mqtt-mcp** Model Context Protocol 
 | WebSocket | 8000 | 30000 | `ws://10.0.0.58:30000` |
 
 ### Authentication
-- **Username:** `jrg`
-- **Password:** *[Add your HiveMQ password here]*
-- **Role:** `superuser` (full access to all topics `#`)
-- **RBAC Extension:** hivemq-file-rbac-extension v4.5.3
+- **Current Mode:** Anonymous (demo mode - no credentials required)
+- **TECH DEBT:** Install RBAC extension and configure secure authentication
+- **Control Center Login:** admin/SuperSecurePassword0!
 
 ### Configuration Repository
 - GitHub: https://github.com/jrgleason/home-infra/tree/main/mqtt
@@ -33,159 +32,83 @@ This guide shows how to configure the **ezhuk/mqtt-mcp** Model Context Protocol 
 
 ## MCP Server Installation
 
-### Option 1: Using pip (Recommended)
+### Install Dependencies
 
 ```bash
-pip install mqtt-mcp
-```
-
-### Option 2: Using npx (from Node.js project)
-
-```bash
-npx -y mqtt-mcp
+npm install @modelcontextprotocol/sdk mqtt zod
+npm install -D @types/node typescript
 ```
 
 ---
 
 ## Claude Code Configuration (CLI)
 
-**Step 1: Install mqtt-mcp Python package**
+**Step 1: Create MCP Server File**
 
-```bash
-pip install mqtt-mcp
+The MCP server is already created at `/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js`
+
+**Step 2: Configure Claude Code**
+
+Edit your `~/.claude/settings.local.json`:
+
+```json
+{
+  "mcpServers": {
+    "mqtt": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js"
+      ],
+      "env": {
+        "MQTT_BROKER_URL": "mqtt://10.0.0.58:31883"
+      }
+    }
+  }
+}
 ```
 
-**Step 2: Set Environment Variables**
-
-Add these environment variables to your `~/.zshrc` (or `~/.bashrc` if using bash):
-
-```bash
-# MQTT Connection Settings for MCP
-export MQTT_BROKER_HOST=10.0.0.58
-export MQTT_BROKER_PORT=31883
-export MQTT_USERNAME=jrg
-export MQTT_PASSWORD=<your-hivemq-password>
-export MQTT_CLIENT_ID=claude_mcp
-```
-
-Then reload your shell:
-```bash
-source ~/.zshrc
-```
-
-**Step 3: Add MCP Server to Claude Code**
-
-Run this command to add the MQTT MCP server to your Claude Code configuration:
-
-```bash
-claude mcp add mqtt "python3 -m mqtt_mcp"
-```
-
-The MCP server will automatically use the environment variables from your shell.
-
-**Step 4: Restart Claude Code**
+**Step 3: Restart Claude Code**
 
 Exit and restart Claude Code to load the MCP server.
 
-**Step 5: Verify Connection**
+**Step 4: Verify Connection**
 
-Check that the MCP server loaded without errors. If you see "Failed to reconnect to mqtt", check:
-- Environment variables are set: Run the test one-liner below
-- mqtt-mcp is installed: `pip show mqtt-mcp`
-- HiveMQ broker is running: `nc -zv 10.0.0.58 31883`
-
-**Quick environment variable check:**
-```bash
-python3 -c 'import os; vars=["MQTT_BROKER_HOST","MQTT_BROKER_PORT","MQTT_USERNAME","MQTT_PASSWORD","MQTT_CLIENT_ID"]; [print(f"{"✅" if os.getenv(v) else "❌"} {v}: {os.getenv(v,"NOT SET") if v!="MQTT_PASSWORD" else (os.getenv(v)[:3]+"***" if os.getenv(v) else "NOT SET")}") for v in vars]'
+Run `/mcp` command in Claude Code to check server status:
 ```
+✓ mqtt - Custom TypeScript MQTT MCP Server
+```
+
+If connection fails, check:
+- HiveMQ broker is running: `nc -zv 10.0.0.58 31883`
+- MCP server file exists and is executable
+- Node.js is installed: `node --version`
 
 ---
 
 ## Claude Desktop Configuration
 
-### Add MCP Server to User Settings
-
-**Step 1: Install mqtt-mcp Python package**
-
-```bash
-pip install mqtt-mcp
-```
-
-**Step 2: Set Environment Variables**
-
-First, add these environment variables to your `~/.zshrc` (or `~/.bashrc` if using bash):
-
-```bash
-# MQTT Connection Settings for MCP
-export MQTT_BROKER_HOST=10.0.0.58
-export MQTT_BROKER_PORT=31883
-export MQTT_USERNAME=jrg
-export MQTT_PASSWORD=<your-hivemq-password>
-export MQTT_CLIENT_ID=claude_mcp
-```
-
-Then reload your shell:
-```bash
-source ~/.zshrc
-```
-
-**Step 2: Add MCP Server to Claude Desktop**
-
-Run this command to add the MQTT MCP server to your Claude Desktop configuration:
-
-```bash
-claude mcp add -s user mqtt "python -m mqtt_mcp"
-```
-
-The MCP server will automatically use the environment variables from your shell.
-
-### Manual Configuration (Alternative)
-
-If you prefer to edit the config file manually, add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "mqtt": {
-      "command": "python",
-      "args": ["-m", "mqtt_mcp"],
+      "command": "node",
+      "args": ["/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js"],
       "env": {
-        "MQTT_BROKER_HOST": "10.0.0.58",
-        "MQTT_BROKER_PORT": "31883",
-        "MQTT_USERNAME": "jrg",
-        "MQTT_PASSWORD": "<your-password-from-credentials.xml>",
-        "MQTT_CLIENT_ID": "claude_mcp"
+        "MQTT_BROKER_URL": "mqtt://10.0.0.58:31883"
       }
     }
   }
 }
 ```
+
+Restart Claude Desktop to load the MCP server.
 
 ---
 
 ## For Oracle Project (Next.js + LangChain)
-
-### MCP Client Configuration
-
-Create/update `.claude/mcp-settings.json` in your project:
-
-```json
-{
-  "mcpServers": {
-    "mqtt": {
-      "command": "python",
-      "args": ["-m", "mqtt_mcp"],
-      "env": {
-        "MQTT_BROKER_HOST": "10.0.0.58",
-        "MQTT_BROKER_PORT": "31883",
-        "MQTT_USERNAME": "jrg",
-        "MQTT_PASSWORD": "<your-password-from-credentials.xml>",
-        "MQTT_CLIENT_ID": "oracle_mcp"
-      }
-    }
-  }
-}
-```
 
 ### Environment Variables
 
@@ -194,8 +117,8 @@ Update your `.env` file:
 ```bash
 # MQTT (HiveMQ on Kubernetes - NodePort)
 MQTT_BROKER_URL=mqtt://10.0.0.58:31883
-MQTT_USERNAME=jrg
-MQTT_PASSWORD=<your-password-from-credentials.xml>
+MQTT_USERNAME=
+MQTT_PASSWORD=
 
 # Optional: WebSocket for browser clients
 MQTT_WEBSOCKET_URL=ws://10.0.0.58:30000/mqtt
@@ -204,11 +127,34 @@ MQTT_WEBSOCKET_URL=ws://10.0.0.58:30000/mqtt
 MQTT_CONTROL_CENTER_URL=http://10.0.0.58:30080
 ```
 
+### Integration with LangChain
+
+Use the MCP server via LangChain tools:
+
+```typescript
+import { MCPClientManager } from '@/lib/mcp-client';
+
+const mcpManager = new MCPClientManager();
+await mcpManager.connect('mqtt', {
+  command: 'node',
+  args: ['/path/to/mqtt-mcp-server-v2.js'],
+  env: {
+    MQTT_BROKER_URL: process.env.MQTT_BROKER_URL
+  }
+});
+
+// Call publish_message tool
+await mcpManager.callTool('mqtt', 'publish_message', {
+  topic: 'test/hello',
+  message: 'Hello from Oracle!'
+});
+```
+
 ---
 
 ## Available MCP Tools
 
-The ezhuk/mqtt-mcp server provides these tools:
+The custom TypeScript MCP server provides these tools:
 
 ### 1. `publish_message`
 Publish a message to an MQTT topic.
@@ -244,33 +190,6 @@ Subscribe to an MQTT topic pattern.
 }
 ```
 
-### 3. `unsubscribe_topic`
-Remove a topic subscription.
-
-**Parameters:**
-- `topic` (string): Topic pattern to unsubscribe from
-
-**Example:**
-```json
-{
-  "topic": "home/+/temperature"
-}
-```
-
-### 4. `list_subscriptions`
-Show all active topic subscriptions.
-
-**Example:** (no parameters)
-
----
-
-## MCP Resources
-
-The server also provides resources for accessing topic values:
-
-- `mqtt://10.0.0.58:31883/{topic}` - Access current value for a specific topic
-- Supports wildcard patterns in topic names
-
 ---
 
 ## Testing the Connection
@@ -290,11 +209,11 @@ mcp-inspector
 **Note:** `mosquitto_pub` and `mosquitto_sub` are standard MQTT client tools that work with any MQTT broker, including HiveMQ.
 
 ```bash
-# Subscribe to all topics (using mosquitto-clients package)
-mosquitto_sub -h 10.0.0.58 -p 31883 -u jrg -P "<your-password>" -t '#' -v
+# Subscribe to all topics (anonymous connection)
+mosquitto_sub -h 10.0.0.58 -p 31883 -t '#' -v
 
 # Publish a test message
-mosquitto_pub -h 10.0.0.58 -p 31883 -u jrg -P "<your-password>" -t 'test/hello' -m 'Hello from MQTT!'
+mosquitto_pub -h 10.0.0.58 -p 31883 -t 'test/hello' -m 'Hello from MQTT!'
 ```
 
 ### Using HiveMQ Control Center
@@ -374,22 +293,21 @@ curl -I http://10.0.0.58:30080
 
 ### MCP Server Issues
 
-**Check Python installation:**
+**Check Node.js installation:**
 ```bash
-python --version  # Should be 3.9+
-pip show mqtt-mcp
+node --version  # Should be 20+
+npm list @modelcontextprotocol/sdk mqtt
 ```
 
 **Test MCP server directly:**
 ```bash
-python -m mqtt_mcp --help
+node /Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js
+# Should output: "Starting MQTT MCP Server..."
+# Press Ctrl+C to exit
 ```
 
-**Check Claude Desktop logs:**
-```bash
-# macOS
-tail -f ~/Library/Logs/Claude/mcp*.log
-```
+**Check Claude Code/Desktop logs:**
+Run `/mcp` command in Claude Code to see server status
 
 ---
 
@@ -451,14 +369,14 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 │                     │
 │  - MCP Client       │
 └─────────┬───────────┘
-          │ MCP Protocol (stdio/HTTP)
+          │ MCP Protocol (stdio)
           ↓
 ┌─────────────────────┐
-│  mqtt-mcp Server    │
-│  (ezhuk/mqtt-mcp)   │
+│  Custom TypeScript  │
+│  MCP Server         │
 │                     │
-│  - FastMCP 2.0      │
-│  - paho-mqtt        │
+│  - @modelcontext... │
+│  - mqtt.js          │
 └─────────┬───────────┘
           │ MQTT (10.0.0.58:31883)
           ↓
@@ -488,24 +406,23 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 
 ## References
 
-- **ezhuk/mqtt-mcp:** https://github.com/ezhuk/mqtt-mcp
+- **@modelcontextprotocol/sdk:** https://github.com/modelcontextprotocol/typescript-sdk
+- **mqtt.js:** https://github.com/mqttjs/MQTT.js
 - **HiveMQ Config:** https://github.com/jrgleason/home-infra/tree/main/mqtt
 - **Kubernetes Deployment:** https://github.com/jrgleason/home-infra/tree/main/kubernetes/apps/communications
 - **MCP Documentation:** https://modelcontextprotocol.info/
-- **FastMCP Framework:** https://github.com/gofastmcp/fastmcp
 
 ---
 
 ## Quick Start Checklist
 
-- [ ] Install mqtt-mcp: `pip install mqtt-mcp`
-- [ ] Run Claude MCP add command (see above)
-- [ ] Test connection with MCP Inspector
+- [ ] Install dependencies: `npm install @modelcontextprotocol/sdk mqtt zod`
+- [ ] Configure Claude Code settings.local.json
+- [ ] Test connection with `/mcp` command
 - [ ] Verify HiveMQ Control Center access: http://10.0.0.58:30080
 - [ ] Test publish/subscribe with mosquitto tools
-- [ ] Configure Oracle project MCP settings
 - [ ] Update project .env file
-- [ ] Test MCP tools from Claude Desktop
+- [ ] Test MCP tools from Claude Code
 - [ ] Integrate with Z-Wave JS UI (if applicable)
 
 ---
@@ -513,4 +430,4 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 **Last Updated:** January 2025
 **Cluster:** yoda (10.0.0.58)
 **HiveMQ Version:** 4.x (latest)
-**MCP Server:** ezhuk/mqtt-mcp (FastMCP 2.0)
+**MCP Server:** Custom TypeScript using @modelcontextprotocol/sdk + mqtt.js

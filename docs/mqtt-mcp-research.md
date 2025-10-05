@@ -1,380 +1,282 @@
 # MQTT Integration via MCP Server - Comprehensive Research
 
-## Research Summary (October 2025)
+## Research Summary (Updated October 2025)
 
-**Recommendation: Use a third-party MCP Server for MQTT communication**
+**Decision: Build Custom TypeScript MCP Server (No Python)**
 
-Your theory is **100% correct**! After extensive research with 20+ references, the best way to interact with MQTT from the Oracle application is to use an MCP (Model Context Protocol) server. This approach provides clean separation of concerns, standardization, and aligns perfectly with our local-first architecture.
+After extensive research, we've decided to **build a custom TypeScript MCP server** that combines MQTT control with Z-Wave JS UI device discovery. This approach provides clean separation of concerns, full type safety, and aligns perfectly with our Next.js/TypeScript stack - **no Python dependencies**.
 
-**Key Finding:** The MCP architecture pattern is widely adopted in production AI systems, including OpenAI's ChatGPT plugin architecture, PydanticAI, and Anthropic's own Claude Desktop application.
+**Key Finding:** While `@emqx-ai/mcp-mqtt-sdk` provides excellent MQTT MCP capabilities, we need to combine it with Z-Wave JS UI API access for device discovery. A custom TypeScript implementation gives us full control over both aspects.
 
-## Why MCP for MQTT? (Validated by 6+ Sources)
+## Why MCP for MQTT?
 
-### 1. **Separation of Concerns** *(MCP Best Practices, Anthropic Docs, FastMCP Architecture)*
-- Oracle/LangChain focuses on AI orchestration
-- MCP server handles MQTT protocol implementation
-- Clear boundaries between AI logic and device communication
-- [Reference: MCP Best Practices - Single Responsibility](https://modelcontextprotocol.info/docs/best-practices/)
+**Key Benefits:**
+- **Separation of Concerns:** AI orchestration (Oracle) separate from device communication (MCP server)
+- **Standardization:** Anthropic's official protocol with growing ecosystem (100+ servers)
+- **Reusability:** Same MCP server works with Claude Desktop, Cursor, Cline, etc.
+- **Security:** MQTT credentials isolated in MCP config, not in app code
+- **Debugging:** MCP Inspector for independent testing, easier troubleshooting
 
-### 2. **Standardized Protocol** *(Anthropic MCP Announcement, ModelContextProtocol.info)*
-- Anthropic's official standard for AI-to-service integration
-- Well-defined tool/resource/prompt abstractions
-- Growing ecosystem with 100+ community MCP servers
-- [Reference: Anthropic MCP Introduction](https://www.anthropic.com/news/model-context-protocol)
+## Implementation Approach: Custom TypeScript MCP Server
 
-### 3. **Reusability Across MCP Clients** *(Claude Desktop Docs, Cline Integration Guide)*
-- Same MCP server works with Claude Desktop, Cursor, Cline, etc.
-- Not locked into LangChain.js or specific frameworks
-- Can migrate between MCP-compatible clients without rewriting
-- [Reference: MCP Client Implementations](https://modelcontextprotocol.info/clients)
+### Core Technologies (All TypeScript/Node.js)
 
-### 4. **Security & Isolation** *(MCP Security Guide, Defense in Depth Pattern)*
-- MQTT credentials isolated in MCP server configuration
-- Network boundaries between AI application and MQTT broker
-- Can run MCP server with restricted permissions
-- [Reference: MCP Security Best Practices](https://modelcontextprotocol.info/docs/best-practices/security)
+**No Python. No external MCP servers. Pure TypeScript stack.**
 
-### 5. **Debugging & Observability** *(FastMCP Logging, MCP Inspector)*
-- MCP server provides centralized MQTT operation logs
-- MCP Inspector tool for testing tools independently
-- Easier to trace issues across AI → MCP → MQTT boundary
-- [Reference: MCP Inspector Documentation](https://modelcontextprotocol.info/docs/tools/inspector)
+**MCP Framework:**
+- `@modelcontextprotocol/sdk` - Official Anthropic MCP SDK
+- Stdio transport for Claude Desktop/Oracle integration
+- Full TypeScript type safety
 
-## Available MQTT MCP Server Options (Compared 4 Servers)
+**MQTT Client:**
+- `mqtt` (mqtt.js) - Battle-tested MQTT client
+- Direct connection to HiveMQ broker
+- QoS support, topic wildcards, retained messages
 
-### 1. **ezhuk/mqtt-mcp** ✅ RECOMMENDED
+**Z-Wave Integration:**
+- HTTP client (`node-fetch`) for Z-Wave JS UI REST API
+- WebSocket (Socket.IO client) for real-time updates (optional)
+- Device registry building and caching
 
-**Repository:** https://github.com/ezhuk/mqtt-mcp
+**Validation:**
+- `zod` - Runtime type validation for tool parameters
+- TypeScript compile-time validation
 
-**Technical Details:**
-- **Language:** Python 3.9+
-- **Framework:** FastMCP 2.0 (Anthropic's official Python SDK)
-- **MQTT Library:** paho-mqtt 2.1.0
-- **Protocol:** Streamable HTTP transport (MCP default)
+### Why Custom TypeScript Implementation?
 
-**Features:**
-- ✅ Publish/Subscribe tools with full QoS support (0/1/2)
-- ✅ Topic management and wildcard subscriptions
-- ✅ Works with ANY MQTT broker (Mosquitto, EMQX, HiveMQ, etc.)
-- ✅ MCP Resources for topic state access
-- ✅ Docker deployment support
-- ✅ Examples folder with integration guides
-- ✅ Environment variable configuration
+**✅ Advantages:**
+- **Single Language** - No Python runtime, no language context switching
+- **Full Control** - Combine MQTT + Z-Wave API in one server
+- **Type Safety** - End-to-end TypeScript from Oracle to MCP server
+- **Simpler Deployment** - One Node.js process, no Python dependencies
+- **Better Integration** - Direct access to both MQTT and Z-Wave JS UI
+- **Easier Debugging** - Same toolchain, same debugger, same stack traces
+- **Lighter Weight** - No Python interpreter, faster startup
 
-**MCP Tools Provided:**
-1. `publish_message` - Publish to MQTT topic
-2. `subscribe_topic` - Subscribe to topic pattern
-3. `unsubscribe_topic` - Remove subscription
-4. `list_subscriptions` - Show active subscriptions
-
-**MCP Resources Provided:**
-- `mqtt://{host}:{port}/{topic*}` - Access current topic values
-- Resource templates support wildcards (e.g., `home/+/temperature`)
-
-**Why This is Recommended:**
-- ✅ Generic MQTT support (not broker-specific)
-- ✅ Uses FastMCP 2.0 (Anthropic's official framework)
-- ✅ Clean implementation following MCP best practices
-- ✅ Well-documented with working examples
-- ✅ Fits our local-first architecture (no cloud dependencies)
-- ✅ Active maintenance (last update: October 2024)
-- ✅ Production-ready error handling and reconnection logic
-
-**Installation:**
-```bash
-# Via pip
-pip install mqtt-mcp
-
-# Via npx (from Oracle/Node.js project)
-npx -y mqtt-mcp
-
-# Via Docker
-docker run -p 8000:8000 ezhuk/mqtt-mcp
-```
-
-**Configuration Example:**
-```json
-{
-  "mcpServers": {
-    "mqtt": {
-      "command": "python",
-      "args": ["-m", "mqtt_mcp"],
-      "env": {
-        "MQTT_BROKER_HOST": "localhost",
-        "MQTT_BROKER_PORT": "1883",
-        "MQTT_USERNAME": "your_user",
-        "MQTT_PASSWORD": "your_pass",
-        "MQTT_CLIENT_ID": "oracle_mcp"
-      }
-    }
-  }
-}
-```
+**❌ What We Avoid:**
+- Python runtime requirements
+- Language/toolchain mixing
+- Python-to-Node.js bridge complexity
+- Separate MCP server processes
+- Additional deployment dependencies
 
 ## Integration Architecture
 
 ### Recommended Architecture Pattern
 
 ```
-┌─────────────────────┐
-│   Oracle App        │
-│  (Next.js + AI)     │
-│                     │
-│  - LangChain.js     │
-│  - Ollama           │
-│  - Auth0            │
-└─────────┬───────────┘
-          │ MCP Protocol
-          │ (stdio/HTTP)
-          ↓
-┌─────────────────────┐
-│  mqtt-mcp Server    │
-│  (ezhuk/mqtt-mcp)   │
-│                     │
-│  - FastMCP 2.0      │
-│  - paho-mqtt        │
-└─────────┬───────────┘
-          │ MQTT Protocol
-          │ (TCP 1883)
-          ↓
-┌─────────────────────┐
-│  Mosquitto Broker   │
-│     (Local)         │
-└─────────┬───────────┘
-          │ MQTT Protocol
-          ↓
-┌─────────────────────┐
-│   Z-Wave JS UI      │
-│                     │
-│  - MQTT Gateway     │
-│  - Z-Wave Network   │
-└─────────────────────┘
+┌─────────────────────────────┐
+│   Oracle App                │
+│   (Next.js + AI)            │
+│                             │
+│  - LangChain.js             │
+│  - Ollama                   │
+│  - Auth0                    │
+└─────────────┬───────────────┘
+              │ MCP Protocol (stdio)
+              ↓
+┌─────────────────────────────┐
+│   Custom TypeScript         │
+│   MCP Server                │
+│                             │
+│  - @modelcontextprotocol/sdk│
+│  - mqtt.js (MQTT client)    │
+│  - node-fetch (HTTP client) │
+│  - Zod validation           │
+│                             │
+│  Tools:                     │
+│  - list_devices()           │
+│  - control_device()         │
+│  - get_device_state()       │
+└──────┬──────────────────┬───┘
+       │                  │
+       │ MQTT             │ HTTP/WebSocket
+       │ (31883)          │ (8091)
+       ↓                  ↓
+┌────────────┐      ┌──────────────────┐
+│  HiveMQ    │←────→│  Z-Wave JS UI    │
+│  Broker    │      │                  │
+│            │      │  - Device Info   │
+│            │      │  - MQTT Gateway  │
+└────────────┘      │  - Z-Wave Radio  │
+                    └──────────────────┘
+                              ↓
+                    ┌──────────────────┐
+                    │  Z-Wave Devices  │
+                    │  (Physical)      │
+                    └──────────────────┘
 ```
 
-**Protocol Flow:**
-1. **User → Oracle:** "Turn on living room light" (natural language)
-2. **Oracle → Ollama:** Prompt + available tools (LangChain)
-3. **Ollama → Oracle:** Tool call decision (`mqtt_publish` with params)
-4. **Oracle → MCP Server:** `callTool('publish_message', {...})` (MCP protocol)
-5. **MCP Server → Mosquitto:** MQTT PUBLISH packet (QoS 1)
-6. **Mosquitto → Z-Wave JS UI:** Message routed to subscribed topic
-7. **Z-Wave JS UI → Z-Wave Device:** Command sent over Z-Wave RF
-8. **MCP Server → Oracle:** Success response
-9. **Oracle → User:** "Living room light is now on" (natural language)
+**Key Points:**
+- **TypeScript-Only Stack:** No Python, single language across entire stack
+- **Local-first:** All components on local network, zero internet during demo
+- **Dual Integration:** MCP server queries Z-Wave JS UI (HTTP) and controls via MQTT
+- **Security:** MQTT and Z-Wave credentials in MCP server, isolated from Oracle app
 
-**Network Boundaries:**
-- **Local Network Only:** All components (no cloud in the loop)
-- **Zero Internet During Demo:** Fully offline-capable
-- **Security:** MQTT credentials isolated in MCP config, not in Oracle code
-
-## Implementation Example
-
-### LangChain Tools that Call MCP
+## Quick Start Example
 
 ```typescript
-// oracle/src/lib/langchain/tools/mqtt-tools.ts
-import { DynamicTool } from '@langchain/core/tools';
+// Custom TypeScript MCP Server
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import mqtt from 'mqtt';
+import fetch from 'node-fetch';
 import { z } from 'zod';
-import { MCPClientManager } from '@/lib/mcp-client';
 
-const PublishMQTTSchema = z.object({
-  topic: z.string().describe('MQTT topic to publish to'),
-  message: z.string().describe('Message payload (string or JSON)'),
-  qos: z.enum(['0', '1', '2']).optional().default('1').describe('Quality of Service level'),
-  retain: z.boolean().optional().default(false).describe('Retain message on broker'),
+// Initialize MCP Server
+const server = new Server(
+  {
+    name: 'zwave-device-control',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
+
+// Connect to MQTT broker
+const mqttClient = mqtt.connect('mqtt://10.0.0.58:31883', {
+  username: 'jrg',
+  password: process.env.MQTT_PASSWORD
 });
 
-export function createMQTTPublishTool(mcpManager: MCPClientManager) {
-  return new DynamicTool({
-    name: 'mqtt_publish',
-    description: `
-      Publish a message to an MQTT topic to control IoT devices or send commands.
-
-      Use this tool to:
-      - Control Z-Wave devices (lights, switches, sensors)
-      - Send commands to smart home devices
-      - Trigger automations or scenes
-
-      Topic format for Z-Wave devices: zwave/<nodeId>/<commandClass>/<endpoint>/<property>/set
-      Example: zwave/5/38/0/targetValue/set
-
-      Common command classes:
-      - 37: Binary Switch (on/off)
-      - 38: Multilevel Switch (dimming, 0-99)
-      - 49: Sensor Multilevel (temperature, humidity)
-    `,
-    schema: PublishMQTTSchema,
-    func: async (input) => {
-      const params = PublishMQTTSchema.parse(JSON.parse(input));
-
-      try {
-        const result = await mcpManager.callTool('mqtt', 'publish_message', {
-          topic: params.topic,
-          message: params.message,
-          qos: parseInt(params.qos),
-          retain: params.retain,
-        });
-
-        return `Successfully published to ${params.topic}. Message ID: ${result.messageId}`;
-      } catch (error) {
-        return `Failed to publish: ${error.message}`;
-      }
+// Tool: List devices from Z-Wave JS UI
+server.setRequestHandler('tools/list', async () => ({
+  tools: [
+    {
+      name: 'list_devices',
+      description: 'Get all Z-Wave devices with names and states',
+      inputSchema: z.object({}).passthrough(),
     },
-  });
-}
+    {
+      name: 'control_device',
+      description: 'Control a Z-Wave device by friendly name',
+      inputSchema: z.object({
+        name: z.string(),
+        action: z.enum(['on', 'off', 'dim']),
+        value: z.number().optional(),
+      }).passthrough(),
+    },
+  ],
+}));
+
+// Tool: Get devices from Z-Wave JS UI API
+server.setRequestHandler('tools/call', async (request) => {
+  if (request.params.name === 'list_devices') {
+    const response = await fetch('http://10.0.0.58:8091/api/exportConfig');
+    const { data } = await response.json();
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(data, null, 2)
+      }],
+    };
+  }
+
+  if (request.params.name === 'control_device') {
+    const { name, action, value } = request.params.arguments;
+
+    // Find device, build MQTT topic, publish command
+    // (implementation in actual server)
+
+    return {
+      content: [{
+        type: 'text',
+        text: `Device ${name} ${action} command sent`
+      }],
+    };
+  }
+});
+
+// Start server with stdio transport
+const transport = new StdioServerTransport();
+await server.connect(transport);
 ```
 
-## Decision Matrix: MCP Server vs Direct MQTT
+## Decision: MCP Server vs Direct MQTT
 
-| Criteria | MCP Server (ezhuk/mqtt-mcp) | Direct MQTT (MQTT.js in Oracle) |
-|----------|----------------------------|--------------------------------|
-| **Architecture** | | |
-| Separation of concerns | ✅ Excellent (AI ↔ MQTT decoupled) | ❌ Mixed (MQTT in AI app) |
-| Code maintainability | ✅ High (change MQTT without touching Oracle) | ⚠️ Medium (MQTT changes affect Oracle) |
-| Testability | ✅ Easy (test MCP independently) | ⚠️ Harder (need Oracle runtime) |
-| **Reusability** | | |
-| Works with Claude Desktop | ✅ Yes (same MCP server) | ❌ No (Oracle-specific) |
-| Works with Cursor/Cline | ✅ Yes | ❌ No |
-| Works with PydanticAI | ✅ Yes | ❌ No |
-| **Development** | | |
-| Setup complexity | ⚠️ Medium (MCP + Oracle) | ✅ Simple (just Oracle) |
-| Learning curve | ⚠️ Need to learn MCP | ✅ Standard MQTT.js |
-| Dependencies | ⚠️ +1 (MCP server process) | ✅ Just npm package |
-| **Operations** | | |
-| Debugging | ✅ MCP Inspector + logs | ⚠️ Oracle logs only |
-| Monitoring | ✅ MCP server metrics | ⚠️ Need custom monitoring |
-| Error isolation | ✅ MQTT issues don't crash Oracle | ❌ MQTT issues affect Oracle |
-| **Security** | | |
-| Credential storage | ✅ Isolated in MCP config | ⚠️ In Oracle .env |
-| Network isolation | ✅ MCP → Broker (separate process) | ❌ Oracle → Broker (same process) |
-| Permission model | ✅ Can restrict topics in MCP | ⚠️ Oracle has full access |
-| **Performance** | | |
-| Latency | ⚠️ +5-10ms (extra hop) | ✅ Direct (0ms overhead) |
-| Resource usage | ⚠️ +50MB (MCP process) | ✅ Minimal (just library) |
-| Scalability | ✅ Can run MCP on separate host | ⚠️ Scales with Oracle |
-| **Ecosystem** | | |
-| Standardization | ✅ Part of MCP ecosystem | ❌ Custom integration |
-| Community support | ✅ Growing (100+ MCP servers) | ✅ Mature (MQTT.js) |
-| Future-proof | ✅ MCP gaining adoption | ⚠️ May need refactor for MCP later |
-| **Local-First** | | |
-| Offline capable | ✅ Yes | ✅ Yes |
-| Cloud dependencies | ✅ None | ✅ None |
-| Demo reliability | ✅ High | ✅ High |
+| Key Factors | MCP Server (Recommended) | Direct MQTT.js |
+|-------------|-------------------------|----------------|
+| **Architecture** | ✅ Clean separation, testable | ❌ Mixed concerns |
+| **Reusability** | ✅ Works with Claude Desktop, Cursor, etc. | ❌ Oracle-only |
+| **Setup** | ✅ TypeScript (same stack) | ✅ Simple (fewer parts) |
+| **Learning** | ⚠️ Need to learn MCP | ✅ Standard MQTT |
+| **Security** | ✅ Credentials isolated | ⚠️ In Oracle .env |
+| **Type Safety** | ✅ Full TS + Zod validation | ⚠️ Manual typing |
+| **Performance** | ⚠️ +5-10ms, +50MB | ✅ Minimal overhead |
+| **Future-proof** | ✅ Industry standard | ⚠️ Custom integration |
 
-## Final Recommendation: Use ezhuk/mqtt-mcp
+**Winner: MCP Server** - Better architecture, reusability, and future-proofing outweigh slight complexity increase.
 
-**Decision: MCP Server Approach**
+## Why TypeScript SDK?
 
-**Rationale (Priority Order):**
+1. **Language Consistency** - Same TypeScript stack as Oracle (Next.js), no Python runtime needed
+2. **Clean Architecture** - Separation of concerns, easier to explain in presentation
+3. **Type Safety** - Full TypeScript + Zod validation prevents runtime errors
+4. **Reusability** - Works with Claude Desktop, Cursor, Cline (not locked to LangChain)
+5. **Local-First** - Zero internet during demo, all components local
 
-1. **Clean Architecture** *(Highest Priority for Presentation)*
-   - Demonstrates modern AI engineering best practices
-   - Clean separation of concerns makes code easier to explain
-   - Educational value for CodeMash audience
+## Network Dependencies
 
-2. **Reusability** *(Important for Future Flexibility)*
-   - Can demo controlling devices from Claude Desktop
-   - Shows real-world MCP integration patterns
-   - Not locked into LangChain.js
+**Setup (one-time, requires internet):**
+- `npm install @emqx-ai/mcp-mqtt-sdk`
+- Docker images: hivemq, ollama, zwave-js-ui
+- Ollama model: qwen2.5:3b
 
-3. **Standardization** *(Industry Alignment)*
-   - MCP is Anthropic's official standard (momentum behind it)
-   - Part of growing ecosystem (100+ servers)
-   - Future-proof architecture decision
+**Demo (local only, zero internet):**
+- ✅ All components on local network
+- ✅ Fully offline-capable
 
-4. **Local-First Compatible** *(Critical for Demo)*
-   - No cloud dependencies (ezhuk/mqtt-mcp runs locally)
-   - Zero internet required during demo
-   - Reliable presentation environment
+## References
 
-5. **Debugging & Observability** *(Developer Experience)*
-   - MCP Inspector for testing without Oracle
-   - Centralized MQTT operation logs
-   - Easy to trace issues across boundaries
-
-## Network Dependencies *(Updated for MCP)*
-
-**Local Network Only (Demo-Safe):**
-- ✅ Oracle → MCP Server (stdio/local process communication)
-- ✅ MCP Server → Mosquitto MQTT Broker (TCP 1883, local)
-- ✅ Mosquitto → Z-Wave JS UI (MQTT, local)
-- ✅ Z-Wave JS UI → Z-Wave Devices (RF 908.42MHz, no WiFi)
-- ✅ Oracle → Ollama (HTTP 11434, local)
-
-**Internet Required (One-Time Setup):**
-- ☁️ `pip install mqtt-mcp` (download MCP server package)
-- ☁️ `npm install @modelcontextprotocol/sdk` (download MCP client SDK)
-- ☁️ Docker image pulls (mosquitto, ollama, zwave-js-ui)
-- ☁️ Ollama model download (pre-cache qwen2.5:3b before demo)
-
-**Internet Required (During Demo):**
-- ❌ **NONE!** All components run locally, zero cloud dependencies
-
-## References & Further Reading
-
-**MCP Core Documentation (5 references):**
-1. [Anthropic MCP Announcement](https://www.anthropic.com/news/model-context-protocol) - Official introduction
-2. [Model Context Protocol Documentation](https://modelcontextprotocol.info/) - Complete spec
-3. [MCP Best Practices](https://modelcontextprotocol.info/docs/best-practices/) - Architecture patterns
-4. [MCP Inspector Tool](https://modelcontextprotocol.info/docs/tools/inspector) - Testing and debugging
-5. [MCP Security Guide](https://modelcontextprotocol.info/docs/best-practices/security) - Security considerations
-
-**MQTT MCP Servers (4 references):**
-1. [ezhuk/mqtt-mcp GitHub](https://github.com/ezhuk/mqtt-mcp) - Recommended server
-2. [EMQX MCP Server Tutorial](https://emqx.medium.com/integrating-claude-with-mqtt-an-introduction-to-emqx-mcp-server-a42fb8f7f121) - Cloud alternative
-3. [MCP over MQTT Architecture](https://www.iotforall.com/mcp-over-mqtt-iot-ai-explained) - Integration patterns
-4. [MCP Servers Directory](https://github.com/modelcontextprotocol/servers) - Community servers
-
-**FastMCP Framework (3 references):**
-1. [FastMCP GitHub](https://github.com/gofastmcp/fastmcp) - Python framework for MCP servers
-2. [FastMCP Documentation](https://github.com/gofastmcp/fastmcp/blob/main/README.md) - Getting started
-3. [FastMCP Examples](https://github.com/gofastmcp/fastmcp/tree/main/examples) - Sample implementations
-
-**MCP Clients & Integration (4 references):**
-1. [Claude Desktop MCP Config](https://modelcontextprotocol.info/clients/claude-desktop) - Official client
-2. [MCP SDK for TypeScript](https://github.com/modelcontextprotocol/typescript-sdk) - Client library
-3. [PydanticAI MCP Support](https://ai.pydantic.dev/mcp/) - Python AI framework
-4. [Cursor MCP Integration](https://docs.cursor.com/context/mcp) - IDE integration
-
-**MQTT & IoT (3 references):**
-1. [Eclipse Mosquitto](https://mosquitto.org/) - MQTT broker
-2. [paho-mqtt Python Client](https://eclipse.dev/paho/index.php?page=clients/python/index.php) - MQTT library
-3. [MQTT.js](https://github.com/mqttjs/MQTT.js) - Node.js MQTT client
-
-**Architecture & Best Practices (4 references):**
-1. [MCP vs OpenAI Plugins](https://www.vellum.ai/blog/mcp-vs-openai-plugins) - Standard comparison
-2. [Defense in Depth for IoT](https://www.nist.gov/publications/iot-security-guidance) - Security patterns
-3. [LangChain Tool Calling](https://js.langchain.com/docs/modules/agents/tools/) - AI tool integration
-4. [Microservices Best Practices](https://martinfowler.com/microservices/) - Service boundaries
-
-**Total References:** 20+ sources validating MCP architecture decision
+**Primary:**
+- [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk) - Official TypeScript MCP SDK
+- [Model Context Protocol](https://modelcontextprotocol.info/) - Official MCP documentation
+- [mqtt.js](https://github.com/mqttjs/MQTT.js) - MQTT client for Node.js
+- [Z-Wave JS UI](https://github.com/zwave-js/zwave-js-ui) - Z-Wave controller with MQTT gateway
+- [MCP Servers Directory](https://github.com/modelcontextprotocol/servers) - Community MCP servers
 
 ## Next Steps
 
-1. **Update Architecture Diagram** (`docs/architecture.md`)
-   - Add MCP layer between Oracle and MQTT
-   - Show stdio transport connection
-   - Illustrate tool calling flow
+1. **Install Dependencies**
+   ```bash
+   npm install @modelcontextprotocol/sdk mqtt node-fetch zod
+   npm install -D @types/node typescript
+   ```
 
-2. **Create Setup Guide** (`docs/mqtt-mcp-integration.md`)
-   - Step-by-step installation instructions
-   - Configuration examples
-   - Troubleshooting common issues
+2. **Create MCP Server Module** (`zwave-mcp-server/`)
+   - Implement custom TypeScript MCP server
+   - Add Z-Wave JS UI HTTP client
+   - Add MQTT client for device control
+   - Build device registry mapping
 
-3. **Update Network Dependencies** (`docs/network-dependencies.md`)
-   - Add MCP server to dependency list
-   - Document stdio communication (local-only)
-   - Clarify zero internet needed during demo
+3. **Implement Core Tools**
+   - `list_devices()` - Query Z-Wave JS UI API
+   - `control_device(name, action, value)` - Publish MQTT commands
+   - `get_device_state(name)` - Read current device states
 
-4. **Begin Implementation** (Week 1 of 4-week plan)
-   - Install ezhuk/mqtt-mcp
-   - Test with MCP Inspector
-   - Validate local Mosquitto connection
+4. **Update Oracle Integration**
+   - Add MCP client to LangChain tools
+   - Configure stdio transport
+   - Test tool calling from Oracle
 
-5. **Prepare for CodeMash Demo** (January 12, 2026)
-   - Practice full integration flow 10+ times
+5. **Update Architecture Diagram** (`docs/architecture.md`)
+   - Show TypeScript-only stack
+   - Illustrate MCP stdio transport
+   - Document tool calling flow
+
+6. **Test Integration**
+   - Verify MCP server starts with stdio
+   - Test device discovery and control
+   - Validate Oracle → MCP → Device flow
+
+7. **Prepare for CodeMash Demo** (January 12, 2026)
+   - Practice full integration 10+ times
    - Create fallback scenarios (mock devices)
    - Record backup demo video
    - Prepare architecture explanation slides
 
-**Research Complete ✅** - Ready to begin implementation!
+**Research Complete ✅** - Custom TypeScript MCP approach finalized, ready to implement!
