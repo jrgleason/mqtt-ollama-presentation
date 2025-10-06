@@ -7,10 +7,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SERVICE_NAME="oracle"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 USER=$(whoami)
+NODE_PATH=$(which node)
+NPM_PATH=$(which npm)
 
 echo "Installing Oracle systemd service..."
 echo "Working directory: $SCRIPT_DIR"
 echo "User: $USER"
+echo "Node path: $NODE_PATH"
+echo "NPM path: $NPM_PATH"
 
 # Build the app
 echo "Building production app..."
@@ -31,7 +35,8 @@ User=$USER
 WorkingDirectory=$SCRIPT_DIR
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
-ExecStart=/usr/bin/npm start
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=$NODE_PATH $SCRIPT_DIR/node_modules/.bin/next start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
