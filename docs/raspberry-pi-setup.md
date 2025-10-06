@@ -19,9 +19,10 @@
 2. [Z-Pi 7 HAT Configuration](#z-pi-7-hat-configuration)
 3. [ZWaveJsUI Installation](#zwavejsui-installation)
 4. [Mosquitto MQTT Broker Installation](#mosquitto-mqtt-broker-installation)
-5. [Ollama Installation](#ollama-installation)
-6. [Testing & Verification](#testing--verification)
-7. [Troubleshooting](#troubleshooting)
+5. [Nginx Installation](#nginx-installation)
+6. [Ollama Installation](#ollama-installation)
+7. [Testing & Verification](#testing--verification)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -426,6 +427,91 @@ mosquitto_sub -h localhost -t "#" -v
 
 ---
 
+## Nginx Installation
+
+### 1. Install Nginx
+
+```bash
+sudo apt install -y nginx
+```
+
+### 2. Start and Enable Nginx
+
+```bash
+# Enable on boot
+sudo systemctl enable nginx
+
+# Start service
+sudo systemctl start nginx
+
+# Check status
+sudo systemctl status nginx
+```
+
+### 3. Verify Installation
+
+Open browser to: `http://<pi-ip>` - you should see the default Nginx welcome page.
+
+### 4. Configure Firewall (Optional)
+
+```bash
+# Allow HTTP
+sudo ufw allow 80/tcp
+
+# Allow HTTPS (if needed later)
+sudo ufw allow 443/tcp
+
+# Check firewall status
+sudo ufw status
+```
+
+### 5. Configure Nginx to Proxy to Oracle App
+
+Copy the provided nginx configuration file:
+
+```bash
+# Copy config file from docs
+sudo cp ~/code/CodeMash/mqtt-ollama-presentation/docs/nginx-oracle-site.conf /etc/nginx/sites-available/oracle
+
+# Create symlink to enable site
+sudo ln -s /etc/nginx/sites-available/oracle /etc/nginx/sites-enabled/
+
+# Remove default site
+sudo rm /etc/nginx/sites-enabled/default
+
+# Test configuration
+sudo nginx -t
+
+# Reload nginx to apply changes
+sudo systemctl reload nginx
+```
+
+**What this does:**
+- Proxies all HTTP requests on port 80 to the Next.js app on port 3000
+- Enables WebSocket support for Next.js hot reload
+- Configures proper headers for SSE streaming (chat responses)
+- Sets timeouts for long-running chat requests
+- Optional health check endpoint at `/health`
+
+**Access the app:**
+- Before nginx: `http://<pi-ip>:3000`
+- After nginx: `http://<pi-ip>` (port 80)
+
+**Verify nginx is working:**
+
+```bash
+# Check nginx status
+sudo systemctl status nginx
+
+# View nginx access logs
+sudo tail -f /var/log/nginx/access.log
+
+# View nginx error logs
+sudo tail -f /var/log/nginx/error.log
+```
+
+---
+
 ## Ollama Installation
 
 ### 1. Install Ollama
@@ -736,9 +822,8 @@ After completing this setup:
 1. **Pair Z-Wave Devices** via ZWaveJsUI web interface
 2. **Import Devices to Database** using `scripts/discover-zwave-devices.ts`
 3. **Test Device Control** via MQTT commands
-4. **Integrate with Oracle App** (Next.js + LangChain)
-
-See main project README for application setup: `../README.md`
+4. **Install Oracle App** (Next.js + LangChain) - see main README: `../README.md`
+5. **Configure Oracle as System Service** - see `oracle-systemd-setup.md` for auto-start on boot
 
 ---
 

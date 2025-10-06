@@ -101,6 +101,30 @@
 - [ ] ⏳ Create .editorconfig
 - [ ] ⏳ Setup ESLint + Prettier configuration
 
+### TECH DEBT: Re-enable ESLint during builds (post-demo)
+
+- **Priority:** 🔴 High (TECH DEBT)
+- **Context:** ESLint checks were temporarily disabled during `next build` and generated Prisma files were ignored/overridden to avoid build-time warnings (see `oracle/next.config.ts`, `oracle/eslint.config.mjs`, and `.eslintignore`). This change reduced noise for the demo but skipped automated lint enforcement.
+- **Goal:** Re-enable ESLint in CI and during local builds, and remove ad-hoc ignores/overrides so the codebase is linted consistently.
+- **Acceptance criteria:**
+  - ESLint runs as part of the build/test pipeline (e.g., `npm run lint` executed in CI) and passes on `main` branch.
+  - `next build` does not disable ESLint (i.e., `eslint.ignoreDuringBuilds` is removed or set to false).
+  - `oracle/eslint.config.mjs` no longer contains broad overrides that silence linting for `src/generated/**` (generated files should be ignored via `.eslintignore` or handled explicitly in generator step).
+  - No remaining lint warnings from source (excluding intentionally ignored generated files) on a fresh clone after `npm ci`.
+  - A follow-up PR documents the re-enablement and any fixes required to satisfy the linter.
+
+- **Tasks:**
+  - [ ] Create a branch `tech/eslint-reenable`
+  - [ ] Revert `eslint.ignoreDuringBuilds` in `oracle/next.config.ts`
+  - [ ] Remove or tighten the generated-files override in `oracle/eslint.config.mjs`
+  - [ ] Keep `src/generated/**` entries in `.eslintignore` but remove any rules that hide real source problems
+  - [ ] Run `npm ci` and `npm run lint` locally, fix lint failures (or produce follow-up tasks for large refactors)
+  - [ ] Add `npm run lint` to CI pipeline (or ensure existing CI runs it) and get CI green
+  - [ ] Update `docs/tasks-active.md` with any blockers or large refactor estimates
+
+- **Estimated effort:** 1-4 hours (depends on lint errors found)
+- **Owner:** @your-team (assign to a developer)
+
 ### 1.4 Decision Making (Remaining)
 
 - [ ] ⏳ Q1: Voice solution (Whisper vs cloud STT)
