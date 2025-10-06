@@ -35,7 +35,16 @@ export function ChatInterface() {
         fetch('/api/models')
             .then(res => res.json())
             .then(data => {
-                const modelNames = data.models?.map((m: any) => m.name) || [];
+                const modelNames = Array.isArray(data.models)
+                    ? data.models.map((m: unknown) => {
+                          if (typeof m === 'object' && m !== null) {
+                              const mm = m as Record<string, unknown>;
+                              return typeof mm.name === 'string' ? mm.name : String(mm.name ?? '');
+                          }
+                          return String(m ?? '');
+                      })
+                    : [];
+
                 setAvailableModels(modelNames);
 
                 // Use saved model if it exists in available models, otherwise use first
@@ -93,7 +102,20 @@ export function ChatInterface() {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Avoid throwing here so we don't trigger the "throw caught locally" lint warning.
+                const text = await response.text().catch(() => null);
+                const msg = `HTTP error ${response.status}${text ? `: ${text}` : ''}`;
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: msg,
+                        timestamp: new Date(),
+                    },
+                ]);
+                setIsLoading(false);
+                return;
             }
 
             const reader = response.body?.getReader();

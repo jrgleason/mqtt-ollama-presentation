@@ -50,7 +50,6 @@ describe('Device Control Tool', () => {
       where: {
         name: {
           contains: 'living room',
-          mode: 'insensitive',
         },
       },
     });
@@ -230,7 +229,6 @@ describe('Device Control Tool', () => {
       where: {
         name: {
           contains: 'LIVING ROOM',
-          mode: 'insensitive',
         },
       },
     });

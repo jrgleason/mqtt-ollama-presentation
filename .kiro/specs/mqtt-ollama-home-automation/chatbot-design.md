@@ -180,7 +180,6 @@ export function createDeviceControlTool() {
           where: {
             friendlyName: {
               contains: deviceName,
-              mode: 'insensitive',
             },
           },
         });

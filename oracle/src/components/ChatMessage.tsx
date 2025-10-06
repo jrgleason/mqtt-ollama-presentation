@@ -27,7 +27,7 @@ export function ChatMessage({message}: ChatMessageProps) {
     const thinkingContent = thinkingMatch ? thinkingMatch[1].trim() : null;
 
     // Remove thinking tags (both complete and incomplete)
-    let mainContent = message.content
+    const mainContent = message.content
         .replace(/<think>[\s\S]*?<\/think>/g, '') // Remove complete tags
         .replace(/<think>[\s\S]*$/g, '') // Remove incomplete opening tag at end
         .replace(/<\/think>/g, '') // Remove stray closing tags

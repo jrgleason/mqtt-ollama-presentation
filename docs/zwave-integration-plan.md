@@ -406,7 +406,6 @@ export function createDeviceControlTool() {
           where: {
             name: {
               contains: deviceName,
-              mode: 'insensitive',
             },
           },
         });
@@ -482,7 +481,6 @@ export async function subscribeToDeviceStates() {
         where: {
           name: {
             contains: deviceName,
-            mode: 'insensitive',
           },
         },
         data: {

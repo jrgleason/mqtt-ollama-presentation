@@ -208,57 +208,62 @@ class MQTTClientSingleton {
 // Export singleton instance
 export const mqttClient = MQTTClientSingleton.getInstance();
 
-// Helper functions for Z-Wave specific commands
-export namespace ZWave {
-  /**
-   * Publish a Z-Wave device control command
-   * Topic format: zwave/<DeviceName>/<CommandClass>/<Endpoint>/<Property>/set
-   */
-  export async function publishDeviceCommand(
-    deviceName: string,
-    commandClass: number,
-    endpoint: number,
-    property: string,
-    value: string | number | boolean
-  ): Promise<void> {
-    const topic = `zwave/${deviceName}/${commandClass}/${endpoint}/${property}/set`;
-    await mqttClient.publish(topic, JSON.stringify({ value }));
-  }
-
-  /**
-   * Control a binary switch (on/off)
-   * Command Class 37
-   */
-  export async function controlBinarySwitch(deviceName: string, state: boolean): Promise<void> {
-    await publishDeviceCommand(deviceName, 37, 0, 'targetValue', state);
-  }
-
-  /**
-   * Control a multilevel switch (dimmer)
-   * Command Class 38
-   */
-  export async function controlMultilevelSwitch(deviceName: string, level: number): Promise<void> {
-    // Ensure level is between 0-99
-    const clampedLevel = Math.max(0, Math.min(99, level));
-    await publishDeviceCommand(deviceName, 38, 0, 'targetValue', clampedLevel);
-  }
-
-  /**
-   * Subscribe to device state updates
-   * Topic format: zwave/<DeviceName>/<CommandClass>/<Endpoint>/<Property>
-   */
-  export async function subscribeToDeviceState(
-    deviceName: string,
-    callback: (state: any) => void
-  ): Promise<void> {
-    const topic = `zwave/${deviceName}/+/+/+`;
-    await mqttClient.subscribe(topic, (receivedTopic, message) => {
-      try {
-        const payload = JSON.parse(message.toString());
-        callback(payload);
-      } catch (error) {
-        console.error('[MQTT] Failed to parse device state:', error);
-      }
-    });
-  }
+/**
+ * Publish a Z-Wave device control command
+ * Topic format: zwave/<DeviceName>/<CommandClass>/<Endpoint>/<Property>/set
+ */
+export async function publishDeviceCommand(
+  deviceName: string,
+  commandClass: number,
+  endpoint: number,
+  property: string,
+  value: string | number | boolean
+): Promise<void> {
+  const topic = `zwave/${deviceName}/${commandClass}/${endpoint}/${property}/set`;
+  await mqttClient.publish(topic, JSON.stringify({ value }));
 }
+
+/**
+ * Control a binary switch (on/off)
+ * Command Class 37
+ */
+export async function controlBinarySwitch(deviceName: string, state: boolean): Promise<void> {
+  await publishDeviceCommand(deviceName, 37, 0, 'targetValue', state);
+}
+
+/**
+ * Control a multilevel switch (dimmer)
+ * Command Class 38
+ */
+export async function controlMultilevelSwitch(deviceName: string, level: number): Promise<void> {
+  // Ensure level is between 0-99
+  const clampedLevel = Math.max(0, Math.min(99, level));
+  await publishDeviceCommand(deviceName, 38, 0, 'targetValue', clampedLevel);
+}
+
+/**
+ * Subscribe to device state updates
+ * Topic format: zwave/<DeviceName>/<CommandClass>/<Endpoint>/<Property>
+ */
+export async function subscribeToDeviceState(
+  deviceName: string,
+  callback: (state: unknown) => void
+): Promise<void> {
+  const topic = `zwave/${deviceName}/+/+/+`;
+  await mqttClient.subscribe(topic, (receivedTopic, message) => {
+    try {
+      const payload = JSON.parse(message.toString());
+      callback(payload);
+    } catch (error) {
+      console.error('[MQTT] Failed to parse device state:', error);
+    }
+  });
+}
+
+// Provide a compatibility object so existing code that references `ZWave.*` continues to work
+export const ZWave = {
+  publishDeviceCommand,
+  controlBinarySwitch,
+  controlMultilevelSwitch,
+  subscribeToDeviceState,
+};

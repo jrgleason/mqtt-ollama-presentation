@@ -45,7 +45,6 @@ export function createDeviceControlTool() {
                     where: {
                         name: {
                             contains: deviceName,
-                            mode: 'insensitive',
                         },
                     },
                 });
