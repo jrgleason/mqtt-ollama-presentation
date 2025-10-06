@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
 
   // Set the workspace root to the oracle directory (multi-module project)
   outputFileTracingRoot: path.join(__dirname),
+
+  // Avoid running ESLint during `next build` so generated Prisma client/runtime files
+  // don't surface lint warnings that come from code generation.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

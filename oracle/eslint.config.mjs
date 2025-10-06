@@ -33,6 +33,18 @@ const eslintConfig = [
       '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
+
+  // Explicit override for generated files: turn off rules that commonly trigger on generated code
+  {
+    files: ["src/generated/**", "src/**/generated/**"],
+    rules: {
+      '@typescript-eslint/no-unused-expressions': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-expressions': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;
