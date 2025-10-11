@@ -25,24 +25,24 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@picovoice/porcupine-node": "^3.0.0",
-    "mqtt": "^5.14.1",
-    "uuid": "^9.0.0",
-    "wav": "^1.0.2",
-    "dotenv": "^16.0.0"
+    "@picovoice/porcupine-node": "latest",
+    "mqtt": "latest",
+    "uuid": "latest",
+    "wav": "latest",
+    "dotenv": "latest"
   },
   "devDependencies": {
-    "@types/jest": "^29.0.0",
-    "@types/node": "^20.0.0",
-    "@types/uuid": "^9.0.0",
-    "@types/wav": "^1.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "jest": "^29.0.0",
-    "ts-jest": "^29.0.0",
-    "ts-node": "^10.0.0",
-    "typescript": "^5.0.0"
+    "@types/jest": "latest",
+    "@types/node": "latest",
+    "@types/uuid": "latest",
+    "@types/wav": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "jest": "latest",
+    "ts-jest": "latest",
+    "ts-node": "latest",
+    "typescript": "latest"
   },
   "engines": {
     "node": ">=20.0.0"
