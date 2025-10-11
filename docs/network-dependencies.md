@@ -99,6 +99,71 @@ This project is designed to run **primarily locally** on your network, but has s
 
 ---
 
+### 3.1 Whisper Model Downloads (Voice Gateway) 🔽
+
+**Service:** Hugging Face model repository
+**Network Type:** Internet (one-time download)
+**Used By:**
+- voice-gateway setup: `npm run setup`
+- whisper.cpp model download
+
+**Rationale:**
+- Whisper base model (~74MB) must be downloaded for speech-to-text
+- Model enables local voice transcription without cloud dependencies
+- Part of Phase 5: Voice Integration (stretch goal)
+
+**Network Calls:**
+- **Outbound to Hugging Face:**
+  - Model download at `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin`
+  - Size: 74MB
+
+**Mitigation for Offline Scenarios:**
+- **Model cached locally after first download**
+- Pre-download model before demo: `npm run setup` in voice-gateway
+- Model stored in `voice-gateway/models/ggml-base.bin`
+- Docker build can download model at image build time
+
+**Demo Impact:**
+- **No internet needed during demo** (after model is downloaded)
+- Pre-setup: Run `npm run setup` in voice-gateway before event
+- Estimated download time: 30-60 seconds on decent connection
+
+---
+
+### 3.2 Porcupine Wake Word Model 🔽
+
+**Service:** Picovoice Porcupine SDK
+**Network Type:** Internet (one-time, embedded in SDK)
+**Used By:**
+- voice-gateway: `@picovoice/porcupine-node` package
+
+**Rationale:**
+- Wake word detection models embedded in npm package
+- "Computer" wake word included in SDK (~5MB)
+- Requires Picovoice API key (free tier) for runtime
+
+**Network Calls:**
+- **npm package install** - Wake word models bundled in `@picovoice/porcupine-node`
+- **Runtime:** Porcupine API key validation (online check during initialization)
+  - **Mitigation:** API key validated once at startup, then works offline
+
+**Mitigation for Offline Scenarios:**
+- Wake word models installed with npm package (no separate download)
+- API key validated at voice-gateway startup
+- Once validated, voice-gateway runs fully offline
+- **Recommendation:** Start voice-gateway before demo to validate API key
+
+**Demo Impact:**
+- **No internet needed during demo** (after initial startup)
+- Pre-setup:
+  1. Sign up for free Picovoice account: https://console.picovoice.ai
+  2. Generate Access Key
+  3. Add to voice-gateway `.env`: `PORCUPINE_ACCESS_KEY=your_key_here`
+  4. Start voice-gateway once with internet to validate key
+  5. Demo can run offline after validation
+
+---
+
 ## Local Network Dependencies (No Internet)
 
 ### 4. MQTT Broker (Mosquitto) 🏠
@@ -257,9 +322,12 @@ This project is designed to run **primarily locally** on your network, but has s
 | **Auth0** | Internet ☁️ | Yes | Pre-authenticated session |
 | **Ollama Models** | Internet 🔽 | No (pre-download) | Cache models before demo |
 | **npm packages** | Internet 📦 | No (pre-install) | Run `npm install` before |
+| **Whisper Model** | Internet 🔽 | No (pre-download) | Run `npm run setup` in voice-gateway |
+| **Porcupine Wake Word** | Internet 🔽 | No (startup only) | Start voice-gateway once before demo |
 | **MQTT Broker** | Local 🏠 | Local network only | Fully local |
 | **Ollama Runtime** | Local 🤖 | Local network only | Fully local |
 | **zwave-js-ui** | Local 📡 | Local network only | Fully local |
+| **Voice Gateway** | Local 🎤 | Local network only | Fully local (after setup) |
 | **Docker Images** | Internet 🐳 | No (pre-pull) | Pull images before demo |
 | **GitHub** | Internet 🔄 | No | Clone repo before demo |
 
@@ -380,6 +448,38 @@ The project prioritizes **local-first architecture**:
 
 ---
 
-**Last Updated:** 2025-09-29
+**Last Updated:** 2025-10-11
 **Maintained By:** Project documentation team
 **Referenced By:** CLAUDE.md (AI development guidelines)
+
+---
+
+## Voice Gateway Network Requirements (Phase 5)
+
+**New in v2.0:** Voice integration adds two new network dependencies for initial setup:
+
+1. **Whisper Model** - 74MB one-time download
+2. **Porcupine API Key** - Free tier registration + validation at startup
+
+**Key Point:** Both are one-time setup requirements. Once models are downloaded and API key validated, voice-gateway runs fully offline during demo.
+
+**Pre-Demo Setup:**
+```bash
+# 1. Sign up for Picovoice account
+open https://console.picovoice.ai
+
+# 2. Add API key to .env
+echo "PORCUPINE_ACCESS_KEY=your_key_here" >> voice-gateway/.env
+
+# 3. Download models
+cd voice-gateway && npm run setup
+
+# 4. Validate API key (requires internet once)
+npm start
+# Wait for "Wake word detection started" message
+# Ctrl+C to stop
+
+# 5. Demo ready (no internet needed)
+```
+
+**See also:** [Voice Gateway Architecture](./voice-gateway-architecture.md)

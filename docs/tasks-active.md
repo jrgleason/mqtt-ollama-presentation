@@ -373,26 +373,323 @@
 
 ---
 
-## Phase 5: Voice Commands 🎯 STRETCH GOAL
+## Phase 5: Voice Integration 🎯 STRETCH GOAL
 
-**Note:** Optional - defer until core demo works
+**Goal:** Add offline, Alexa-style voice commands using wake word → STT → chat → text response
 
-### 5.1 Whisper Integration
-- [ ] 🎯 Research Whisper.cpp vs OpenAI API
-- [ ] 🎯 Install Whisper.cpp locally (if chosen)
-- [ ] 🎯 Create audio recording component
-- [ ] 🎯 Implement STT endpoint `/api/voice/transcribe`
-- [ ] 🎯 Test transcription accuracy
+**Architecture:** Separate `voice-gateway` Node.js service alongside Oracle app
+- Wake word detection (Porcupine)
+- Audio recording with VAD (WebRTC VAD)
+- Speech-to-text (whisper.cpp + base model)
+- MQTT integration with Oracle chatbot
+- Text-only responses initially (TTS deferred)
 
-### 5.2 Voice UI
-- [ ] 🎯 Add microphone button to chat interface
-- [ ] 🎯 Visualize recording state
-- [ ] 🎯 Send transcribed text to chat
+**Hardware:**
+- Raspberry Pi 5 16GB (same device as Oracle)
+- USB Microphone: LANDIBO GSH23 (16kHz, hw:2,0 - "USB PnP Sound Device")
+- USB DAC/Speaker: TBD (for future TTS playback)
 
-### 5.3 Wake Word Detection (Super Stretch)
-- [ ] 🎯 Research Porcupine or Snowboy
-- [ ] 🎯 Implement wake word listener
-- [ ] 🎯 Test: "Hey Oracle, turn on the lights"
+**MQTT Contract:**
+```
+voice/req  → {transcription: string, timestamp: ISO8601, session_id: uuid}
+voice/res  ← {response: string, session_id: uuid, timestamp: ISO8601}
+voice/status → {state: "listening"|"recording"|"processing"|"idle"|"error", wake_word_active: boolean}
+```
+
+---
+
+### 5.1: Voice Gateway Project Setup (5 tasks)
+- [ ] 🎯 5.1.1: Create `voice-gateway/` directory structure
+  - [ ] `src/main.ts` - Entry point
+  - [ ] `src/wakeword.ts` - Porcupine integration
+  - [ ] `src/recorder.ts` - ALSA capture + VAD
+  - [ ] `src/stt.ts` - whisper.cpp wrapper
+  - [ ] `src/mqtt.ts` - MQTT client (publish/subscribe)
+  - [ ] `src/audio.ts` - ALSA playback utilities (for future TTS)
+  - [ ] `src/config.ts` - Environment configuration
+  - [ ] `models/` directory (gitignored, for downloaded models)
+- [ ] 🎯 5.1.2: Create `voice-gateway/package.json`
+  - Dependencies: `@picovoice/porcupine-node`, `node-webrtc-vad`, `mqtt`, `wav`, ALSA bindings
+  - Scripts: `dev`, `build`, `start`, `setup` (model downloads)
+- [ ] 🎯 5.1.3: Create `voice-gateway/Dockerfile`
+  - Base: Node 20 + ALSA dev libraries
+  - Copy source + install deps
+  - Download models at build time
+  - Expose health check port
+- [ ] 🎯 5.1.4: Create `voice-gateway/.env.example`
+  ```env
+  # Porcupine
+  PORCUPINE_ACCESS_KEY=your_picovoice_access_key
+  PORCUPINE_KEYWORD=computer
+  PORCUPINE_SENSITIVITY=0.5
+
+  # Audio (ALSA)
+  ALSA_MIC_DEVICE=hw:2,0  # USB PnP Sound Device
+  ALSA_SPEAKER_DEVICE=hw:1,0  # TBD
+  SAMPLE_RATE=16000
+
+  # VAD
+  VAD_TRAILING_SILENCE_MS=1500
+  VAD_MAX_UTTERANCE_MS=10000
+
+  # Whisper
+  WHISPER_MODEL=base
+  WHISPER_MODEL_PATH=./models/ggml-base.bin
+
+  # MQTT
+  MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+  MQTT_CLIENT_ID=voice-gateway
+
+  # Logging
+  LOG_LEVEL=info
+  ```
+- [ ] 🎯 5.1.5: Create `voice-gateway/scripts/setup.sh`
+  - Install system dependencies (libasound2-dev)
+  - Download Porcupine wake word model (if not embedded)
+  - Download whisper-base model from Hugging Face
+  - Test ALSA mic access: `arecord -D hw:2,0 -d 3 -f S16_LE -r 16000 test.wav`
+  - Print setup completion + next steps
+
+---
+
+### 5.2: Wake Word Detection (Porcupine) (4 tasks)
+- [ ] 🎯 5.2.1: Setup Picovoice account and get access key
+  - Create free account at https://console.picovoice.ai
+  - Generate Access Key
+  - Select "Computer" built-in keyword
+  - Document API key in `.env` (not committed)
+- [ ] 🎯 5.2.2: Implement `src/wakeword.ts` - Porcupine integration
+  - Initialize Porcupine with access key + keyword
+  - Open ALSA mic stream (16kHz, mono PCM, 512-frame chunks)
+  - Feed audio frames to Porcupine detector
+  - Return Promise on wake word detection
+  - Cleanup resources on stop
+- [ ] 🎯 5.2.3: Implement wake word loop in `src/main.ts`
+  - Start Porcupine listener on app start
+  - On wake word detection:
+    - Log event with timestamp
+    - Publish `voice/status` → `{state: "recording", wake_word_active: false}`
+    - Trigger recorder (5.3)
+  - Auto-restart loop after each detection
+- [ ] 🎯 5.2.4: Test wake word detection
+  - Say "Computer" → verify console log
+  - Measure false positive rate (leave running 5 min)
+  - Adjust sensitivity if needed (env var)
+  - Document: "Say 'Computer' clearly within 3 feet of mic"
+
+---
+
+### 5.3: Audio Recording + VAD (4 tasks)
+- [ ] 🎯 5.3.1: Implement `src/recorder.ts` - PCM buffer capture
+  - Continue reading from ALSA mic after wake word
+  - Buffer audio in memory (16kHz mono PCM)
+  - Max buffer size: 10 seconds (VAD_MAX_UTTERANCE_MS)
+  - Return captured audio as Buffer
+- [ ] 🎯 5.3.2: Integrate WebRTC VAD for silence detection
+  - Install `node-webrtc-vad` or `@svanttecnologia/vad` (C++ binding)
+  - Initialize VAD with 16kHz sample rate
+  - Process each audio frame (10ms = 160 samples at 16kHz)
+  - Detect trailing silence: 1.5s continuous silence → stop recording
+- [ ] 🎯 5.3.3: Add max utterance length cap
+  - If recording exceeds 10 seconds → force stop
+  - Log warning: "Utterance truncated at 10s"
+  - Prevents memory issues from continuous speech
+- [ ] 🎯 5.3.4: Save captured audio as WAV file (temp)
+  - Use `wav` npm package to write PCM → WAV
+  - Save to `/tmp/voice-recording-{timestamp}.wav`
+  - Pass WAV path to STT module
+  - Auto-cleanup: Delete WAV after transcription
+
+---
+
+### 5.4: Speech-to-Text (whisper.cpp) (4 tasks)
+- [ ] 🎯 5.4.1: Install whisper.cpp + Node.js bindings
+  - Clone `https://github.com/ggerganov/whisper.cpp`
+  - Build C++ library: `make`
+  - Install Node binding: `npm install whisper-node` or compile manually
+  - Alternative: Use `@svanttecnologia/whisper` (pre-built bindings)
+- [ ] 🎯 5.4.2: Download & cache whisper-base model
+  - Download `ggml-base.bin` (~74MB) from Hugging Face
+  - Save to `voice-gateway/models/`
+  - Verify model loads on app start
+  - Fallback: whisper-tiny if base doesn't fit in memory
+- [ ] 🎯 5.4.3: Implement `src/stt.ts` - Transcription function
+  ```typescript
+  async function transcribe(wavFilePath: string): Promise<string> {
+    const whisper = new Whisper(WHISPER_MODEL_PATH);
+    const result = await whisper.transcribe(wavFilePath, {
+      language: 'en',
+      temperature: 0.0, // Deterministic output
+    });
+    return result.text.trim();
+  }
+  ```
+- [ ] 🎯 5.4.4: Test transcription accuracy
+  - Record test utterance: "Turn on the living room lights"
+  - Verify output: Expected vs actual transcription
+  - Measure latency: Recording stop → transcription complete
+  - Document: Average transcription time (~1-2s for 5s audio)
+
+---
+
+### 5.5: MQTT Integration (3 tasks)
+- [ ] 🎯 5.5.1: Implement `src/mqtt.ts` - MQTT client
+  - Connect to HiveMQ broker (`mqtt://10.0.0.58:31883`)
+  - Publish function: `publishVoiceRequest(transcription: string, sessionId: string)`
+  - Subscribe to `voice/res` topic
+  - Handle connection errors + auto-reconnect
+- [ ] 🎯 5.5.2: Publish transcriptions to `voice/req` topic
+  - On successful transcription:
+    - Generate session_id (uuid v4)
+    - Publish JSON payload:
+      ```json
+      {
+        "transcription": "turn on the living room lights",
+        "timestamp": "2025-10-11T15:30:00Z",
+        "session_id": "abc-123-def"
+      }
+      ```
+    - Log: "Sent voice request: {transcription}"
+- [ ] 🎯 5.5.3: Subscribe to `voice/res` and log responses
+  - Listen for responses matching session_id
+  - Log response text: "AI replied: {response}"
+  - Publish `voice/status` → `{state: "idle", wake_word_active: true}`
+  - Future: Pipe response to TTS (Phase 5.6)
+
+---
+
+### 5.6: Text-to-Speech (Piper) - DEFERRED 🎯
+**Note:** TTS implementation deferred per user request. Voice gateway will only handle wake word → STT → MQTT → text response logging. Oracle app will return text responses via MQTT.
+
+- [ ] 🎯 5.6.1: Research Piper TTS installation (FUTURE)
+- [ ] 🎯 5.6.2: Implement TTS synthesis (FUTURE)
+- [ ] 🎯 5.6.3: Implement ALSA playback queue (FUTURE)
+
+**Current MVP:** Voice gateway logs text responses to console. User reads AI response from Oracle web UI.
+
+---
+
+### 5.7: Resilience & Monitoring (5 tasks)
+- [ ] 🎯 5.7.1: Implement health check endpoint
+  - Add simple HTTP server on port 3001
+  - `GET /health` → `{status: "ok", wake_word_active: boolean, uptime: number}`
+  - Used by Docker healthcheck + Kubernetes liveness probe
+- [ ] 🎯 5.7.2: Add metrics logging
+  - Wake word detections per hour
+  - STT latency (median, p95, p99)
+  - MQTT publish success rate
+  - Failed transcriptions count
+  - Log to stdout (structured JSON for Kubernetes)
+- [ ] 🎯 5.7.3: Implement auto-restart logic after errors
+  - If Porcupine crashes → restart wake word loop
+  - If STT fails → log error, beep (optional), restart loop
+  - If MQTT disconnects → queue requests (max 10), reconnect
+  - Max consecutive failures before process exit: 5
+- [ ] 🎯 5.7.4: Add back-pressure protection
+  - Disable wake word detection during:
+    - Active recording
+    - STT processing
+    - TTS playback (future)
+  - Prevents overlapping commands
+  - Re-enable wake word only when `state === "idle"`
+- [ ] 🎯 5.7.5: Write end-to-end test script
+  - `scripts/test-voice-e2e.sh`:
+    - Start voice-gateway in background
+    - Play pre-recorded audio: "Computer, what devices are available?"
+    - Verify MQTT message published to `voice/req`
+    - Mock Oracle response on `voice/res`
+    - Verify voice-gateway logs response
+  - Document: "Run before live demo"
+
+---
+
+### 5.8: Oracle Integration (3 tasks)
+- [ ] 🎯 5.8.1: Update Oracle to subscribe to `voice/req` MQTT topic
+  - Add subscription in `oracle/src/lib/mqtt/client.ts`
+  - On message received:
+    - Extract `transcription` and `session_id`
+    - Log: "Voice request: {transcription}"
+    - Forward to existing `/api/chat` logic
+- [ ] 🎯 5.8.2: Update Oracle to publish responses to `voice/res`
+  - After LangChain agent generates response:
+    - Publish to `voice/res`:
+      ```json
+      {
+        "response": "Turning on the living room lights now.",
+        "session_id": "abc-123-def",
+        "timestamp": "2025-10-11T15:30:02Z"
+      }
+      ```
+  - Keep web UI response unchanged
+  - Voice and text chat use same backend logic
+- [ ] 🎯 5.8.3: Test end-to-end voice → chat → MQTT flow
+  - Say "Computer, turn on the living room lights"
+  - Verify Oracle logs transcription
+  - Verify device control MQTT message sent
+  - Verify response published to `voice/res`
+  - Verify voice-gateway logs AI response
+
+---
+
+### 5.9: Documentation & Demo (4 tasks)
+- [ ] 🎯 5.9.1: Write `voice-gateway/README.md`
+  - Architecture overview
+  - Hardware requirements (LANDIBO GSH23 mic)
+  - Installation instructions (`npm install` + `npm run setup`)
+  - Configuration (`.env` variables)
+  - Running: `npm run dev` (development) or `npm start` (production)
+  - Troubleshooting: ALSA device not found, Porcupine API errors
+- [ ] 🎯 5.9.2: Document ALSA device configuration
+  - Create `docs/alsa-setup.md`
+  - How to find USB mic device: `arecord -l`
+  - How to test mic: `arecord -D hw:2,0 -f S16_LE -r 16000 -d 3 test.wav && aplay test.wav`
+  - Setting correct device in `.env`
+  - Troubleshooting: Permissions, device busy, wrong format
+- [ ] 🎯 5.9.3: Add voice demo to presentation materials
+  - Update `presentation/slides/` with voice architecture diagram
+  - Add demo script: Live voice command during presentation
+  - Backup plan: If voice fails, show pre-recorded video
+  - Practice saying "Computer, turn on the living room lights" clearly
+- [ ] 🎯 5.9.4: Update main README.md with voice instructions
+  - Add "Voice Commands (Optional)" section
+  - Link to `voice-gateway/README.md`
+  - Document: "Say 'Computer' followed by your command"
+  - Note: TTS responses not implemented (text only)
+
+---
+
+### 5.10: Network Dependencies (1 task)
+- [ ] 🎯 5.10.1: Document voice model downloads in `docs/network-dependencies.md`
+  - **Porcupine wake word model**: Embedded in SDK (~5MB, one-time)
+  - **Whisper base model**: 74MB download from Hugging Face (one-time, cached)
+  - **Pre-demo checklist**: Run `npm run setup` with internet, verify models cached
+  - **Demo mitigation**: Models downloaded at Docker build time, no internet needed at runtime
+
+---
+
+## Phase 5 Summary
+
+**Total Tasks:** 30 tasks across 10 subsections
+**Estimated Time:** ~25-30 hours
+**Priority:** 🎯 Stretch Goal (Optional for CodeMash demo)
+
+**Key Decisions Made:**
+1. ✅ Separate `voice-gateway` service (not integrated into Oracle)
+2. ✅ Porcupine for wake word ("Computer")
+3. ✅ whisper.cpp + base model for STT
+4. ✅ WebRTC VAD for silence detection
+5. ✅ Text-only responses (TTS deferred to future)
+6. ✅ MQTT integration with Oracle chatbot
+7. ✅ ALSA for audio I/O (USB PnP Sound Device hw:2,0)
+
+**Pre-Demo Requirements:**
+- [ ] Picovoice account created + access key obtained
+- [ ] Whisper base model downloaded (~74MB)
+- [ ] USB microphone tested: `arecord -l` shows hw:2,0
+- [ ] MQTT broker accessible from Pi
+- [ ] End-to-end test passing (5.7.5)
+
+**Phase 5 Completion:** 0/30 (0%)
 
 ---
 
@@ -476,7 +773,7 @@
 - **Phase 2:** AI Chatbot - 6/~95 (6%)
 - **Phase 3:** MQTT - 2/~15 (13%)
 - **Phase 4:** Z-Wave - 0/~20 (0%)
-- **Phase 5:** Voice - 0/~20 (0%) - Stretch Goal
+- **Phase 5:** Voice - 0/30 (0%) - Stretch Goal
 - **Phase 6:** ESP32 - 0/~15 (0%) - Stretch Goal
 - **Phase 7:** Deployment - 1/~25 (4%) - Optional
 - **Phase 8:** Presentation - 0/~30 (0%)

@@ -4,7 +4,26 @@
 
 This design document outlines the architecture for a local AI-powered home automation system that demonstrates natural language control of Z-Wave devices through MQTT and Ollama. The system is designed for the CodeMash 2026 presentation with a deadline of January 1, 2026.
 
-The system consists of a Next.js web application that integrates LangChain.js with Ollama for natural language processing, MQTT for device communication, and Auth0 for authentication. All AI processing happens locally while maintaining secure user authentication.
+The system consists of a Next.js web application that integrates LangChain.js with Ollama for natural language processing, MQTT for device communication, and optional Auth0 for authentication. All AI processing happens locally while maintaining secure user authentication.
+
+## Current Implementation Status (October 11, 2025)
+
+### Completed Components
+- ✅ **Next.js 15.5.4** application with TypeScript and App Router
+- ✅ **Prisma database** with SQLite and seed data (4 devices)
+- ✅ **Ollama integration** with streaming chat API
+- ✅ **LangChain.js agent** with tool calling capabilities
+- ✅ **Chat interface** confirmed functional by user
+- ✅ **HiveMQ MQTT broker** running in Kubernetes (10.0.0.58:31883)
+
+### Critical Discovery: Model Compatibility
+**IMPORTANT:** Not all Ollama models support LangChain tool calling:
+- ❌ **Failed Models:** qwen2.5:3b, gemma2:2b, phi3:3.8b (error: "model does not support tools")
+- ✅ **Working Models:** llama3.2:1b (recommended for Pi), llama3.2:3b, mistral
+- **Verification:** Look for "Using [tool_name]..." in logs during testing
+
+### Architecture Decision: Auth0 Optional
+Auth0 integration has been made optional and deferred to post-demo to focus on core functionality. The system can operate without authentication for demo purposes.
 
 ## Architecture
 
@@ -12,13 +31,13 @@ The system consists of a Next.js web application that integrates LangChain.js wi
 
 ```mermaid
 graph TB
-    User[User Browser] --> NextJS[Next.js App<br/>Port 3000]
-    NextJS --> Auth0[Auth0 Cloud<br/>Authentication]
-    NextJS --> Ollama[Ollama LLM<br/>Port 11434]
-    NextJS --> MQTT[MQTT Broker<br/>Port 1883]
+    User[User Browser] --> NextJS[Next.js 15.5.4<br/>Port 3000]
+    NextJS -.-> Auth0[Auth0 Cloud<br/>Authentication<br/>(Optional)]
+    NextJS --> Ollama[Ollama LLM<br/>llama3.2:1b<br/>Port 11434]
+    NextJS --> MQTT[HiveMQ CE<br/>10.0.0.58:31883]
     MQTT --> ZWave[zwave-js-ui<br/>Port 8091]
     ZWave --> Devices[Z-Wave Devices<br/>Switches, Dimmers, Sensors]
-    NextJS --> SQLite[(SQLite Database)]
+    NextJS --> SQLite[(SQLite Database<br/>Prisma ORM)]
     
     subgraph "Local Network"
         NextJS
@@ -29,8 +48,16 @@ graph TB
         Devices
     end
     
-    subgraph "Cloud Services"
+    subgraph "Cloud Services (Optional)"
         Auth0
+    end
+    
+    subgraph "Current Status"
+        Status1[✅ Next.js + Prisma Working]
+        Status2[✅ Ollama + LangChain Working]
+        Status3[✅ HiveMQ Broker Running]
+        Status4[🔄 MQTT Client In Progress]
+        Status5[⏳ Z-Wave Integration Pending]
     end
 ```
 
@@ -518,3 +545,50 @@ services:
 - ConfigMaps for configuration
 - Secrets for sensitive data
 - Ingress for external access
+
+## Current Tech Stack Delivered
+
+### Backend
+- **Framework:** Next.js 15.5.4 with App Router
+- **Language:** TypeScript (strict mode)
+- **Database:** SQLite with Prisma 6.16.3 ORM
+- **AI:** Ollama + LangChain.js 0.3.35
+- **MQTT:** mqtt.js 5.14.1
+- **Validation:** Zod 3.25.76
+
+### Frontend
+- **Styling:** Tailwind CSS 4.1.14
+- **UI Components:** Custom React components
+- **State Management:** React hooks and context
+- **Real-time:** Server-Sent Events (SSE) for streaming
+
+### AI/ML Stack
+- **LLM Runtime:** Ollama (local inference)
+- **Models:** 
+  - **Development:** llama3.2:1b (tool calling compatible)
+  - **Demo:** DeepSeek-R1 70B or Llama 3.3 70B (Mac Studio)
+- **Agent Framework:** LangChain.js with ToolCallingAgent
+- **Tools:** Custom MQTT and device control tools
+
+### Infrastructure
+- **MQTT Broker:** HiveMQ Community Edition (Kubernetes)
+- **Z-Wave Gateway:** zwave-js-ui (planned)
+- **Database:** SQLite file-based storage
+- **Deployment:** Docker containers + Kubernetes
+
+## Model Selection Strategy
+
+### Tool Calling Compatibility Matrix
+| Model | Tool Support | Performance | Use Case |
+|-------|-------------|-------------|----------|
+| llama3.2:1b | ✅ Confirmed | ~20 tok/sec (Pi 5) | Production/Edge |
+| llama3.2:3b | ✅ Confirmed | ~15 tok/sec (Pi 5) | Balanced |
+| mistral | ✅ Confirmed | Variable | Alternative |
+| qwen2.5:3b | ❌ Failed | N/A | Avoid |
+| gemma2:2b | ❌ Failed | N/A | Avoid |
+| DeepSeek-R1 70B | ✅ Excellent | ~8 tok/sec (Mac) | Demo/Dev |
+
+### Hardware Recommendations
+- **Raspberry Pi 5:** llama3.2:1b (1.3GB RAM, <1s response)
+- **Mac Studio:** DeepSeek-R1 70B (42GB RAM, rich reasoning)
+- **Always verify:** Test tool calling before deployment

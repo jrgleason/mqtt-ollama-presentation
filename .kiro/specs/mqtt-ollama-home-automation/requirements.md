@@ -5,11 +5,38 @@
 This feature implements a local AI-powered home automation system for the CodeMash 2026 presentation (January 12, 2026). The system demonstrates how to build intelligent home automation using MQTT + Ollama that runs entirely on local infrastructure without cloud dependencies, providing natural language control of Z-Wave devices through a conversational AI interface.
 
 **Project Deadline:** January 1, 2026
+**Presentation Date:** January 12, 2026
+**Presentation Title:** MQTT + Ollama = Building Home Automation That Actually Works (And Doesn't Spy on You)
 **Presentation Constraint:** Maximum 45 minutes total presentation time
 **Deliverables:** 
 - Functional demo application for live presentation
 - Presentation materials and slide deck (optimized for 45-minute format)
 - Complete working system that can be deployed and demonstrated
+
+## Current Status (Updated October 11, 2025)
+
+### Completed Work
+- ✅ Phase 1: Project Setup (78% complete - 28/36 tasks)
+- ✅ Next.js 15.5.4 application with TypeScript and App Router
+- ✅ Prisma database with SQLite and seed data (4 devices)
+- ✅ Ollama integration with qwen2.5:3b model
+- ✅ LangChain.js agent with streaming chat API
+- ✅ Chat interface confirmed functional by user
+- ✅ HiveMQ MQTT broker running in Kubernetes
+- ✅ LangChain tools implemented (using mock data)
+
+### Critical Discovery: Model Tool Calling Compatibility
+**IMPORTANT:** Not all Ollama models support LangChain tool calling! This was discovered during implementation:
+- ❌ **Failed Models:** qwen2.5:3b, gemma2:2b, phi3:3.8b (despite documentation suggesting support)
+- ✅ **Working Models:** llama3.2:1b (recommended for Raspberry Pi), llama3.2:3b, mistral
+- **Error:** `"model does not support tools"` when using incompatible models
+- **Verification:** Look for log messages like "Using list_devices..." during testing
+
+### Next Critical Tasks
+1. **Update LangChain tools to use Prisma database** (currently using mock data)
+2. **Implement MQTT client** for real device communication
+3. **Setup zwave-js-ui** on Raspberry Pi for Z-Wave integration
+4. **End-to-end testing** of complete device control flow
 
 ## Requirements
 
@@ -101,6 +128,18 @@ This feature implements a local AI-powered home automation system for the CodeMa
 8. WHEN technical issues occur THEN the demo SHALL have backup mechanisms (recorded video, mock devices) to ensure presentation success
 9. WHEN timing the presentation THEN the live demo portion SHALL be limited to 10-15 minutes maximum to allow time for architecture explanation and Q&A
 
+#### Hardware Requirements for Demo
+- **Primary Setup:** Mac Studio with Ollama running DeepSeek-R1 70B or Llama 3.3 70B
+- **Edge Demo:** Raspberry Pi 5 with llama3.2:1b (tool calling compatible)
+- **Z-Wave Devices:** 2-3 physical devices (switches, dimmers, motion sensor)
+- **Z-Wave USB Stick:** Connected to laptop running Z-Wave JS UI
+- **Network:** Local WiFi for MQTT broker (HiveMQ CE)
+
+#### Model Selection Strategy
+- **Development/Demo:** DeepSeek-R1 70B or Llama 3.3 70B on Mac Studio (~8 tokens/sec, rich reasoning)
+- **Production/Pi:** llama3.2:1b (CONFIRMED tool calling support, ~20 tokens/sec on Pi 5)
+- **Critical:** Always verify tool calling compatibility before deployment
+
 ### Requirement 8: ESP32 Integration (Stretch Goal)
 
 **User Story:** As a maker, I want to integrate custom ESP32 devices with the home automation system, so that I can add custom sensors and actuators to my smart home setup.
@@ -112,3 +151,84 @@ This feature implements a local AI-powered home automation system for the CodeMa
 3. WHEN ESP32 devices connect THEN the system SHALL discover and control them through the same natural language interface
 4. WHEN developers want to add ESP32 devices THEN the system SHALL provide firmware templates for ESP32
 5. WHEN ESP32 devices publish data THEN the system SHALL integrate sensor data into the conversational AI responses
+## Tec
+hnical Stack Delivered (Current Status)
+
+### Backend Components
+- **Framework:** Next.js 15.5.4 with App Router and TypeScript
+- **Database:** SQLite with Prisma 6.16.3 ORM
+- **AI Integration:** LangChain.js 0.3.35 + Ollama client
+- **MQTT Client:** mqtt.js 5.14.1
+- **Validation:** Zod 3.25.76 for type-safe schemas
+
+### Frontend Components  
+- **Styling:** Tailwind CSS 4.1.14
+- **UI Framework:** React 18+ via Next.js
+- **Real-time Communication:** Server-Sent Events (SSE) for streaming responses
+- **State Management:** React hooks and context
+
+### Infrastructure Components
+- **MQTT Broker:** HiveMQ Community Edition running in Kubernetes
+  - Address: 10.0.0.58:31883
+  - Management UI: http://10.0.0.58:30080
+  - Anonymous access enabled (demo mode)
+- **AI Runtime:** Ollama with model compatibility verification
+- **Database:** SQLite file-based storage with Prisma migrations
+
+### Files Created/Modified (Key Deliverables)
+**Configuration:**
+- `oracle/package.json` - Dependencies and scripts
+- `oracle/prisma/schema.prisma` - Database schema with Device, User, Preferences models
+- `oracle/.env` + `.env.local` - Environment configuration
+- `oracle/tsconfig.json` - TypeScript strict mode configuration
+
+**Source Code:**
+- `oracle/src/lib/db/client.ts` - Prisma client singleton
+- `oracle/src/lib/ollama/client.ts` - Ollama client wrapper with streaming
+- `oracle/src/lib/langchain/tools/` - Device control and listing tools
+- `oracle/src/app/api/chat/route.ts` - Streaming chat API with SSE
+- `oracle/src/app/chat/page.tsx` - Chat UI with real-time updates
+
+**Database:**
+- `oracle/prisma/migrations/20251005140754_init/migration.sql` - Initial schema
+- `oracle/prisma/seed.ts` - Seed data with 4 mock devices
+- `oracle/prisma/dev.db` - SQLite database (seeded and functional)
+
+## Presentation Outline Integration
+
+The presentation structure has been defined with the following key sections:
+1. **Introduction & Problem Statement** (5 min) - Cloud dependency and privacy concerns
+2. **Ollama & Local LLM Models** (10 min) - Including critical tool calling compatibility findings
+3. **Next.js + LangChain Integration** (10 min) - Agent architecture and tool development
+4. **LangChain Tools: Simple vs Enterprise** (12 min) - Custom tools vs MCP servers
+5. **MQTT for IoT Communication** (7 min) - Local-first device communication
+6. **Z-Wave JS UI Integration** (8 min) - Physical device control
+7. **Complete System Demo** (5 min) - End-to-end functionality
+8. **Q&A Session** (10 min) - Technical discussion
+
+**Total Duration:** 45 minutes with live demo and architecture explanation
+
+## Success Metrics (Updated)
+
+### MVP Criteria (In Progress)
+- ✅ User can send text commands via chat interface
+- ✅ System translates commands using local Ollama LLM
+- ✅ LangChain agent processes natural language with tool calling
+- ✅ Database stores device configurations and state
+- ⏳ System publishes MQTT messages for device control
+- ⏳ Z-Wave devices respond to commands via zwave-js-ui
+- ⏳ Demo runs reliably on laptop or Raspberry Pi
+
+### Technical Achievements
+- ✅ Streaming chat responses with Server-Sent Events
+- ✅ Tool calling compatibility verified (llama3.2:1b confirmed working)
+- ✅ Database integration with Prisma ORM and SQLite
+- ✅ Conversational AI with personality system
+- ✅ MQTT broker infrastructure (HiveMQ CE in Kubernetes)
+
+### Remaining Critical Path
+1. **MQTT Client Integration** - Connect LangChain tools to HiveMQ broker
+2. **Database Tool Updates** - Replace mock data with Prisma queries
+3. **Z-Wave Hardware Setup** - Deploy zwave-js-ui and pair physical devices
+4. **End-to-End Testing** - Verify complete chat → device control flow
+5. **Presentation Materials** - Slides, demo script, and backup mechanisms

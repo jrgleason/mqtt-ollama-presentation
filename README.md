@@ -163,7 +163,7 @@ This starts:
 ### 5. Install Dependencies & Run
 
 ```bash
-cd oracle
+cd apps/oracle
 pnpm install
 pnpm run build
 ```
@@ -257,57 +257,57 @@ Try these natural language commands:
 
 ```
 mqtt-ollama-presentation/
-├── oracle/              # Main Next.js application (App Router)
-│   ├── src/
-│   │   ├── app/                   # Next.js App Router
-│   │   │   ├── page.tsx           # Landing page (login/dashboard)
-│   │   │   ├── layout.tsx         # Root layout
-│   │   │   ├── dashboard/         # Dashboard pages
-│   │   │   ├── devices/           # Device control pages
-│   │   │   └── api/               # API routes
-│   │   │       ├── auth/[auth0]/  # Auth0 callback routes
-│   │   │       ├── chat/          # LangChain chat endpoint
-│   │   │       ├── devices/       # Device control API
-│   │   │       └── mqtt/          # MQTT WebSocket handler
-│   │   ├── lib/                   # Shared libraries
-│   │   │   ├── auth0.ts           # Auth0 SDK client
-│   │   │   ├── langchain/         # LangChain agent & tools
-│   │   │   │   ├── agent.ts       # Agent configuration
-│   │   │   │   ├── tools/         # Custom tools
-│   │   │   │   │   ├── mqtt-tool.ts
-│   │   │   │   │   └── device-tool.ts
-│   │   │   │   └── prompts.ts     # System prompts
-│   │   │   ├── mqtt/              # MQTT client
-│   │   │   │   ├── client.ts      # MQTT singleton
-│   │   │   │   └── topics.ts      # Topic mappings
-│   │   │   └── db/                # Database client (Prisma)
-│   │   ├── components/            # React components
-│   │   │   ├── DeviceCard.tsx
-│   │   │   ├── ChatInterface.tsx
-│   │   │   └── VoiceInput.tsx
-│   │   ├── hooks/                 # Custom React hooks
-│   │   │   ├── useMQTT.ts
-│   │   │   ├── useDevices.ts
-│   │   │   └── useChat.ts
-│   │   └── middleware.ts          # Auth0 middleware
-│   ├── prisma/                    # Database schema
-│   │   └── schema.prisma
-│   ├── .env.local                 # Environment variables (not in git)
-│   └── package.json
+├── apps/                          # All application services
+│   ├── oracle/                    # Main Next.js chatbot (App Router)
+│   │   ├── src/
+│   │   │   ├── app/               # Next.js App Router
+│   │   │   │   ├── page.tsx       # Landing page
+│   │   │   │   ├── layout.tsx     # Root layout
+│   │   │   │   ├── dashboard/     # Dashboard pages
+│   │   │   │   └── api/           # API routes
+│   │   │   │       ├── chat/      # LangChain chat endpoint
+│   │   │   │       └── devices/   # Device control API
+│   │   │   ├── lib/               # Shared libraries
+│   │   │   │   ├── langchain/     # LangChain agent & tools
+│   │   │   │   ├── mqtt/          # MQTT client
+│   │   │   │   └── db/            # Database (Prisma)
+│   │   │   ├── components/        # React components
+│   │   │   └── middleware.ts      # Auth0 middleware
+│   │   ├── prisma/                # Database schema
+│   │   ├── .env.local             # Environment variables
+│   │   └── package.json
+│   ├── voice-gateway/             # Voice command service (Phase 5)
+│   │   ├── src/
+│   │   │   ├── main.ts            # Entry point
+│   │   │   ├── wakeword.ts        # Porcupine integration
+│   │   │   ├── recorder.ts        # Audio capture + VAD
+│   │   │   ├── stt.ts             # Whisper.cpp wrapper
+│   │   │   ├── mqtt.ts            # MQTT client
+│   │   │   └── config.ts          # Configuration
+│   │   ├── models/                # Whisper models (gitignored)
+│   │   ├── .env                   # Environment variables
+│   │   └── package.json
+│   ├── zwave-mcp-server/          # Z-Wave MCP server (optional)
+│   │   └── package.json
+│   └── README.md                  # Apps overview
 ├── docs/                          # Project documentation
 │   ├── requirements.md
-│   ├── tasks.md
-│   ├── questions.md
-│   └── architecture-decision-nextjs-vs-react-native.md
+│   ├── tasks-active.md
+│   ├── voice-gateway-architecture.md
+│   ├── alsa-setup.md
+│   └── network-dependencies.md
 ├── deployment/                    # Docker & Kubernetes configs
-│   ├── docker-compose.yml
-│   └── helm/
+│   └── mosquitto/                 # MQTT broker config
+├── docker-compose.yml             # Multi-service orchestration
 └── presentation/                  # Slide deck & demo materials
 ```
 
 ### Available Scripts
 
+**Oracle (Main App):**
 ```bash
+cd apps/oracle
+
 # Install dependencies
 pnpm install
 
@@ -322,9 +322,35 @@ pnpm test
 
 # Lint code
 pnpm run lint
+```
 
-# Type check
-pnpm run type-check
+**Voice Gateway (Phase 5):**
+```bash
+cd apps/voice-gateway
+
+# Install dependencies
+npm install
+
+# Setup (download models)
+npm run setup
+
+# Development
+npm run dev
+
+# Production
+npm start
+```
+
+**All Services (Docker):**
+```bash
+# Start all services
+docker-compose up
+
+# Start specific service
+docker-compose up oracle
+
+# Start with voice (Phase 5)
+docker-compose --profile voice up
 ```
 
 ### Adding a New Device Type

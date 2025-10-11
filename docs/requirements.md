@@ -65,11 +65,28 @@ CodeMash 2026 presentation demonstrating local AI-powered home automation using 
 ---
 
 ### FR6: Voice Commands (Stretch Goal)
-- **FR6.1:** System SHALL accept voice input via microphone
-- **FR6.2:** System SHALL transcribe speech using local Whisper model
-- **FR6.3:** System SHALL optionally support wake word detection
-- **FR6.4:** System SHALL provide audio feedback for voice interactions
-- **FR6.5:** System SHALL handle background noise gracefully
+**Architecture Decision:** Separate `voice-gateway` Node.js service (not integrated into Oracle)
+
+- **FR6.1:** System SHALL accept voice input via USB microphone (LANDIBO GSH23, hw:2,0)
+- **FR6.2:** System SHALL detect wake word "Computer" using Porcupine (Picovoice)
+- **FR6.3:** System SHALL record audio after wake word with Voice Activity Detection (WebRTC VAD)
+  - Trailing silence timeout: 1.5 seconds
+  - Max utterance length: 10 seconds
+  - 16kHz mono PCM format
+- **FR6.4:** System SHALL transcribe speech using local Whisper model (whisper.cpp + base model)
+  - Transcription latency target: < 2 seconds
+  - Model size: ~74MB (pre-downloaded)
+- **FR6.5:** System SHALL publish transcriptions to MQTT `voice/req` topic
+  - Payload: `{transcription: string, timestamp: ISO8601, session_id: uuid}`
+- **FR6.6:** System SHALL subscribe to MQTT `voice/res` topic for AI responses
+  - Payload: `{response: string, session_id: uuid, timestamp: ISO8601}`
+- **FR6.7:** System SHALL integrate with Oracle chatbot via MQTT (text-only responses)
+  - Voice requests forwarded to `/api/chat` logic
+  - No TTS playback (text logging only for MVP)
+- **FR6.8:** System SHALL handle background noise and audio errors gracefully
+  - Beep on STT failure
+  - Auto-restart wake word loop after errors
+  - Back-pressure: Disable wake word during processing
 
 ---
 
@@ -159,8 +176,9 @@ CodeMash 2026 presentation demonstrating local AI-powered home automation using 
 - **Recommended Models:**
   - Primary: Qwen2.5:1.5b or Gemma2:2b
   - Alternative: Phi-3.5-mini-instruct
-- **Voice Recognition:** Whisper (transformers.js or whisper.cpp)
-- **Wake Word:** TBD (Porcupine, push-to-talk, or none)
+- **Voice Recognition:** Whisper (whisper.cpp + base model, ~74MB)
+- **Wake Word:** Porcupine (Picovoice) with "Computer" keyword
+- **Voice Activity Detection:** WebRTC VAD (C++ bindings)
 
 ### IoT/Hardware
 - **MQTT Broker:** Mosquitto
