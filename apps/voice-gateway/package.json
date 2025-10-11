@@ -2,18 +2,16 @@
   "name": "voice-gateway",
   "version": "1.0.0",
   "description": "Voice command gateway with wake word detection and speech-to-text",
-  "main": "dist/main.js",
+  "main": "src/main.js",
   "type": "module",
   "scripts": {
-    "dev": "ts-node --esm src/main.ts",
-    "build": "tsc",
-    "start": "node dist/main.js",
+    "dev": "node src/main.js",
+    "start": "node src/main.js",
     "setup": "node scripts/setup.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.ts",
-    "type-check": "tsc --noEmit"
+    "lint": "eslint src/**/*.js"
   },
   "keywords": [
     "voice",
@@ -25,24 +23,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@picovoice/porcupine-node": "latest",
+    "@picovoice/porcupine-node": "^3.0.6",
+    "dotenv": "latest",
+    "mic": "^2.1.2",
     "mqtt": "latest",
     "uuid": "latest",
-    "wav": "latest",
-    "dotenv": "latest"
+    "wav": "latest"
   },
   "devDependencies": {
-    "@types/jest": "latest",
-    "@types/node": "latest",
-    "@types/uuid": "latest",
-    "@types/wav": "latest",
-    "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
     "eslint": "latest",
-    "jest": "latest",
-    "ts-jest": "latest",
-    "ts-node": "latest",
-    "typescript": "latest"
+    "jest": "next"
   },
   "engines": {
     "node": ">=20.0.0"
