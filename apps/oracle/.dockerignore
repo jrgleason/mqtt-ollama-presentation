@@ -1,0 +1,60 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json.backup
+
+# Build output
+.next
+out
+dist
+build
+
+# Testing
+coverage
+*.test.ts
+*.test.tsx
+__tests__
+*.spec.ts
+*.spec.tsx
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CHATBOT_README.md
+IMPLEMENTATION_SUMMARY.md
+docs
+
+# Database (don't copy local dev database)
+dev.db
+*.db
+*.db-journal
+
+# Scripts
+test-*.sh
+test-*.mjs
+install-service.sh
+
+# Misc
+.DS_Store
+Thumbs.db
+*.backup
