@@ -1,5 +1,5 @@
 {
-  "name": "voice-gateway-oww",
+  "name": "@jrg-voice/oww",
   "version": "1.0.0",
   "description": "Voice command gateway with OpenWakeWord detection and speech-to-text",
   "main": "src/main.js",
@@ -25,12 +25,14 @@
   "license": "MIT",
   "dependencies": {
     "dotenv": "latest",
-    "mic": "^2.1.2",
+    "mic": "latest",
     "mqtt": "latest",
     "uuid": "latest",
     "wav": "latest",
-    "onnxruntime-node": "^1.16.0",
-    "fft-js": "latest"
+    "onnxruntime-node": "latest",
+    "fft-js": "latest",
+    "xstate": "latest",
+    "@jrg-voice/common": "file:../voice-gateway-common"
   },
   "devDependencies": {
     "eslint": "latest",

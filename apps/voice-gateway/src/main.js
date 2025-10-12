@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import wav from 'wav';
+import { transcribeWithWhisper } from '@jrg-voice/common';
 
 async function main() {
   logger.info('Voice Gateway starting...', {
@@ -74,26 +75,17 @@ async function main() {
             const buffer = Buffer.from(Int16Array.from(recordedAudio).buffer);
             writer.write(buffer);
             writer.end();
-            writer.on('finish', () => {
-              // Run whisper.cpp using whisper-cli
+            writer.on('finish', async () => {
+              // Run whisper.cpp using the shared helper
               const whisperModelRel = config.whisper.modelPath || 'models/ggml-base.bin';
-              const whisperModelAbs = path.isAbsolute(whisperModelRel)
-                ? whisperModelRel
-                : path.resolve(process.cwd(), whisperModelRel);
-              const whisper = spawn('whisper-cli', ['-m', whisperModelAbs, '-f', wavPath, '-nt']);
-              let transcript = '';
-              whisper.stdout.on('data', (data) => {
-                transcript += data.toString();
-              });
-              whisper.stderr.on('data', (data) => {
-                logger.error('Whisper error:', { error: data.toString() });
-              });
-              whisper.on('close', (code) => {
-                logger.info('Transcription result:');
-                console.log(transcript.trim());
-                // Optionally delete the wav file
-                fs.unlinkSync(wavPath);
-              });
+              try {
+                const transcript = await transcribeWithWhisper(whisperModelRel, wavPath);
+                logger.info('Transcription result:', { text: transcript });
+              } catch (err) {
+                logger.error('Whisper transcription failed', { error: err && err.message ? err.message : String(err) });
+              }
+              // Optionally delete the wav file
+              try { fs.unlinkSync(wavPath); } catch (e) { /* ignore */ }
             });
           }, 5000);
         }

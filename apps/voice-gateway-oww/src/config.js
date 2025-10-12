@@ -1,3 +1,5 @@
+/* eslint-disable */
+// filepath: /Users/jrg/code/CodeMash/mqtt-ollama-presentation/apps/voice-gateway-oww/src/config.js
 /**
  * Configuration loader and validator
  */
@@ -25,6 +27,7 @@ const config = {
     speakerDevice: process.env.AUDIO_SPEAKER_DEVICE,
     sampleRate: process.env.AUDIO_SAMPLE_RATE ? Number(process.env.AUDIO_SAMPLE_RATE) : 16000,
     channels: process.env.AUDIO_CHANNELS ? Number(process.env.AUDIO_CHANNELS) : 1,
+    triggerCooldownMs: process.env.AUDIO_TRIGGER_COOLDOWN_MS ? Number(process.env.AUDIO_TRIGGER_COOLDOWN_MS) : 1500,
   },
   vad: {
     trailingSilenceMs: process.env.VAD_TRAILING_SILENCE_MS ? Number(process.env.VAD_TRAILING_SILENCE_MS) : 1500,

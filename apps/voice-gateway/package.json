@@ -1,5 +1,5 @@
 {
-  "name": "voice-gateway",
+  "name": "@jrg-voice/pico",
   "version": "1.0.0",
   "description": "Voice command gateway with wake word detection and speech-to-text",
   "main": "src/main.js",
@@ -23,12 +23,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@picovoice/porcupine-node": "^3.0.6",
+    "@picovoice/porcupine-node": "latest",
     "dotenv": "latest",
-    "mic": "^2.1.2",
+    "mic": "latest",
     "mqtt": "latest",
     "uuid": "latest",
-    "wav": "latest"
+    "wav": "latest",
+    "@jrg-voice/common": "file:../voice-gateway-common"
   },
   "devDependencies": {
     "eslint": "latest",
