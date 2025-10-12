@@ -194,35 +194,53 @@ async function main() {
         logger.info(`🔍 Checking ALSA device: ${alsaDevice}`);
 
         // Run arecord test and WAIT for it to complete before continuing
-        await new Promise((resolve, reject) => {
-            const arecord = spawn('arecord', ['-D', alsaDevice, '-f', 'S16_LE', '-r', String(config.audio.sampleRate), '-c', String(config.audio.channels), '-d', '1', '/dev/null']);
+        try {
+            await Promise.race([
+                new Promise((resolve, reject) => {
+                    const arecord = spawn('arecord', ['-D', alsaDevice, '-f', 'S16_LE', '-r', String(config.audio.sampleRate), '-c', String(config.audio.channels), '-d', '1', '/dev/null']);
 
-            let stderr = '';
-            arecord.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
+                    let stderr = '';
+                    let stdout = '';
 
-            arecord.on('error', (err) => {
-                logger.error('❌ ALSA device check failed - spawn error', {
-                    device: alsaDevice,
-                    error: err.message
-                });
-                reject(err);
-            });
-
-            arecord.on('close', (code) => {
-                if (code !== 0) {
-                    logger.error(`❌ ALSA device check failed with code ${code}`, {
-                        device: alsaDevice,
-                        stderr: stderr.trim()
+                    arecord.stdout.on('data', (data) => {
+                        stdout += data.toString();
                     });
-                    reject(new Error(`ALSA device ${alsaDevice} failed with code ${code}`));
-                } else {
-                    logger.info(`✅ ALSA device check passed: ${alsaDevice}`);
-                    resolve();
-                }
+
+                    arecord.stderr.on('data', (data) => {
+                        stderr += data.toString();
+                    });
+
+                    arecord.on('error', (err) => {
+                        logger.error('❌ ALSA spawn error', { error: err.message });
+                        reject(err);
+                    });
+
+                    arecord.on('exit', (code, signal) => {
+                        logger.info('📋 arecord exit event', { code, signal, stderr: stderr.trim(), stdout: stdout.trim() });
+                        if (code === 0) {
+                            resolve();
+                        } else {
+                            reject(new Error(`arecord exited with code ${code}`));
+                        }
+                    });
+
+                    arecord.on('close', (code) => {
+                        logger.info('📋 arecord close event', { code });
+                        // Don't resolve/reject here since 'exit' handles it
+                    });
+                }),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('ALSA check timeout after 5s')), 5000)
+                )
+            ]);
+            logger.info(`✅ ALSA device check passed: ${alsaDevice}`);
+        } catch (err) {
+            logger.error(`❌ ALSA device check failed`, {
+                device: alsaDevice,
+                error: err.message
             });
-        });
+            logger.warn('⚠️  Continuing anyway - mic library will try to use device');
+        }
     }
 
     try {
