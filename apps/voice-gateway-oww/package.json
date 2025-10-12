@@ -1,0 +1,44 @@
+{
+  "name": "@jrg-voice/oww",
+  "version": "1.0.0",
+  "description": "Voice command gateway with OpenWakeWord detection and speech-to-text",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/main.js",
+    "start": "node src/main.js",
+    "setup": "node scripts/setup.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.js"
+  },
+  "keywords": [
+    "voice",
+    "speech-to-text",
+    "wake-word",
+    "openwakeword",
+    "mqtt",
+    "home-automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "latest",
+    "mic": "latest",
+    "mqtt": "latest",
+    "uuid": "latest",
+    "wav": "latest",
+    "onnxruntime-node": "latest",
+    "fft-js": "latest",
+    "xstate": "latest",
+    "@jrg-voice/common": "file:../voice-gateway-common"
+  },
+  "devDependencies": {
+    "eslint": "latest",
+    "jest": "next"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

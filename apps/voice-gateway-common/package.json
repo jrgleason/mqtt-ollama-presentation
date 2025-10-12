@@ -1,0 +1,12 @@
+{
+  "name": "@jrg-voice/common",
+  "version": "0.0.1",
+  "description": "Voice common",
+  "license": "GPL-3.0-or-later",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

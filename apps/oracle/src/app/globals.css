@@ -1,0 +1,28 @@
+/* Tailwind CSS v4 - single import, no config needed */
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        --background: #ffffff;
+        --foreground: #171717;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --background: #0a0a0a;
+            --foreground: #ededed;
+        }
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: var(--background);
+        color: var(--foreground);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+}

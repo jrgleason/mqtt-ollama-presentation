@@ -1,0 +1,60 @@
+{
+  "name": "int-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --watch",
+    "dev:next": "next dev",
+    "dev": "next dev",
+    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/tailwind.css --minify",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "latest",
+    "@langchain/ollama": "latest",
+    "@prisma/client": "latest",
+    "class-variance-authority": "latest",
+    "clsx": "latest",
+    "langchain": "latest",
+    "lucide-react": "latest",
+    "mqtt": "latest",
+    "next": "latest",
+    "prisma": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwind-merge": "latest",
+    "tailwindcss-animate": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "latest",
+    "@tailwindcss/postcss": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@types/jest": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "concurrently": "latest",
+    "dotenv": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "jest": "latest",
+    "postcss": "latest",
+    "tailwindcss": "latest",
+    "ts-jest": "latest",
+    "ts-node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}

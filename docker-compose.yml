@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # Oracle - Main Next.js chatbot application
+  oracle:
+    build:
+      context: ./apps/oracle
+      dockerfile: Dockerfile
+    container_name: oracle
+    ports:
+      - "3000:3000"
+    environment:
+      # Auth0 (required)
+      - AUTH0_SECRET=${AUTH0_SECRET}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+
+      # Database
+      - DATABASE_URL=file:./dev.db
+
+      # MQTT
+      - MQTT_BROKER_URL=mqtt://mosquitto:1883
+
+      # Ollama
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+    volumes:
+      - oracle-data:/app/prisma
+    depends_on:
+      - mosquitto
+    networks:
+      - home-automation
+    restart: unless-stopped
+
+  # Voice Gateway - Voice command service (optional, Phase 5)
+  voice-gateway:
+    build:
+      context: ./apps/voice-gateway
+      dockerfile: Dockerfile
+    container_name: voice-gateway
+    devices:
+      - /dev/snd:/dev/snd  # ALSA audio devices
+    environment:
+      # Porcupine
+      - PORCUPINE_ACCESS_KEY=${PORCUPINE_ACCESS_KEY}
+      - PORCUPINE_KEYWORD=computer
+      - PORCUPINE_SENSITIVITY=0.5
+
+      # Audio
+      - ALSA_MIC_DEVICE=hw:2,0
+      - SAMPLE_RATE=16000
+
+      # VAD
+      - VAD_TRAILING_SILENCE_MS=1500
+      - VAD_MAX_UTTERANCE_MS=10000
+
+      # Whisper
+      - WHISPER_MODEL=base
+      - WHISPER_MODEL_PATH=./models/ggml-base.bin
+
+      # MQTT
+      - MQTT_BROKER_URL=mqtt://mosquitto:1883
+      - MQTT_CLIENT_ID=voice-gateway
+
+      # Health check
+      - HEALTH_CHECK_PORT=3001
+    ports:
+      - "3001:3001"  # Health check endpoint
+    volumes:
+      - voice-models:/app/models
+    depends_on:
+      - mosquitto
+    networks:
+      - home-automation
+    restart: unless-stopped
+    # Optional: Comment out if not using voice features
+    profiles:
+      - voice
+
+  # Z-Wave JS UI - Z-Wave device management
+  zwave-js-ui:
+    image: zwavejs/zwave-js-ui:latest
+    container_name: zwave-js-ui
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0  # Z-Wave USB stick (adjust if different)
+    environment:
+      - TZ=America/New_York
+    ports:
+      - "8091:8091"  # Web UI
+      - "3000:3000"  # WebSocket
+    volumes:
+      - zwave-data:/usr/src/app/store
+    networks:
+      - home-automation
+    restart: unless-stopped
+
+  # Eclipse Mosquitto - MQTT Broker
+  # Note: Using external HiveMQ broker at 10.0.0.58:31883 for production
+  # This is a local fallback for development
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    ports:
+      - "1883:1883"  # MQTT
+      - "9001:9001"  # WebSocket
+    volumes:
+      - ./deployment/mosquitto/config:/mosquitto/config
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - home-automation
+    restart: unless-stopped
+
+volumes:
+  oracle-data:
+    driver: local
+  voice-models:
+    driver: local
+  zwave-data:
+    driver: local
+  mosquitto-data:
+    driver: local
+  mosquitto-log:
+    driver: local
+
+networks:
+  home-automation:
+    driver: bridge
