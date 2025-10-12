@@ -39,9 +39,11 @@ nano .env
 
 **Default Configuration (works as-is):**
 - Wake Word: "Hey Jarvis"
-- Microphone: hw:2,0 (LANDIBO USB mic)
+- Microphone: plughw:2,0 (LANDIBO USB mic with auto resampling)
 - MQTT Broker: mqtt://10.0.0.58:31883
-- Threshold: 0.5
+- Threshold: 0.25
+
+**Note**: We use `plughw` instead of `hw` to enable automatic sample rate conversion. Most USB mics don't natively support 16kHz, so ALSA's plug plugin resamples for us.
 
 ### 4. Run
 
@@ -98,8 +100,10 @@ OWW_THRESHOLD=0.7
 # List available devices
 arecord -l
 
-# Update .env
-AUDIO_MIC_DEVICE=hw:X,Y  # Replace X,Y with your device
+# Update .env (use plughw for automatic resampling!)
+AUDIO_MIC_DEVICE=plughw:X,Y  # Replace X,Y with your device
+
+# Note: Always use plughw instead of hw unless your mic natively supports 16kHz
 ```
 
 ## Troubleshooting

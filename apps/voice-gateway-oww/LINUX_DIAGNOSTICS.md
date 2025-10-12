@@ -112,7 +112,29 @@ aplay test_stream.wav
 
 ## Common Linux/Pi Issues
 
-### Issue 1: Wrong ALSA Device
+### Issue 1: Sample Rate Mismatch (CRITICAL!)
+**Symptom**:
+```
+Warning: rate is not accurate (requested = 16000Hz, got = 44100Hz)
+First audio chunk received! { size: 44 }
+Still listening... { detections: 100 }
+[No wake word detection despite speaking]
+```
+
+**Root Cause**: USB mic doesn't natively support 16kHz, so ALSA gives you 44100Hz instead, making audio unusable.
+
+**Fix**: Use `plughw` instead of `hw` to enable automatic resampling:
+```bash
+# In .env, change:
+AUDIO_MIC_DEVICE=hw:2,0
+
+# To:
+AUDIO_MIC_DEVICE=plughw:2,0
+```
+
+The `plug` plugin automatically converts 44100Hz → 16000Hz for you!
+
+### Issue 2: Wrong ALSA Device
 **Symptom**: `❌ ALSA device check failed with code 1`
 
 **Fix**:
