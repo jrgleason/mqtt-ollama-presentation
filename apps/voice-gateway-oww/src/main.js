@@ -507,15 +507,28 @@ async function main() {
 // Background transcription helper (fire-and-forget). Accepts a snapshot of normalized samples.
 async function backgroundTranscribe(audioSamples) {
   try {
-    if (!audioSamples || audioSamples.length < SAMPLE_RATE * 0.15) {
-      logger.warn('backgroundTranscribe: audio too short, skipping');
+    // Minimum duration check: need at least 0.5 seconds for meaningful transcription
+    if (!audioSamples || audioSamples.length < SAMPLE_RATE * 0.5) {
+      logger.warn('backgroundTranscribe: audio too short', {
+        samples: audioSamples ? audioSamples.length : 0,
+        minRequired: SAMPLE_RATE * 0.5,
+        duration: audioSamples ? (audioSamples.length / SAMPLE_RATE).toFixed(2) + 's' : '0s'
+      });
       return;
     }
-    // Compute energy check again (defensive)
+
+    // Energy check: skip if audio is essentially silence
     let energy = 0;
     for (let i = 0; i < audioSamples.length; i++) energy += audioSamples[i] * audioSamples[i];
     energy = energy / audioSamples.length;
-    if (energy < 1e-6) { logger.warn('backgroundTranscribe: audio energy too low, skipping'); return; }
+
+    if (energy < 1e-6) {
+      logger.warn('backgroundTranscribe: audio energy too low (silence or zeros)', {
+        energy: energy.toExponential(3),
+        samples: audioSamples.length
+      });
+      return;
+    }
 
     const wavPath = path.join(process.cwd(), `recorded_bg_${Date.now()}.wav`);
     const writer = new wav.FileWriter(wavPath, { channels: 1, sampleRate: SAMPLE_RATE, bitDepth: 16 });
