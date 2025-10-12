@@ -191,20 +191,37 @@ async function main() {
     // Optionally, check ALSA device availability (Linux only)
     if (process.platform === 'linux') {
         const alsaDevice = config.audio.micDevice;
-        logger.info(`Checking ALSA device: ${alsaDevice}`);
-        const arecord = spawn('arecord', ['-D', alsaDevice, '-f', 'S16_LE', '-r', String(config.audio.sampleRate), '-c', String(config.audio.channels), '-d', '1', '/dev/null']);
-        arecord.on('error', (err) => {
-            logger.error('ALSA device check failed. Microphone may not be available.', {
-                device: alsaDevice,
-                error: err.message
+        logger.info(`🔍 Checking ALSA device: ${alsaDevice}`);
+
+        // Run arecord test and WAIT for it to complete before continuing
+        await new Promise((resolve, reject) => {
+            const arecord = spawn('arecord', ['-D', alsaDevice, '-f', 'S16_LE', '-r', String(config.audio.sampleRate), '-c', String(config.audio.channels), '-d', '1', '/dev/null']);
+
+            let stderr = '';
+            arecord.stderr.on('data', (data) => {
+                stderr += data.toString();
             });
-            process.exit(1);
-        });
-        arecord.on('close', (code) => {
-            if (code !== 0) {
-                logger.error(`ALSA device check failed with code ${code}. Microphone may not be available.`, {device: alsaDevice});
-                process.exit(1);
-            }
+
+            arecord.on('error', (err) => {
+                logger.error('❌ ALSA device check failed - spawn error', {
+                    device: alsaDevice,
+                    error: err.message
+                });
+                reject(err);
+            });
+
+            arecord.on('close', (code) => {
+                if (code !== 0) {
+                    logger.error(`❌ ALSA device check failed with code ${code}`, {
+                        device: alsaDevice,
+                        stderr: stderr.trim()
+                    });
+                    reject(new Error(`ALSA device ${alsaDevice} failed with code ${code}`));
+                } else {
+                    logger.info(`✅ ALSA device check passed: ${alsaDevice}`);
+                    resolve();
+                }
+            });
         });
     }
 
@@ -340,13 +357,49 @@ async function main() {
 
         const micInstance = mic(micConfig);
         const micInputStream = micInstance.getAudioStream();
+
+        // Add error handler for mic stream
+        micInputStream.on('error', (err) => {
+            logger.error('❌ Microphone stream error', { error: err.message });
+        });
+
+        logger.info('🎤 Starting microphone...');
         micInstance.start();
 
         let audioChunkCount = 0;
         let detectionCount = 0;
+        let firstChunkLogged = false;
+
+        // Timeout to detect if mic never starts streaming
+        const micTimeout = setTimeout(() => {
+            if (audioChunkCount === 0) {
+                logger.error('❌ No audio chunks received after 3 seconds!', {
+                    platform: process.platform,
+                    device: process.platform !== 'darwin' ? config.audio.micDevice : 'default',
+                    suggestion: 'Check microphone permissions or device configuration'
+                });
+            }
+        }, 3000);
 
         micInputStream.on('data', async (data) => {
+            if (audioChunkCount === 0) clearTimeout(micTimeout); // Clear timeout on first chunk
             audioChunkCount++;
+
+            // Log first chunk to verify mic is working
+            if (!firstChunkLogged) {
+                logger.info('✅ First audio chunk received!', {
+                    size: data.length,
+                    platform: process.platform,
+                    device: process.platform !== 'darwin' ? config.audio.micDevice : 'default'
+                });
+                firstChunkLogged = true;
+            }
+
+            // Log every 100th chunk on Linux to show mic is still working
+            if (process.platform === 'linux' && audioChunkCount % 100 === 0) {
+                logger.info('🎙️ Microphone still streaming', { chunks: audioChunkCount, bufferSize: data.length });
+            }
+
             // Convert buffer to Float32Array (normalized to -1 to 1)
             const pcm = new Int16Array(data.buffer, data.byteOffset, data.length / Int16Array.BYTES_PER_ELEMENT);
             const normalized = new Float32Array(pcm.length);
