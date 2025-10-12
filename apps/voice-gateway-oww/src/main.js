@@ -304,22 +304,7 @@ async function main() {
               audioBuffer = [];
               try { detector.reset(); } catch (err) { logger.debug('Detector reset failed on cooldown', { error: err && err.message ? err.message : String(err) }); }
             },
-            // Action called when transcription finishes successfully
-            handleTranscriptionDone: (ctx, evt) => {
-              // evt.data contains the resolved value from transcribeService (the transcription string)
-              const transcription = (evt && evt.data) ? evt.data : '';
-              if (transcription && transcription.length) {
-                logger.info('📝 Transcription result', { text: transcription });
-              } else {
-                logger.warn('⚠️ Transcription returned empty string');
-              }
-            },
-            // Action called when transcription fails
-            handleTranscriptionError: (ctx, evt) => {
-              const err = evt && evt.data ? evt.data : evt;
-              const msg = (err && err.message) ? err.message : String(err);
-              logger.error('Transcription service failed', { error: msg });
-            }
+            // transcription runs in background via backgroundTranscribe
           }
         });
 
@@ -372,17 +357,18 @@ async function main() {
 
             // Process audio in chunks for wake word detection
             // Only attempt wake word detection when machine is in listening state
-            // Get a safe snapshot of the service state (v5 interpreter may expose getSnapshot)
-            const svcSnapshot = typeof voiceService.getSnapshot === 'function' ? voiceService.getSnapshot() : voiceService.state;
-            while (audioBuffer.length >= CHUNK_SIZE && svcSnapshot && typeof svcSnapshot.matches === 'function' && svcSnapshot.matches('listening')) {
+            while (audioBuffer.length >= CHUNK_SIZE) {
+               // Re-evaluate the interpreter snapshot on each chunk so we don't use a stale state
+               const svcSnapshot = typeof voiceService.getSnapshot === 'function' ? voiceService.getSnapshot() : voiceService.state;
+               if (!svcSnapshot || typeof svcSnapshot.matches !== 'function' || !svcSnapshot.matches('listening')) break;
                const chunk = new Float32Array(audioBuffer.slice(0, CHUNK_SIZE));
                audioBuffer = audioBuffer.slice(CHUNK_SIZE);
-               try {
-                 // Run wake word detection
-                 const score = await detector.detect(chunk);
-                 detectionCount++;
-                 // Heartbeat: log every 100 detections to show it's working
-                 if (detectionCount % 100 === 0) {
+                try {
+                  // Run wake word detection
+                  const score = await detector.detect(chunk);
+                  detectionCount++;
+                  // Heartbeat: log every 100 detections to show it's working
+                  if (detectionCount % 100 === 0) {
                      logger.info('👂 Still listening...', {detections: detectionCount});
                  }
                  // Log scores that are close to threshold (helps tune sensitivity)
@@ -394,7 +380,8 @@ async function main() {
                                        config.openWakeWord.modelPath.includes('alexa') ? 'Alexa' : 'Wake word';
                    logger.info('🎤 Wake word detected!', {
                      wakeWord,
-                     score: score.toFixed(3)
+                     score: score.toFixed(3),
+                     serviceState: svcSnapshot2 && svcSnapshot2.value ? svcSnapshot2.value : String(svcSnapshot2)
                    });
                    // Signal the state machine to transition to recording with timestamp for guard
                    voiceService.send({ type: 'TRIGGER', ts });
