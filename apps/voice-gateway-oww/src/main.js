@@ -170,6 +170,24 @@ class OpenWakeWordDetector {
 
 async function main() {
   logger.info('🚀 Voice Gateway (OpenWakeWord) starting...');
+  logger.info(`Audio config: micDevice=${config.audio.micDevice}, sampleRate=${config.audio.sampleRate}, channels=${config.audio.channels}`);
+
+  // Optionally, check ALSA device availability (Linux only)
+  if (process.platform === 'linux') {
+    const alsaDevice = config.audio.micDevice;
+    logger.info(`Checking ALSA device: ${alsaDevice}`);
+    const arecord = spawn('arecord', ['-D', alsaDevice, '-f', 'S16_LE', '-r', String(config.audio.sampleRate), '-c', String(config.audio.channels), '-d', '1', '/dev/null']);
+    arecord.on('error', (err) => {
+      logger.error('ALSA device check failed. Microphone may not be available.', { device: alsaDevice, error: err.message });
+      process.exit(1);
+    });
+    arecord.on('close', (code) => {
+      if (code !== 0) {
+        logger.error(`ALSA device check failed with code ${code}. Microphone may not be available.`, { device: alsaDevice });
+        process.exit(1);
+      }
+    });
+  }
 
   try {
     // Initialize OpenWakeWord detector
@@ -186,8 +204,10 @@ async function main() {
 
     let audioBuffer = [];
     let isRecording = false;
+    let recordingCooldown = false;
     let recordedAudio = [];
     let recordTimeout = null;
+    let cooldownTimeout = null;
 
     // On macOS, the 'device' parameter won't work (ALSA is Linux-only)
     const isMacOS = process.platform === 'darwin';
@@ -204,7 +224,6 @@ async function main() {
     }
 
     const micInstance = mic(micConfig);
-
     const micInputStream = micInstance.getAudioStream();
     micInstance.start();
 
@@ -213,33 +232,27 @@ async function main() {
 
     micInputStream.on('data', async (data) => {
       audioChunkCount++;
-
       // Convert buffer to Float32Array (normalized to -1 to 1)
       const pcm = new Int16Array(data.buffer, data.byteOffset, data.length / Int16Array.BYTES_PER_ELEMENT);
       const normalized = new Float32Array(pcm.length);
       for (let i = 0; i < pcm.length; i++) {
         normalized[i] = pcm[i] / 32768.0;
       }
-
       audioBuffer = audioBuffer.concat(Array.from(normalized));
 
       // Process audio in chunks for wake word detection
-      while (audioBuffer.length >= CHUNK_SIZE && !isRecording) {
+      while (audioBuffer.length >= CHUNK_SIZE && !isRecording && !recordingCooldown) {
         const chunk = new Float32Array(audioBuffer.slice(0, CHUNK_SIZE));
         audioBuffer = audioBuffer.slice(CHUNK_SIZE);
-
         try {
           // Run wake word detection
           const score = await detector.detect(chunk);
           detectionCount++;
-
           // Heartbeat: log every 100 detections to show it's working
           if (detectionCount % 100 === 0) {
             logger.info('👂 Still listening...', { detections: detectionCount });
           }
-
           // Log scores that are close to threshold (helps tune sensitivity)
-          // Show scores between 0.1 and threshold, and anything above threshold
           if (score > 0.1) {
             const status = score >= config.openWakeWord.threshold ? '🎯 Above threshold!' :
                           score > 0.2 ? '⚡ Getting close' :
@@ -250,8 +263,7 @@ async function main() {
               status
             });
           }
-
-          if (score > config.openWakeWord.threshold && !isRecording) {
+          if (score > config.openWakeWord.threshold && !isRecording && !recordingCooldown) {
             const wakeWord = config.openWakeWord.modelPath.includes('jarvis') ? 'Hey Jarvis' :
                             config.openWakeWord.modelPath.includes('mycroft') ? 'Hey Mycroft' :
                             config.openWakeWord.modelPath.includes('alexa') ? 'Alexa' : 'Wake word';
@@ -262,12 +274,13 @@ async function main() {
             isRecording = true;
             recordedAudio = [];
             audioBuffer = []; // Clear buffer to avoid duplicate processing
-
-            // Record for 5 seconds
+            // Clear any previous timeouts
+            if (recordTimeout) clearTimeout(recordTimeout);
+            if (cooldownTimeout) clearTimeout(cooldownTimeout);
+            // Record for 3 seconds
             recordTimeout = setTimeout(async () => {
               isRecording = false;
               logger.info('⏹️  Recording stopped');
-
               // Write recorded audio to WAV file
               const wavPath = path.join(process.cwd(), 'recorded.wav');
               const writer = new wav.FileWriter(wavPath, {
@@ -275,35 +288,28 @@ async function main() {
                 sampleRate: SAMPLE_RATE,
                 bitDepth: 16
               });
-
               // Convert float32 back to int16
               const int16Audio = new Int16Array(recordedAudio.length);
               for (let i = 0; i < recordedAudio.length; i++) {
                 int16Audio[i] = Math.max(-32768, Math.min(32767, recordedAudio[i] * 32768));
               }
-
               const buffer = Buffer.from(int16Audio.buffer);
               writer.write(buffer);
               writer.end();
-
               writer.on('finish', () => {
                 // Run whisper.cpp using whisper-cli
                 const whisperModelRel = config.whisper.modelPath || 'models/ggml-base.bin';
                 const whisperModelAbs = path.isAbsolute(whisperModelRel)
                   ? whisperModelRel
                   : path.resolve(process.cwd(), whisperModelRel);
-
                 const whisper = spawn('whisper-cli', ['-m', whisperModelAbs, '-f', wavPath, '-nt']);
                 let transcript = '';
-
                 whisper.stdout.on('data', (data) => {
                   transcript += data.toString();
                 });
-
                 whisper.stderr.on('data', (data) => {
                   // Whisper outputs debug info to stderr - ignore it
                 });
-
                 whisper.on('close', (code) => {
                   const transcription = transcript.trim();
                   if (transcription) {
@@ -311,7 +317,6 @@ async function main() {
                   } else {
                     logger.warn('⚠️ No transcription generated');
                   }
-
                   // Delete the wav file
                   try {
                     fs.unlinkSync(wavPath);
@@ -320,31 +325,33 @@ async function main() {
                   }
                 });
               });
-            }, 5000);
+              // Start cooldown after recording
+              recordingCooldown = true;
+              cooldownTimeout = setTimeout(() => {
+                recordingCooldown = false;
+                logger.info('Cooldown ended, ready for next wake word.');
+              }, 1000); // 1 second cooldown
+            }, 3000);
           }
         } catch (err) {
           logger.error('Error during wake word detection', { error: err.message });
         }
       }
-
       if (isRecording) {
         recordedAudio = recordedAudio.concat(Array.from(normalized));
       }
     });
 
-
     process.on('SIGINT', async () => {
       logger.info('Shutting down gracefully...');
       try {
         micInstance.stop();
-        // Give mic time to stop cleanly
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (err) {
         logger.error('Error stopping microphone', { error: err.message });
       }
       process.exit(0);
     });
-
   } catch (error) {
     logger.error('Failed to start Voice Gateway', { error: error.message, stack: error.stack });
     process.exit(1);
