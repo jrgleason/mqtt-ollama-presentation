@@ -307,7 +307,10 @@ async function main() {
             },
             recordTriggered: assign({ lastTrigger: (ctx, evt) => (evt && evt.ts) ? evt.ts : Date.now() }),
             startRecordingAction: () => {
-              logger.info('⏺  Start recording (state machine)');
+              logger.info('⏺  Start recording (state machine)', {
+                preRollSamples: preRollBuffer.length,
+                preRollDuration: (preRollBuffer.length / SAMPLE_RATE).toFixed(3) + 's'
+              });
               isRecording = true;
               // Prepend pre-roll audio so we capture speech that occurred slightly before the trigger
               recordedAudio = preRollBuffer.slice();
@@ -507,9 +510,14 @@ async function main() {
 // Background transcription helper (fire-and-forget). Accepts a snapshot of normalized samples.
 async function backgroundTranscribe(audioSamples) {
   try {
+    logger.info('🎬 backgroundTranscribe called', {
+      samples: audioSamples ? audioSamples.length : 0,
+      duration: audioSamples ? (audioSamples.length / SAMPLE_RATE).toFixed(2) + 's' : '0s'
+    });
+
     // Minimum duration check: need at least 0.5 seconds for meaningful transcription
     if (!audioSamples || audioSamples.length < SAMPLE_RATE * 0.5) {
-      logger.warn('backgroundTranscribe: audio too short', {
+      logger.warn('⏭️  backgroundTranscribe: audio too short, skipping', {
         samples: audioSamples ? audioSamples.length : 0,
         minRequired: SAMPLE_RATE * 0.5,
         duration: audioSamples ? (audioSamples.length / SAMPLE_RATE).toFixed(2) + 's' : '0s'
@@ -519,16 +527,27 @@ async function backgroundTranscribe(audioSamples) {
 
     // Energy check: skip if audio is essentially silence
     let energy = 0;
-    for (let i = 0; i < audioSamples.length; i++) energy += audioSamples[i] * audioSamples[i];
+    let maxAmplitude = 0;
+    for (let i = 0; i < audioSamples.length; i++) {
+      energy += audioSamples[i] * audioSamples[i];
+      maxAmplitude = Math.max(maxAmplitude, Math.abs(audioSamples[i]));
+    }
     energy = energy / audioSamples.length;
 
     if (energy < 1e-6) {
-      logger.warn('backgroundTranscribe: audio energy too low (silence or zeros)', {
+      logger.warn('⏭️  backgroundTranscribe: audio energy too low (silence or zeros), skipping', {
         energy: energy.toExponential(3),
+        maxAmplitude: maxAmplitude.toFixed(4),
         samples: audioSamples.length
       });
       return;
     }
+
+    logger.info('✅ Audio checks passed, transcribing...', {
+      duration: (audioSamples.length / SAMPLE_RATE).toFixed(2) + 's',
+      energy: energy.toExponential(3),
+      maxAmplitude: maxAmplitude.toFixed(4)
+    });
 
     const wavPath = path.join(process.cwd(), `recorded_bg_${Date.now()}.wav`);
     const writer = new wav.FileWriter(wavPath, { channels: 1, sampleRate: SAMPLE_RATE, bitDepth: 16 });
