@@ -261,6 +261,7 @@ async function main() {
         let recordedAudio = [];
         let recordTimeout = null;
         let preRollBuffer = [];
+        let isTranscribing = false; // Prevent overlapping transcriptions
 
         // Define the state machine for voice control
         const voiceMachine = createMachine({
@@ -328,12 +329,22 @@ async function main() {
               // Snapshot the recorded audio and clear buffer promptly so detector can work
               const audioSnapshot = Array.isArray(recordedAudio) ? recordedAudio.slice() : [];
               recordedAudio = [];
+
               // Fire-and-forget transcription so we don't block the state machine
+              // But check if already transcribing to prevent overlaps (important on slow Pi)
+              if (isTranscribing) {
+                logger.warn('⚠️  Transcription already in progress, skipping this recording');
+                return;
+              }
+
+              isTranscribing = true;
               (async () => {
                 try {
                   await backgroundTranscribe(audioSnapshot);
                 } catch (e) {
                   logger.error('stopRecordingAction: backgroundTranscribe error', { error: e && e.message ? e.message : String(e) });
+                } finally {
+                  isTranscribing = false;
                 }
               })();
             },
@@ -565,16 +576,27 @@ async function backgroundTranscribe(audioSamples) {
     });
 
     const whisperModelRel = config.whisper.modelPath || 'models/ggml-base.bin';
-    logger.info('backgroundTranscribe: calling transcribeWithWhisper', { wavPath, model: whisperModelRel });
+    logger.info('🎙️  Calling Whisper...', { wavPath, model: whisperModelRel });
+
+    const startTime = Date.now();
     try {
       const transcription = await transcribeWithWhisper(whisperModelRel, wavPath, { timeoutMs: 60000 });
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
       if (transcription && transcription.length) {
-        logger.info('📝 Background transcription result', { text: transcription });
+        logger.info('📝 Transcription complete', {
+          text: transcription,
+          whisperDuration: duration + 's'
+        });
       } else {
-        logger.warn('⚠️ Background transcription returned empty string');
+        logger.warn('⚠️  Transcription returned empty', { whisperDuration: duration + 's' });
       }
     } catch (err) {
-      logger.error('backgroundTranscribe: transcription failed', { error: err && err.message ? err.message : String(err) });
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      logger.error('❌ Transcription failed', {
+        error: err && err.message ? err.message : String(err),
+        whisperDuration: duration + 's'
+      });
     } finally {
       try { fs.unlinkSync(wavPath); } catch (e) { /* ignore */ }
     }
