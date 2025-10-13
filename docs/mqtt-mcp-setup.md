@@ -1,3 +1,11 @@
+# [Archived – Deprecated] MQTT MCP Server Setup Guide (Historical)
+
+We no longer use a custom MCP server for the demo path. The Oracle app publishes directly to MQTT. See:
+- docs/requirements.md (Condensed for Demo)
+- docs/zwave-integration-plan.md (Demo-Focused)
+
+---
+
 # MQTT MCP Server Setup Guide (TypeScript)
 
 ## Overview
@@ -363,24 +371,24 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 ## Network Architecture
 
 ```
-┌─────────────────────┐
+┌──────────────────────┐
 │   Claude Desktop    │
 │  or Oracle App      │
 │                     │
 │  - MCP Client       │
-└─────────┬───────────┘
+└───────────┬─────────┘
           │ MCP Protocol (stdio)
           ↓
-┌─────────────────────┐
+┌──────────────────────┐
 │  Custom TypeScript  │
 │  MCP Server         │
 │                     │
 │  - @modelcontext... │
 │  - mqtt.js          │
-└─────────┬───────────┘
+└───────────┬─────────┘
           │ MQTT (10.0.0.58:31883)
           ↓
-┌─────────────────────┐
+┌──────────────────────┐
 │ Kubernetes Cluster  │
 │   Node: yoda        │
 │                     │
@@ -390,44 +398,12 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 │  │               │  │
 │  │ Port 1883     │  │
 │  │ → 31883       │  │
-│  └───────┬───────┘  │
-└──────────┼──────────┘
+│  └───────────────┘  │
+└───────────┬─────────┘
            │ MQTT
            ↓
-   ┌───────────────┐
-   │ Z-Wave JS UI  │
-   │               │
-   │ - MQTT Gateway│
-   │ - Z-Wave Net  │
-   └───────────────┘
-```
-
----
-
-## References
-
-- **@modelcontextprotocol/sdk:** https://github.com/modelcontextprotocol/typescript-sdk
-- **mqtt.js:** https://github.com/mqttjs/MQTT.js
-- **HiveMQ Config:** https://github.com/jrgleason/home-infra/tree/main/mqtt
-- **Kubernetes Deployment:** https://github.com/jrgleason/home-infra/tree/main/kubernetes/apps/communications
-- **MCP Documentation:** https://modelcontextprotocol.info/
-
----
-
-## Quick Start Checklist
-
-- [ ] Install dependencies: `npm install @modelcontextprotocol/sdk mqtt zod`
-- [ ] Configure Claude Code settings.local.json
-- [ ] Test connection with `/mcp` command
-- [ ] Verify HiveMQ Control Center access: http://10.0.0.58:30080
-- [ ] Test publish/subscribe with mosquitto tools
-- [ ] Update project .env file
-- [ ] Test MCP tools from Claude Code
-- [ ] Integrate with Z-Wave JS UI (if applicable)
-
----
-
-**Last Updated:** January 2025
-**Cluster:** yoda (10.0.0.58)
-**HiveMQ Version:** 4.x (latest)
-**MCP Server:** Custom TypeScript using @modelcontextprotocol/sdk + mqtt.js
+   ┌──────────────────┐
+   │ Z-Wave JS UI     │
+   │                  │
+   │ - MQTT Gateway   │
+   │ - Z-Wave Net     │

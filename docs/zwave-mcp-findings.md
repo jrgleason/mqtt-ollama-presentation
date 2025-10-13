@@ -1,3 +1,11 @@
+# [Archived – Deprecated] Z-Wave JS UI MCP Server – Research Findings (Historical)
+
+We no longer plan to ship an MCP-based path for the demo. The app now publishes directly to MQTT. See:
+- docs/requirements.md (Condensed for Demo)
+- docs/zwave-integration-plan.md (Demo-Focused)
+
+---
+
 # Z-Wave JS UI MCP Server - Research Findings
 
 **Date:** October 4, 2025

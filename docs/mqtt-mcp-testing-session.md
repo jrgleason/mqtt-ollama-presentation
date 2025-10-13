@@ -1,3 +1,11 @@
+# [Archived – Deprecated] MQTT MCP Testing Session (Historical)
+
+This document summarizes an early experiment with a Python-based MQTT MCP server. For the current approach, we publish directly to MQTT from the app. See:
+- docs/requirements.md (Condensed for Demo)
+- docs/zwave-integration-plan.md (Demo-Focused)
+
+---
+
 # MQTT MCP Testing Session Summary
 
 **Date:** October 4, 2025
@@ -199,27 +207,3 @@ User Request → Oracle (AI) → Device Registry → MQTT MCP → HiveMQ → Z-W
 2. **Topic discovery requires device registry** - Need Z-Wave JS UI API integration for topic mapping
 3. **Guessing topics doesn't work** - Must query authoritative source (Z-Wave JS UI)
 4. **Custom TypeScript MCP is the solution** - Build integrated server with both MQTT and Z-Wave API access
-
----
-
-## Files to Update
-
-- [ ] `docs/architecture.md` - Add device registry component
-- [ ] `docs/requirements.md` - Add Z-Wave JS UI API integration requirement
-- [ ] `docs/tasks.md` - Add task for device registry implementation
-- [ ] `config/devices.ts` - Create device topic mapping (once we have Z-Wave data)
-
----
-
-## Conclusion
-
-**The Python MQTT MCP server works for publishing messages**, but lacks message monitoring capabilities and device discovery. The solution is to **build a custom TypeScript MCP server** that:
-
-1. ✅ Queries Z-Wave JS UI REST API for device discovery
-2. ✅ Builds device registry (friendly names → MQTT topics)
-3. ✅ Publishes MQTT control commands
-4. ✅ Provides unified TypeScript stack (no Python dependency)
-
-**Action Required:** Build custom TypeScript MCP server combining MQTT control with Z-Wave JS UI integration.
-
-**See:** `docs/zwave-mcp-findings.md` for complete implementation plan.

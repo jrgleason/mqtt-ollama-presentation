@@ -17,7 +17,7 @@
     "home-automation"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
     "mqtt": "latest",
