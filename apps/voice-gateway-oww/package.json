@@ -22,7 +22,7 @@
     "home-automation"
   ],
   "author": "",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "dependencies": {
     "@jrg-voice/common": "file:../voice-gateway-common",
     "dotenv": "latest",

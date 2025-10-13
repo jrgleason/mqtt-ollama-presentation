@@ -23,24 +23,24 @@ This directory contains all application services for the MQTT + Ollama home auto
 
 ---
 
-### 2. Voice Gateway (`apps/voice-gateway/`)
+### 2. Voice Gateway OWW (`apps/voice-gateway-oww/`)
 
 **Description:** Offline voice command gateway with wake word detection and speech-to-text
 
-**Technology:** Node.js 20 + TypeScript + Porcupine + Whisper.cpp
+**Technology:** Node.js 20 + OpenWakeWord + Ollama Whisper + Piper TTS
 
 **Purpose:**
-- Wake word detection ("Computer")
+- Wake word detection ("Hey Jarvis" via OpenWakeWord)
 - Voice Activity Detection (VAD)
-- Local speech-to-text (Whisper)
+- Local speech-to-text (Whisper via Ollama)
 - MQTT integration with Oracle
-- Text-only responses (TTS deferred)
+- Text-to-speech responses (Piper TTS)
 
-**Port:** 3001 (health check)
+**Port:** N/A (MQTT-based communication)
 
-**Status:** 🎯 Stretch Goal (Phase 5)
+**Status:** ✅ Implemented (Phase 5)
 
-**Documentation:** [apps/voice-gateway/README.md](voice-gateway/README.md)
+**Documentation:** [apps/voice-gateway-oww/README.md](voice-gateway-oww/README.md)
 
 ---
 
@@ -70,9 +70,9 @@ This directory contains all application services for the MQTT + Ollama home auto
 │                                                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
 │  │   Oracle     │  │Voice Gateway │  │ ZWave MCP Server │  │
-│  │  (Next.js)   │  │  (Node.js)   │  │  (TypeScript)    │  │
+│  │  (Next.js)   │  │  OWW (Node)  │  │  (TypeScript)    │  │
 │  │              │  │              │  │                  │  │
-│  │ Port: 3000   │  │ Port: 3001   │  │ MCP Protocol     │  │
+│  │ Port: 3000   │  │ MQTT-based   │  │ MCP Protocol     │  │
 │  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
 │         │                 │                    │             │
 │         └─────────────────┼────────────────────┘             │
@@ -141,18 +141,16 @@ npm run dev
 
 Access at: http://localhost:3000
 
-### 2. Voice Gateway (Optional - Phase 5)
+### 2. Voice Gateway OWW (Optional - Phase 5)
 
 ```bash
-cd apps/voice-gateway
+cd apps/voice-gateway-oww
 npm install
-npm run setup  # Downloads Whisper model
+./setup.sh  # Downloads models
 cp .env.example .env
-# Edit .env with Porcupine API key
+# Edit .env with configuration
 npm run dev
 ```
-
-Health check: http://localhost:3001/health
 
 ### 3. MCP Server (Optional)
 
@@ -177,7 +175,7 @@ Configure in Claude Desktop/Code MCP settings.
 ### Hardware
 
 - **Oracle:** None (web-based)
-- **Voice Gateway:** USB microphone (LANDIBO GSH23, hw:2,0)
+- **Voice Gateway OWW:** USB microphone and speaker
 - **MCP Server:** None (connects to zwave-js-ui)
 
 ---
@@ -200,7 +198,7 @@ Each service has its own test suite:
 ```bash
 # Run all tests
 cd apps/oracle && npm test
-cd apps/voice-gateway && npm test
+cd apps/voice-gateway-oww && npm test
 cd apps/zwave-mcp-server && npm test
 ```
 
@@ -230,7 +228,7 @@ npm run type-check
 | Service | Status | Priority | Phase |
 |---------|--------|----------|-------|
 | **Oracle** | 🔄 In Progress | 🔴 CRITICAL | Phase 2-4 |
-| **Voice Gateway** | 📋 Planned | 🎯 Stretch | Phase 5 |
+| **Voice Gateway OWW** | ✅ Implemented | 🎯 Stretch | Phase 5 |
 | **MCP Server** | 🔧 Experimental | 🎯 Optional | - |
 
 ---

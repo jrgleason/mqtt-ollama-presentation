@@ -2,8 +2,8 @@
   "name": "@jrg-voice/common",
   "version": "0.0.1",
   "description": "Voice common",
-  "license": "GPL-3.0-or-later",
   "author": "",
+  "license": "GPL-3.0",
   "type": "module",
   "main": "index.js",
   "scripts": {
