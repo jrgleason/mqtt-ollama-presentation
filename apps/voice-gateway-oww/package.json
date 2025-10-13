@@ -24,15 +24,17 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@jrg-voice/common": "file:../voice-gateway-common",
     "dotenv": "latest",
+    "fft-js": "latest",
     "mic": "latest",
     "mqtt": "latest",
+    "node-wav": "^0.0.2",
+    "ollama": "^0.6.0",
+    "onnxruntime-node": "latest",
     "uuid": "latest",
     "wav": "latest",
-    "onnxruntime-node": "latest",
-    "fft-js": "latest",
-    "xstate": "latest",
-    "@jrg-voice/common": "file:../voice-gateway-common"
+    "xstate": "latest"
   },
   "devDependencies": {
     "eslint": "latest",
