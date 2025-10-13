@@ -37,12 +37,12 @@ Presentation: CodeMash 2026 • Title: MQTT + Ollama = Building Home Automation 
 
 ## Current Stack
 
-- App: Next.js + TypeScript (Oracle)
-- AI: Ollama (llama3.2:1b/3b or mistral); Whisper via Ollama
+- App: Next.js, TypeScript (Oracle)
+- AI: Ollama (llama3.2:1b/3b, mistral), Whisper (via Ollama)
 - Voice: OpenWakeWord (wake word), RMS VAD, Piper (TTS)
-- Messaging: MQTT.js to HiveMQ CE at 10.0.0.58:31883
-- Z-Wave: zwave-js-ui with MQTT gateway
-- Data: Prisma + SQLite (devices, metadata, basic state)
+- Messaging: MQTT.js, HiveMQ CE (10.0.0.58:31883)
+- Z-Wave: zwave-js-ui (MQTT gateway)
+- Data: Prisma, SQLite (devices, metadata, basic state)
 
 ---
 
