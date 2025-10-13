@@ -100,7 +100,7 @@ TTS_ENABLED=false
 ollama serve
 
 # In another terminal, pull the model if not already downloaded
-ollama pull Qwen2.5:3b
+ollama pull Qwen3:1.7b
 ```
 
 ### 7. Test the Complete Flow
@@ -137,7 +137,7 @@ mosquitto_sub -h 10.0.0.58 -p 31883 -t 'voice/#' -v
 
 # You'll see:
 # voice/transcription {"text":"What is the capital of France?","timestamp":"..."}
-# voice/ai-response {"question":"What is the capital of France?","answer":"Paris is the capital of France.","model":"Qwen2.5:3b","timestamp":"..."}
+# voice/ai-response {"question":"What is the capital of France?","answer":"Paris is the capital of France.","model":"Qwen3:1.7b","timestamp":"..."}
 ```
 
 ## Quick Configuration Changes
@@ -297,12 +297,12 @@ Normal on Raspberry Pi:
 2. **Verify model is downloaded:**
    ```bash
    ollama list
-   # Should show Qwen2.5:3b or your configured model
+   # Should show Qwen3:1.7b or your configured model
    ```
 
 3. **Pull model if missing:**
    ```bash
-   ollama pull Qwen2.5:3b
+   ollama pull Qwen3:1.7b
    ```
 
 4. **Check logs for errors:**

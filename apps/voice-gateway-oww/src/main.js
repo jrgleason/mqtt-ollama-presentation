@@ -642,6 +642,27 @@ async function main() {
     });
 
     logger.info('✅ Voice Gateway (OpenWakeWord) is ready');
+
+    // Speak welcome message
+    if (config.tts.enabled) {
+      try {
+        logger.debug('🗣️ Speaking welcome message...');
+        const welcomeMessage = 'Hello, I am Jarvis. How can I help?';
+        const audioBuffer = await synthesizeSpeech(welcomeMessage, {
+          volume: config.tts.volume,
+          speed: config.tts.speed
+        });
+
+        if (audioBuffer && audioBuffer.length > 0) {
+          await playAudio(audioBuffer);
+          logger.info('✅ Welcome message spoken');
+        }
+      } catch (ttsError) {
+        logger.error('❌ Failed to speak welcome message', {
+          error: ttsError.message
+        });
+      }
+    }
   } catch (err) {
     logger.error('Failed to initialize Voice Gateway', { error: err.message });
     process.exit(1);

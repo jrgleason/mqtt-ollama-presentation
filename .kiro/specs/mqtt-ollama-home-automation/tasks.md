@@ -14,7 +14,7 @@
 - Chat interface confirmed functional
 
 **Critical Discovery:** ⚠️ Model tool calling compatibility issues
-- qwen2.5:3b does NOT support LangChain tools (despite documentation)
+- qwen3:1.7b does NOT support LangChain tools (despite documentation)
 - llama3.2:1b CONFIRMED working with tool calling
 - Must verify tool support before model selection
 
@@ -92,7 +92,7 @@
     - Configure Ollama client connection and model selection
     - Implement LangChain agent with conversation memory
     - Add personality system for configurable AI responses
-    - **CRITICAL DISCOVERY:** qwen2.5:3b does NOT support tool calling - switched to llama3.2:1b
+    - **CRITICAL DISCOVERY:** qwen3:1.7b does NOT support tool calling - switched to llama3.2:1b
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
   - [x] ✅ 5.2 Create custom LangChain tools for device control (MOCK DATA)
@@ -257,7 +257,7 @@
     - _Requirements: 7.1, 7.2, 7.4, 7.8, 7.9_
 
   - [ ] 10.2 Optimize performance for live demo
-    - Configure Ollama with optimized models (Qwen2.5:3b or Gemma2:2b)
+    - Configure Ollama with optimized models (Qwen3:1.7b or Gemma2:2b)
     - Implement response time optimizations and caching
     - Add demo-specific error handling and fallback mechanisms
     - _Requirements: 7.1, 7.4, 7.5, 7.8, 7.9_

@@ -7,7 +7,7 @@ import { ChatOllama } from '@langchain/ollama';
 
 const model = new ChatOllama({
   baseUrl: 'http://localhost:11434',
-  model: 'qwen2.5:3b',
+  model: 'qwen3:1.7b',
   temperature: 0.1,
 });
 

@@ -7,7 +7,7 @@ This is the AI-powered chatbot module for the MQTT + Ollama Home Automation syst
 ## Architecture
 
 - **Framework:** Next.js 15 with App Router
-- **AI Engine:** LangChain.js + Ollama (Qwen2.5:3b)
+- **AI Engine:** LangChain.js + Ollama (Qwen3:1.7b)
 - **UI:** shadcn/ui components
 - **Styling:** Tailwind CSS v4
 - **Language:** TypeScript (strict mode)
@@ -52,9 +52,9 @@ oracle/
 ## Prerequisites
 
 1. **Node.js 20+**
-2. **Ollama** running locally with Qwen2.5:3b model:
+2. **Ollama** running locally with Qwen3:1.7b model:
    ```bash
-   ollama pull qwen2.5:3b
+   ollama pull qwen3:1.7b
    ollama serve  # Should run on http://localhost:11434
    ```
 
@@ -77,7 +77,7 @@ cp .env.example .env.local
 Edit `.env.local`:
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_MODEL=qwen3:1.7b
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -254,7 +254,7 @@ Response: "Turned on Living Room Light"
 
 ## Performance
 
-### Response Time (with Qwen2.5:3b on M1 Mac)
+### Response Time (with Qwen3:1.7b on M1 Mac)
 
 - **Initial request:** ~1-2 seconds
 - **Streaming:** ~20 tokens/second
@@ -276,12 +276,12 @@ Response: "Turned on Living Room Light"
 
 2. Check Ollama has the model:
    ```bash
-   ollama list | grep qwen2.5
+   ollama list | grep qwen3
    ```
 
 3. Test model:
    ```bash
-   ollama run qwen2.5:3b "Hello"
+   ollama run qwen3:1.7b "Hello"
    ```
 
 ### "Tailwind CSS not working"

@@ -269,7 +269,7 @@ const envSchema = z.object({
 
   // Ollama configuration
   OLLAMA_BASE_URL: z.string().url().default('http://localhost:11434'),
-  OLLAMA_MODEL: z.string().min(1).default('qwen2.5:3b'),
+  OLLAMA_MODEL: z.string().min(1).default('qwen3:1.7b'),
 
   // MQTT configuration
   MQTT_BROKER_URL: z.string().regex(/^mqtts?:\/\//).default('mqtt://localhost:1883'),

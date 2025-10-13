@@ -9,7 +9,7 @@
 - Raspberry Pi OS (64-bit)
 - zwave-js-ui (Z-Wave MQTT gateway)
 - Ollama (Local LLM runtime)
-- Qwen2.5:3b model
+- Qwen3:1.7b model
 
 ---
 
@@ -546,7 +546,7 @@ This project uses LangChain's ToolCallingAgent to control smart home devices. **
 
 | Model | Why It Fails |
 |-------|-------------|
-| `qwen2.5:3b` | ❌ Qwen 2.5 series lacks tool calling |
+| `qwen3:1.7b` | ❌ Qwen 3 series lacks tool calling |
 | `gemma2:2b` | ❌ No function calling support |
 | `phi3:3.8b` | ❌ Does not support tools |
 | `phi3.5:3.8b` | ❌ No tool calling capability |
@@ -574,7 +574,7 @@ If you see errors like `"registry.ollama.ai/library/MODEL does not support tools
 ### 4. Test Ollama
 
 ```bash
-ollama run qwen2.5:3b "What is the capital of France?"
+ollama run qwen3:1.7b "What is the capital of France?"
 ```
 
 ### 5. Configure Ollama as System Service
@@ -615,7 +615,7 @@ sudo systemctl restart ollama
 
 ```bash
 curl http://<pi-ip>:11434/api/generate -d '{
-  "model": "qwen2.5:3b",
+  "model": "qwen3:1.7b",
   "prompt": "Why is the sky blue?"
 }'
 ```
@@ -657,11 +657,11 @@ You should see MQTT messages when devices are added or state changes occur.
 
 ```bash
 # Simple chat
-ollama run qwen2.5:3b
+ollama run qwen3:1.7b
 
 # API test
 curl http://localhost:11434/api/generate -d '{
-  "model": "qwen2.5:3b",
+  "model": "qwen3:1.7b",
   "prompt": "List the planets in our solar system",
   "stream": false
 }'
@@ -736,7 +736,7 @@ sudo systemctl status ollama
 **Cause:** Model too large or insufficient RAM
 
 **Fix:**
-- Use smaller model: `ollama pull qwen2.5:1.5b`
+- Use smaller model: `ollama pull qwen3:1.7b`
 - Check RAM: `free -h` (should have 2GB+ free)
 - Close other applications
 
@@ -753,7 +753,7 @@ df -h
 ping ollama.com
 
 # Retry download
-ollama pull qwen2.5:3b
+ollama pull qwen3:1.7b
 ```
 
 ### MQTT Connection Issues

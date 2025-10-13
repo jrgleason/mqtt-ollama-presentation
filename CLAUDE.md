@@ -203,7 +203,7 @@ See `docs/network-dependencies.md` for complete list and rationale.
 - **Testing:** Jest + React Testing Library
 
 ### Ollama Model Recommendations
-**Primary:** Qwen2.5:1.5b-3b or Gemma2:2b
+**Primary:** Qwen3:1.7b-3b or Gemma2:2b
 **Alternative:** Phi-3.5-mini-instruct
 **Why:** Best for command parsing, runs on Raspberry Pi 5
 
@@ -302,7 +302,7 @@ MQTT_WEBSOCKET_URL=ws://10.0.0.58:30000/mqtt
 
 # Ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_MODEL=qwen3:1.7b
 
 # App
 NODE_ENV=development

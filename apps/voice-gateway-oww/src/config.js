@@ -48,7 +48,7 @@ const config = {
   },
   ollama: {
     baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-    model: process.env.OLLAMA_MODEL || 'Qwen2.5:3b',
+    model: process.env.OLLAMA_MODEL || 'qwen3:1.7b',
   },
   tts: {
     enabled: process.env.TTS_ENABLED !== 'false', // Default to enabled
@@ -68,3 +68,12 @@ if (config.openWakeWord.threshold < 0 || config.openWakeWord.threshold > 1) {
 if (config.audio.sampleRate !== 16000) {
   console.warn('⚠️  Warning: Sample rate is not 16000 Hz. OpenWakeWord expects 16kHz audio.');
 }
+
+// Log TTS configuration for debugging
+console.log('🔊 TTS Configuration:', {
+  enabled: config.tts.enabled,
+  speed: config.tts.speed,
+  volume: config.tts.volume,
+  modelPath: config.tts.modelPath,
+  lengthScale: (1.0 / config.tts.speed).toFixed(3),
+});

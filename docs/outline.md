@@ -19,9 +19,9 @@ Date: January 12, 2026 • Duration: 60 minutes • Format: Live demo + architec
 - Status query and a simple scene
 
 ## 3) Code Walkthrough (15 min)
-- LangChain agent + tools (device list/control via Prisma + MQTT)
+- LangChain agent + tools (device list/control via SQLite + MQTT)
 - MQTT client reliability (singleton, reconnect, QoS 1)
-- Data models (Prisma + SQLite)
+- Data models (SQLite with direct queries)
 
 ## 4) MQTT Integration Patterns (10 min)
 - Topic conventions (voice/req, voice/res, voice/status; zwave-js-ui topics)

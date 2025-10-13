@@ -19,7 +19,7 @@ This feature implements a local AI-powered home automation system for the CodeMa
 - ✅ Phase 1: Project Setup (78% complete - 28/36 tasks)
 - ✅ Next.js 15.5.4 application with TypeScript and App Router
 - ✅ Prisma database with SQLite and seed data (4 devices)
-- ✅ Ollama integration with qwen2.5:3b model
+- ✅ Ollama integration with qwen3:1.7b model
 - ✅ LangChain.js agent with streaming chat API
 - ✅ Chat interface confirmed functional by user
 - ✅ HiveMQ MQTT broker running in Kubernetes
@@ -27,7 +27,7 @@ This feature implements a local AI-powered home automation system for the CodeMa
 
 ### Critical Discovery: Model Tool Calling Compatibility
 **IMPORTANT:** Not all Ollama models support LangChain tool calling! This was discovered during implementation:
-- ❌ **Failed Models:** qwen2.5:3b, gemma2:2b, phi3:3.8b (despite documentation suggesting support)
+- ❌ **Failed Models:** qwen3:1.7b, gemma2:2b, phi3:3.8b (despite documentation suggesting support)
 - ✅ **Working Models:** llama3.2:1b (recommended for Raspberry Pi), llama3.2:3b, mistral
 - **Error:** `"model does not support tools"` when using incompatible models
 - **Verification:** Look for log messages like "Using list_devices..." during testing
