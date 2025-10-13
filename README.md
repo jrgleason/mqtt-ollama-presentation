@@ -276,15 +276,16 @@ mqtt-ollama-presentation/
 │   │   ├── prisma/                # Database schema
 │   │   ├── .env.local             # Environment variables
 │   │   └── package.json
-│   ├── voice-gateway/             # Voice command service (Phase 5)
+│   ├── voice-gateway-oww/         # Voice command service (Phase 5)
 │   │   ├── src/
-│   │   │   ├── main.ts            # Entry point
-│   │   │   ├── wakeword.ts        # Porcupine integration
-│   │   │   ├── recorder.ts        # Audio capture + VAD
-│   │   │   ├── stt.ts             # Whisper.cpp wrapper
-│   │   │   ├── mqtt.ts            # MQTT client
-│   │   │   └── config.ts          # Configuration
-│   │   ├── models/                # Whisper models (gitignored)
+│   │   │   ├── main.js            # Entry point
+│   │   │   ├── wakeword.js        # OpenWakeWord integration
+│   │   │   ├── recorder.js        # Audio capture + VAD
+│   │   │   ├── ollama-client.js   # Whisper STT via Ollama
+│   │   │   ├── mqtt-client.js     # MQTT client
+│   │   │   ├── piper-tts.js       # Piper TTS integration
+│   │   │   └── config.js          # Configuration
+│   │   ├── models/                # Models (gitignored)
 │   │   ├── .env                   # Environment variables
 │   │   └── package.json
 │   ├── zwave-mcp-server/          # Z-Wave MCP server (optional)
@@ -326,13 +327,13 @@ pnpm run lint
 
 **Voice Gateway (Phase 5):**
 ```bash
-cd apps/voice-gateway
+cd apps/voice-gateway-oww
 
 # Install dependencies
 npm install
 
 # Setup (download models)
-npm run setup
+./setup.sh
 
 # Development
 npm run dev
@@ -436,10 +437,6 @@ This is a presentation project, but contributions are welcome!
 3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) file for details
 
 ## 🙏 Acknowledgments
 

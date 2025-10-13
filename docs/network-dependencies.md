@@ -1,485 +1,81 @@
-# Network Dependencies
+# Network Dependencies (Condensed)
 
-This document tracks all network/internet dependencies in the project and provides rationale for each.
+This project runs primarily on a local network. Internet is only needed for initial downloads and optional Auth0 auth.
 
-## Overview
-
-This project is designed to run **primarily locally** on your network, but has specific network requirements for certain services. The goal is to minimize cloud dependencies while maintaining security and usability for the CodeMash 2026 demo.
+Last Updated: 2025-10-12
 
 ---
 
-## Required Network Dependencies
+## Required (one-time) before demo
 
-### 1. Auth0 Authentication Service ☁️
+- Ollama models: `ollama pull llama3.2:1b` (Pi) / `llama3.2:3b` or `mistral`, and `ollama pull whisper`
+- NPM packages: `npm install` (cached in node_modules)
+- Optional containers: `docker pull` images if using Docker
 
-**Service:** Auth0 (auth0.com)
-**Network Type:** Internet (external cloud service)
-**Used By:**
-- `@auth0/nextjs-auth0` SDK
-- `src/lib/auth0.ts`
-- `src/middleware.ts`
-
-**Rationale:**
-- Auth0 is a cloud-based authentication service
-- Provides secure, industry-standard OAuth2/OIDC authentication
-- Universal Login page hosted by Auth0
-- Token validation and session management
-
-**Network Calls:**
-- **Outbound to Auth0:**
-  - User login redirects to `https://{AUTH0_DOMAIN}/authorize`
-  - Token exchange at `https://{AUTH0_DOMAIN}/oauth/token`
-  - User info retrieval at `https://{AUTH0_DOMAIN}/userinfo`
-  - JWKS (public keys) at `https://{AUTH0_DOMAIN}/.well-known/jwks.json`
-  - Logout at `https://{AUTH0_DOMAIN}/v2/logout`
-
-**Mitigation for Offline Scenarios:**
-- Could implement mock auth provider for local development
-- Session cookies persist, reducing frequent auth calls
-- JWKS keys are cached
-
-**Demo Impact:**
-- **Internet required at demo venue**
-- Backup: Pre-authenticated session cookies (if demo WiFi fails)
-- Can explain this is a design choice for secure authentication
+After pre-pulls, the demo runs fully local.
 
 ---
 
-### 2. Ollama Model Downloads 🔽
+## Local-only at runtime (no internet)
 
-**Service:** Ollama model registry (ollama.com)
-**Network Type:** Internet (one-time download)
-**Used By:**
-- Initial setup: `ollama pull qwen2.5:3b`
-
-**Rationale:**
-- Models must be downloaded once before use
-- Downloads large files (1-3GB per model)
-
-**Network Calls:**
-- **Outbound to Ollama:**
-  - Model download at `https://ollama.com/library/{model}`
-  - Manifest and layer downloads
-
-**Mitigation for Offline Scenarios:**
-- **Models are cached locally after first download**
-- Pre-download models before demo
-- Models stored in `/usr/share/ollama/.ollama/models/` (Linux) or `~/.ollama/models/` (Mac)
-
-**Demo Impact:**
-- **No internet needed during demo** (after models are downloaded)
-- Pre-setup: Download models on demo hardware before event
+- MQTT Broker: HiveMQ CE at `mqtt://10.0.0.58:31883`
+- Ollama API: `http://localhost:11434` (or Pi IP)
+- Z-Wave: zwave-js-ui (local UI + MQTT gateway)
+- Voice Gateway: OpenWakeWord + Whisper via Ollama + Piper
 
 ---
 
-### 3. NPM Package Installation 📦
+## Optional Cloud (Auth0)
 
-**Service:** npm registry (npmjs.org)
-**Network Type:** Internet (one-time installation)
-**Used By:**
-- Development: `npm install` / `pnpm install`
-
-**Rationale:**
-- JavaScript dependencies must be fetched from npm
-- Standard practice for Node.js projects
-
-**Network Calls:**
-- **Outbound to npm:**
-  - Package downloads at `https://registry.npmjs.org/`
-  - Package metadata retrieval
-
-**Mitigation for Offline Scenarios:**
-- **Dependencies installed once, then cached in `node_modules/`**
-- Lock files (`package-lock.json`, `pnpm-lock.yaml`) ensure reproducible builds
-- Could use offline npm mirror if needed
-
-**Demo Impact:**
-- **No internet needed during demo** (after `npm install` is run)
-- Pre-setup: Run `npm install` before demo
+- Auth: Auth0 is recommended but optional and currently deferred for the live demo.
+  - If enabled: requires internet during auth flows (authorize, token exchange, JWKS). See quickstart for env.
+  - If disabled: run fully local/offline for demo; remove/skip auth middleware.
 
 ---
 
-### 3.1 Whisper Model Downloads (Voice Gateway) 🔽
+## Demo Environment Options
 
-**Service:** Hugging Face model repository
-**Network Type:** Internet (one-time download)
-**Used By:**
-- voice-gateway setup: `npm run setup`
-- whisper.cpp model download
+- Primary plan (local-first):
+  - No internet required at runtime (auth disabled)
+  - MQTT, Ollama, Z-Wave, Voice all local
 
-**Rationale:**
-- Whisper base model (~74MB) must be downloaded for speech-to-text
-- Model enables local voice transcription without cloud dependencies
-- Part of Phase 5: Voice Integration (stretch goal)
+- If demonstrating Auth0 (optional):
+  - Internet required for login
+  - Keep a pre-authenticated session as backup; have hotspot ready
 
-**Network Calls:**
-- **Outbound to Hugging Face:**
-  - Model download at `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin`
-  - Size: 74MB
-
-**Mitigation for Offline Scenarios:**
-- **Model cached locally after first download**
-- Pre-download model before demo: `npm run setup` in voice-gateway
-- Model stored in `voice-gateway/models/ggml-base.bin`
-- Docker build can download model at image build time
-
-**Demo Impact:**
-- **No internet needed during demo** (after model is downloaded)
-- Pre-setup: Run `npm run setup` in voice-gateway before event
-- Estimated download time: 30-60 seconds on decent connection
+- Emergency offline:
+  - Disable auth entirely; proceed with full local stack
 
 ---
 
-### 3.2 Porcupine Wake Word Model 🔽
+## Summary Table
 
-**Service:** Picovoice Porcupine SDK
-**Network Type:** Internet (one-time, embedded in SDK)
-**Used By:**
-- voice-gateway: `@picovoice/porcupine-node` package
-
-**Rationale:**
-- Wake word detection models embedded in npm package
-- "Computer" wake word included in SDK (~5MB)
-- Requires Picovoice API key (free tier) for runtime
-
-**Network Calls:**
-- **npm package install** - Wake word models bundled in `@picovoice/porcupine-node`
-- **Runtime:** Porcupine API key validation (online check during initialization)
-  - **Mitigation:** API key validated once at startup, then works offline
-
-**Mitigation for Offline Scenarios:**
-- Wake word models installed with npm package (no separate download)
-- API key validated at voice-gateway startup
-- Once validated, voice-gateway runs fully offline
-- **Recommendation:** Start voice-gateway before demo to validate API key
-
-**Demo Impact:**
-- **No internet needed during demo** (after initial startup)
-- Pre-setup:
-  1. Sign up for free Picovoice account: https://console.picovoice.ai
-  2. Generate Access Key
-  3. Add to voice-gateway `.env`: `PORCUPINE_ACCESS_KEY=your_key_here`
-  4. Start voice-gateway once with internet to validate key
-  5. Demo can run offline after validation
+| Service | Network Type | Required During Demo? | Notes |
+|---------|--------------|-----------------------|-------|
+| Auth0 (optional) | Internet | No (Deferred by default) | Required only if you choose to show login |
+| Ollama model pulls | Internet | No (pre-download) | Pre-pull models; cached locally |
+| npm install | Internet | No (pre-install) | Cached in node_modules |
+| OpenWakeWord model | Local file | No | Store ONNX under models/ |
+| MQTT Broker (HiveMQ) | Local | Yes | Local TCP/WebSocket |
+| Ollama API (runtime) | Local | Yes | Local HTTP |
+| zwave-js-ui | Local | Yes | Local UI + MQTT gateway |
+| Docker images | Internet | No (pre-pull) | Cached locally |
+| GitHub | Internet | No | Code cloned ahead of time |
 
 ---
 
-## Local Network Dependencies (No Internet)
+## Pre-Demo Checklist (short)
 
-### 4. MQTT Broker (Mosquitto) 🏠
-
-**Service:** Eclipse Mosquitto
-**Network Type:** Local network only
-**Endpoint:** `mqtt://localhost:1883` or `mqtt://{raspberry-pi-ip}:1883`
-
-**Used By:**
-- `mqtt.js` library
-- `src/lib/mqtt/client.ts`
-- zwave-js-ui MQTT gateway
-- LangChain MQTT tools
-
-**Rationale:**
-- MQTT broker runs locally in Docker container or on Raspberry Pi
-- No external network calls
-- All MQTT traffic stays on local network
-
-**Network Calls:**
-- **Local only:** WebSocket/TCP connections to MQTT broker
-- **Device communication:** Z-Wave devices → zwave-js-ui → MQTT → Next.js app
-
-**Demo Impact:**
-- **Fully local, no internet required**
-- WiFi/network needed only for devices to communicate with each other
-- Could run entirely on localhost if all services on one machine
+- ollama list → models present (llama3.2 and whisper)
+- MQTT reachable at 10.0.0.58:31883
+- Ollama reachable at http://localhost:11434
+- zwave-js-ui up on Pi, MQTT gateway enabled
+- Optional: Auth0 env configured (if showing auth)
 
 ---
 
-### 5. Ollama API (Runtime) 🤖
-
-**Service:** Ollama local server
-**Network Type:** Local only
-**Endpoint:** `http://localhost:11434` or `http://{raspberry-pi-ip}:11434`
-
-**Used By:**
-- `@langchain/ollama` client
-- `src/lib/langchain/agent.ts`
-
-**Rationale:**
-- Ollama runs as a local HTTP server
-- All LLM inference happens locally
-- No data sent to cloud
-
-**Network Calls:**
-- **Local only:** HTTP requests to Ollama API
-  - `POST /api/generate` - Text generation
-  - `POST /api/chat` - Chat completions
-  - `GET /api/tags` - List local models
-
-**Demo Impact:**
-- **Fully local, no internet required**
-- Can run on same machine as Next.js app or on Pi 5
-
----
-
-### 6. Z-Wave Controller (zwave-js-ui) 📡
-
-**Service:** zwave-js-ui web interface
-**Network Type:** Local network only
-**Endpoint:** `http://localhost:8091` or `http://{raspberry-pi-ip}:8091`
-
-**Used By:**
-- Z-Wave device management
-- MQTT gateway for Z-Wave devices
-- Browser-based configuration UI
-
-**Rationale:**
-- Z-Wave uses local wireless protocol (not WiFi/internet)
-- zwave-js-ui web UI for configuration only
-- All control happens via MQTT (local)
-
-**Network Calls:**
-- **Local only:** HTTP for web UI, MQTT for device control
-- Z-Wave radio operates on 908.42 MHz (US) or 868.42 MHz (EU)
-
-**Demo Impact:**
-- **Fully local, no internet required**
-- Z-Wave devices communicate directly with USB controller
-
----
-
-## Optional Network Dependencies
-
-### 7. Docker Hub (Container Images) 🐳
-
-**Service:** Docker Hub (hub.docker.com)
-**Network Type:** Internet (one-time pull)
-**Used By:**
-- `docker-compose pull` or `docker pull`
-
-**Rationale:**
-- Docker images must be pulled once
-- Includes: `eclipse-mosquitto`, `zwavejs/zwave-js-ui`, custom images
-
-**Mitigation:**
-- **Images cached locally after first pull**
-- Could pre-build and save images as `.tar` files
-- `docker save` and `docker load` for offline transfer
-
-**Demo Impact:**
-- **No internet needed during demo** (after images are pulled)
-- Pre-setup: Pull all images before demo
-
----
-
-### 8. GitHub (Repository Access) 🔄
-
-**Service:** GitHub (github.com)
-**Network Type:** Internet
-**Used By:**
-- `git clone`, `git pull`, `git push`
-
-**Rationale:**
-- Source code hosted on GitHub
-- Version control and collaboration
-
-**Mitigation:**
-- **Not needed during demo** (code already cloned)
-- Could use USB drive or network share for code transfer
-
-**Demo Impact:**
-- **No internet needed during demo**
-- Pre-setup: Clone repository before demo
-
----
-
-## Demo Environment Network Requirements
-
-### Minimum Network Setup for Live Demo
-
-**Option A: Full Internet Access (Recommended)**
-- ✅ Auth0 authentication works normally
-- ✅ Can show full authentication flow
-- ✅ Most reliable for audience
-
-**Option B: Local Network Only (Backup)**
-- ⚠️ Auth0 will fail without internet
-- ✅ MQTT, Ollama, Z-Wave still work
-- ✅ Could use pre-authenticated session or mock auth
-- 📝 Must explain Auth0 requires internet
-
-**Option C: Fully Offline (Emergency)**
-- ❌ Auth0 authentication disabled
-- ✅ All local services work (MQTT, Ollama, Z-Wave)
-- ✅ Remove auth middleware temporarily
-- 📝 Must explain this is demo-only configuration
-
----
-
-## Network Dependency Summary Table
-
-| Service | Network Type | Required During Demo? | Mitigation |
-|---------|--------------|----------------------|------------|
-| **Auth0** | Internet ☁️ | Yes | Pre-authenticated session |
-| **Ollama Models** | Internet 🔽 | No (pre-download) | Cache models before demo |
-| **npm packages** | Internet 📦 | No (pre-install) | Run `npm install` before |
-| **Whisper Model** | Internet 🔽 | No (pre-download) | Run `npm run setup` in voice-gateway |
-| **Porcupine Wake Word** | Internet 🔽 | No (startup only) | Start voice-gateway once before demo |
-| **MQTT Broker** | Local 🏠 | Local network only | Fully local |
-| **Ollama Runtime** | Local 🤖 | Local network only | Fully local |
-| **zwave-js-ui** | Local 📡 | Local network only | Fully local |
-| **Voice Gateway** | Local 🎤 | Local network only | Fully local (after setup) |
-| **Docker Images** | Internet 🐳 | No (pre-pull) | Pull images before demo |
-| **GitHub** | Internet 🔄 | No | Clone repo before demo |
-
----
-
-## Design Philosophy
-
-### Cloud-Free Where Possible 🛡️
-
-The project prioritizes **local-first architecture**:
-- ✅ All AI processing happens locally (Ollama)
-- ✅ All device control is local (MQTT + Z-Wave)
-- ✅ No telemetry or data sent to cloud
-- ⚠️ Only Auth0 requires cloud (security best practice)
-
-### Why Auth0 Cloud vs Local Auth?
-
-**Reasons for cloud-based Auth0:**
-1. **Security best practices** - OAuth2/OIDC standard
-2. **Industry-standard solution** - Demonstrate production-ready approach
-3. **Ease of implementation** - Official Next.js SDK
-4. **Social login support** - Could add Google/GitHub login
-5. **Audit logging** - Auth attempts tracked by Auth0
-
-**Trade-off accepted:**
-- Authentication is the **only** cloud dependency during demo
-- Could swap for local auth (e.g., NextAuth.js, Keycloak) in production
-- For home automation, local auth might be preferred
-- Demo prioritizes showing proper auth patterns
-
----
-
-## Testing Network Dependencies
-
-### Pre-Demo Checklist
-
-1. **Internet connectivity test:**
-   ```bash
-   curl -I https://YOUR_DOMAIN.auth0.com
-   # Should return 200 OK
-   ```
-
-2. **Ollama models cached:**
-   ```bash
-   ollama list
-   # Should show qwen2.5:3b or gemma2:2b
-   ```
-
-3. **npm packages installed:**
-   ```bash
-   cd oracle && npm list --depth=0
-   # Should show all dependencies
-   ```
-
-4. **Docker images pulled:**
-   ```bash
-   docker images | grep -E "mosquitto|zwave-js-ui"
-   # Should show images with sizes
-   ```
-
-5. **Local MQTT broker reachable:**
-   ```bash
-   curl -v mqtt://localhost:1883
-   # Or use MQTT client to test connection
-   ```
-
-6. **Local Ollama reachable:**
-   ```bash
-   curl http://localhost:11434/api/tags
-   # Should return JSON with model list
-   ```
-
----
-
-## Backup Plans for Network Failures
-
-### If Demo Venue WiFi Fails
-
-**Priority 1: Use Phone Hotspot**
-- Enable mobile hotspot on phone
-- Connect demo laptop to hotspot
-- Auth0 will work over cellular
-
-**Priority 2: Skip Authentication**
-- Temporarily disable auth middleware
-- Hard-code a demo user session
-- Show code and explain this is demo-only
-- All other features (MQTT, Ollama, Z-Wave) still work
-
-**Priority 3: Show Pre-Recorded Video**
-- Backup video in `presentation/backup-demo.mp4`
-- Explain the code while video plays
-- Walk through architecture diagrams
-
----
-
-## Future Improvements
-
-**Reduce Network Dependencies:**
-1. **Optional local auth** - Implement NextAuth.js as alternative to Auth0
-2. **Offline model serving** - Pre-bundle Ollama models in Docker image
-3. **Vendored npm packages** - Bundle dependencies in repo (not recommended)
-
-**Enhance Local-First:**
-1. **Local LLM** ✅ Already implemented (Ollama)
-2. **Local MQTT** ✅ Already implemented (Mosquitto)
-3. **Local Z-Wave** ✅ Already implemented (USB stick)
-4. **Local voice** 🎯 Whisper.cpp (stretch goal)
-
----
-
-## References
-
-- [Auth0 Documentation](https://auth0.com/docs)
-- [Ollama Documentation](https://github.com/ollama/ollama/blob/main/docs/api.md)
-- [MQTT Protocol Specification](https://mqtt.org/)
-- [Next.js Environment Variables](https://nextjs.org/docs/app/building-your-application/configuring/environment-variables)
-
----
-
-**Last Updated:** 2025-10-11
-**Maintained By:** Project documentation team
-**Referenced By:** CLAUDE.md (AI development guidelines)
-
----
-
-## Voice Gateway Network Requirements (Phase 5)
-
-**New in v2.0:** Voice integration adds two new network dependencies for initial setup:
-
-1. **Whisper Model** - 74MB one-time download
-2. **Porcupine API Key** - Free tier registration + validation at startup
-
-**Key Point:** Both are one-time setup requirements. Once models are downloaded and API key validated, voice-gateway runs fully offline during demo.
-
-**Pre-Demo Setup:**
-```bash
-# 1. Sign up for Picovoice account
-open https://console.picovoice.ai
-
-# 2. Add API key to .env
-echo "PORCUPINE_ACCESS_KEY=your_key_here" >> voice-gateway/.env
-
-# 3. Download models
-cd voice-gateway && npm run setup
-
-# 4. Validate API key (requires internet once)
-npm start
-# Wait for "Wake word detection started" message
-# Ctrl+C to stop
-
-# 5. Demo ready (no internet needed)
-```
-
-**See also:** [Voice Gateway Architecture](./voice-gateway-architecture.md)
+## Notes
+
+- Design: local-first; zero cloud calls at runtime unless Auth0 is intentionally enabled
+- Voice: both wake word and STT/TTS are fully offline after one-time downloads
+- See also: voice-gateway-architecture.md

@@ -1,3 +1,11 @@
+# [Archived – Deprecated] MQTT Integration via MCP Server (Historical)
+
+This document is kept for reference only. We have moved to direct MQTT integration from the app (no custom MCP server) for the demo. See:
+- docs/requirements.md (Condensed for Demo)
+- docs/zwave-integration-plan.md (Demo-Focused)
+
+---
+
 # MQTT Integration via MCP Server - Comprehensive Research
 
 ## Research Summary (Updated October 2025)
@@ -44,7 +52,7 @@ After extensive research, we've decided to **build a custom TypeScript MCP serve
 
 ### Why Custom TypeScript Implementation?
 
-**✅ Advantages:**
+**✔ Advantages:**
 - **Single Language** - No Python runtime, no language context switching
 - **Full Control** - Combine MQTT + Z-Wave API in one server
 - **Type Safety** - End-to-end TypeScript from Oracle to MCP server
@@ -53,7 +61,7 @@ After extensive research, we've decided to **build a custom TypeScript MCP serve
 - **Easier Debugging** - Same toolchain, same debugger, same stack traces
 - **Lighter Weight** - No Python interpreter, faster startup
 
-**❌ What We Avoid:**
+**✖ What We Avoid:**
 - Python runtime requirements
 - Language/toolchain mixing
 - Python-to-Node.js bridge complexity
@@ -65,46 +73,46 @@ After extensive research, we've decided to **build a custom TypeScript MCP serve
 ### Recommended Architecture Pattern
 
 ```
-┌─────────────────────────────┐
+┌──────────────────────────────┐
 │   Oracle App                │
 │   (Next.js + AI)            │
-│                             │
-│  - LangChain.js             │
-│  - Ollama                   │
-│  - Auth0                    │
-└─────────────┬───────────────┘
+│                              │
+│  - LangChain.js              │
+│  - Ollama                    │
+│  - Auth0                     │
+└───────────────┬──────────────┘
               │ MCP Protocol (stdio)
               ↓
-┌─────────────────────────────┐
+┌──────────────────────────────┐
 │   Custom TypeScript         │
 │   MCP Server                │
-│                             │
-│  - @modelcontextprotocol/sdk│
-│  - mqtt.js (MQTT client)    │
-│  - node-fetch (HTTP client) │
-│  - Zod validation           │
-│                             │
-│  Tools:                     │
-│  - list_devices()           │
-│  - control_device()         │
-│  - get_device_state()       │
-└──────┬──────────────────┬───┘
+│                              │
+│  - @modelcontextprotocol/sdk │
+│  - mqtt.js (MQTT client)     │
+│  - node-fetch (HTTP client)  │
+│  - Zod validation            │
+│                              │
+│  Tools:                      │
+│  - list_devices()            │
+│  - control_device()          │
+│  - get_device_state()        │
+└───────────────┬──────────────┘
        │                  │
        │ MQTT             │ HTTP/WebSocket
        │ (31883)          │ (8091)
        ↓                  ↓
-┌────────────┐      ┌──────────────────┐
-│  HiveMQ    │←────→│  Z-Wave JS UI    │
-│  Broker    │      │                  │
-│            │      │  - Device Info   │
-│            │      │  - MQTT Gateway  │
-└────────────┘      │  - Z-Wave Radio  │
-                    └──────────────────┘
+┌──────────────┐      ┌──────────────────────┐
+│  HiveMQ    │←────→│  Z-Wave JS UI        │
+│  Broker    │      │                      │
+│            │      │  - Device Info       │
+│            │      │  - MQTT Gateway      │
+└──────────────┘      │  - Z-Wave Radio     │
+                    └──────────────────────┘
                               ↓
-                    ┌──────────────────┐
-                    │  Z-Wave Devices  │
-                    │  (Physical)      │
-                    └──────────────────┘
+                    ┌──────────────────────┐
+                    │  Z-Wave Devices      │
+                    │  (Physical)          │
+                    └──────────────────────┘
 ```
 
 **Key Points:**

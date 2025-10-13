@@ -34,40 +34,41 @@ services:
       - home-automation
     restart: unless-stopped
 
-  # Voice Gateway - Voice command service (optional, Phase 5)
-  voice-gateway:
+  # Voice Gateway OWW - Voice command service (optional, Phase 5)
+  voice-gateway-oww:
     build:
-      context: ./apps/voice-gateway
+      context: ./apps/voice-gateway-oww
       dockerfile: Dockerfile
-    container_name: voice-gateway
+    container_name: voice-gateway-oww
     devices:
       - /dev/snd:/dev/snd  # ALSA audio devices
     environment:
-      # Porcupine
-      - PORCUPINE_ACCESS_KEY=${PORCUPINE_ACCESS_KEY}
-      - PORCUPINE_KEYWORD=computer
-      - PORCUPINE_SENSITIVITY=0.5
+      # OpenWakeWord
+      - OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx
+      - OWW_THRESHOLD=0.5
 
       # Audio
-      - ALSA_MIC_DEVICE=hw:2,0
+      - MIC_DEVICE=plughw:2,0
+      - SPEAKER_DEVICE=plughw:2,0
       - SAMPLE_RATE=16000
 
       # VAD
-      - VAD_TRAILING_SILENCE_MS=1500
-      - VAD_MAX_UTTERANCE_MS=10000
+      - SILENCE_THRESHOLD=0.001
+      - SILENCE_DURATION_MS=1000
 
-      # Whisper
-      - WHISPER_MODEL=base
-      - WHISPER_MODEL_PATH=./models/ggml-base.bin
+      # Ollama Whisper
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_WHISPER_MODEL=whisper:latest
+
+      # Piper TTS
+      - TTS_ENABLED=true
+      - TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx
+      - TTS_VOLUME=1.0
+      - TTS_SPEED=1.0
 
       # MQTT
       - MQTT_BROKER_URL=mqtt://mosquitto:1883
-      - MQTT_CLIENT_ID=voice-gateway
-
-      # Health check
-      - HEALTH_CHECK_PORT=3001
-    ports:
-      - "3001:3001"  # Health check endpoint
+      - MQTT_CLIENT_ID=voice-gateway-oww
     volumes:
       - voice-models:/app/models
     depends_on:

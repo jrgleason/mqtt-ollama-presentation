@@ -79,7 +79,7 @@ arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 3 test.wav
 **Parameters:**
 - `-D hw:2,0` - Device name (USB PnP Sound Device)
 - `-f S16_LE` - Format: Signed 16-bit Little Endian PCM
-- `-r 16000` - Sample rate: 16kHz (required for Whisper/Porcupine)
+- `-r 16000` - Sample rate: 16kHz (required for Whisper/OpenWakeWord)
 - `-c 1` - Channels: Mono
 - `-d 3` - Duration: 3 seconds
 
@@ -99,8 +99,6 @@ Or specify device explicitly:
 ```bash
 aplay -D hw:1,0 test.wav
 ```
-
-**Tip:** If you hear your voice clearly, microphone is working correctly!
 
 ---
 
@@ -309,7 +307,7 @@ ALSA_MIC_DEVICE=voice_mic_16k
 ```env
 # Audio Devices
 ALSA_MIC_DEVICE=hw:2,0       # USB PnP Sound Device (LANDIBO GSH23)
-SAMPLE_RATE=16000             # 16kHz for Whisper/Porcupine
+SAMPLE_RATE=16000             # 16kHz for Whisper/OpenWakeWord
 ```
 
 ### Full Configuration with Future TTS
