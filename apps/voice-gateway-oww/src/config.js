@@ -46,6 +46,16 @@ const config = {
   healthCheck: {
     port: process.env.HEALTHCHECK_PORT ? Number(process.env.HEALTHCHECK_PORT) : 3002,
   },
+  ollama: {
+    baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+    model: process.env.OLLAMA_MODEL || 'Qwen2.5:3b',
+  },
+  tts: {
+    enabled: process.env.TTS_ENABLED !== 'false', // Default to enabled
+    modelPath: process.env.TTS_MODEL_PATH || 'models/piper/en_US-amy-medium.onnx',
+    volume: process.env.TTS_VOLUME ? Number(process.env.TTS_VOLUME) : 1.0,
+    speed: process.env.TTS_SPEED ? Number(process.env.TTS_SPEED) : 1.0,
+  },
 };
 
 export { config };
