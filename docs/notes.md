@@ -11,7 +11,7 @@ After real-world testing, we discovered that **Qwen 3 series does NOT support to
 **Models Confirmed to WORK with Tool Calling:**
 - ✅ `llama3.2:1b` (1.3GB) - **RECOMMENDED** for Raspberry Pi
 - ✅ `llama3.2:3b` (2GB) - Better accuracy, acceptable speed
-- ✅ `qwen3:1.7b` (1.9GB) - Note: Qwen**3**, not Qwen 3
+- ✅ `qwen3:1.7b` (1.9GB)
 - ✅ `mistral` (4.1GB) - Best accuracy but slow on Pi
 - ✅ `smollm2:1.7b` (1.7GB) - Experimental, fast
 
