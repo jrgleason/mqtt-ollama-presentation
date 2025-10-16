@@ -38,7 +38,7 @@ async function queryOllama(prompt, options = {}) {
   const client = createOllamaClient();
   const model = options.model || config.ollama.model;
   const systemPrompt = options.systemPrompt ||
-    'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Do not include non-English text in your responses.';
+    'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
 
   try {
     logger.debug('🤖 Sending prompt to Ollama', { model, prompt: prompt || '[conversation]' });

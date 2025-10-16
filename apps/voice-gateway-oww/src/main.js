@@ -70,6 +70,45 @@ const safeDetectorReset = (detector, context = 'general') => {
 };
 
 /**
+ * Generate a simple beep tone (sine wave)
+ * @param {number} frequency - Frequency in Hz (default 800Hz)
+ * @param {number} duration - Duration in milliseconds (default 200ms)
+ * @returns {Buffer} - PCM audio buffer (16-bit signed integer)
+ */
+const generateBeep = (frequency = 800, duration = 200) => {
+  const sampleRate = SAMPLE_RATE;
+  const numSamples = Math.floor((duration / 1000) * sampleRate);
+  const pcmData = Buffer.alloc(numSamples * 2); // 2 bytes per sample (16-bit)
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const sample = Math.sin(2 * Math.PI * frequency * t) * 0.3; // 30% volume
+    const int16Sample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
+    pcmData.writeInt16LE(int16Sample, i * 2);
+  }
+
+  return pcmData;
+};
+
+/**
+ * Generate a two-tone beep pattern (ascending)
+ * @param {number} freq1 - First frequency in Hz
+ * @param {number} freq2 - Second frequency in Hz
+ * @param {number} toneDuration - Duration of each tone in milliseconds
+ * @param {number} gapDuration - Gap between tones in milliseconds
+ * @returns {Buffer} - PCM audio buffer (16-bit signed integer)
+ */
+const generateDualBeep = (freq1 = 600, freq2 = 900, toneDuration = 80, gapDuration = 30) => {
+  const tone1 = generateBeep(freq1, toneDuration);
+  const tone2 = generateBeep(freq2, toneDuration);
+  const gapSamples = Math.floor((gapDuration / 1000) * SAMPLE_RATE);
+  const gapBuffer = Buffer.alloc(gapSamples * 2); // Silent gap
+
+  // Concatenate: tone1 + gap + tone2
+  return Buffer.concat([tone1, gapBuffer, tone2]);
+};
+
+/**
  * Play audio through speaker using aplay (Linux) or afplay (macOS)
  * @param {Buffer} pcmAudio - Raw 16kHz S16LE PCM audio
  * @returns {Promise<void>}
@@ -298,15 +337,32 @@ async function backgroundTranscribe(audioSamples) {
 
         try {
           conversationManager.addUserMessage(transcription);
-          const systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 3 sentences. Do not include non-English text in your responses.';
+          const systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
           const messages = conversationManager.getMessages(systemPrompt);
           const convSummary = conversationManager.getSummary();
           logger.debug('Conversation context', convSummary);
+
+          // Play processing beep (lower pitch than wake word beep)
+          try {
+            const processingBeep = generateBeep(500, 100); // 500Hz for 100ms (lower/shorter)
+            await playAudio(processingBeep);
+          } catch (beepError) {
+            logger.debug('⚠️ Failed to play processing beep', { error: beepError.message });
+          }
 
           const aiResponse = await queryOllama(null, { messages });
           conversationManager.addAssistantMessage(aiResponse);
 
           logger.info(`🤖 AI Response: "${aiResponse}"`);
+
+          // Play response received beep (dual-tone ascending)
+          try {
+            const responseBeep = generateDualBeep(600, 900, 80, 30); // Two tones: 600Hz → 900Hz
+            await playAudio(responseBeep);
+          } catch (beepError) {
+            logger.debug('⚠️ Failed to play response beep', { error: beepError.message });
+          }
+
           await publishAIResponse(transcription, aiResponse, {
             model: config.ollama.model,
             conversationTurns: Math.floor(convSummary.totalMessages / 2)
@@ -580,6 +636,15 @@ async function main() {
               score: score.toFixed(3),
               serviceState: snapshot2 && snapshot2.value ? snapshot2.value : String(snapshot2)
             });
+
+            // Play acknowledgment beep
+            try {
+              const beep = generateBeep(800, 150); // 800Hz for 150ms
+              await playAudio(beep);
+            } catch (beepError) {
+              logger.debug('⚠️ Failed to play beep', { error: beepError.message });
+            }
+
             voiceService.send({ type: 'TRIGGER', ts });
           }
         } catch (err) {

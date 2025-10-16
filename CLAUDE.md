@@ -202,10 +202,50 @@ See `docs/network-dependencies.md` for complete list and rationale.
 - **MQTT:** MQTT.js client library
 - **Testing:** Jest + React Testing Library
 
-### Ollama Model Recommendations
-**Primary:** Qwen3:1.7b-3b or Gemma2:2b
-**Alternative:** Phi-3.5-mini-instruct
-**Why:** Best for command parsing, runs on Raspberry Pi 5
+### Ollama Model Recommendations (Updated October 2025)
+
+**For Voice Gateway (Conversational AI):**
+- **Primary:** `qwen2.5:0.5b` - Fastest response time (~1s warm), suitable for simple queries
+- **Alternative:** `qwen2.5:1.5b` - Better accuracy (~4.6s warm), recommended if quality matters
+- **Not Recommended:** `qwen3:1.7b` or larger - Too slow for voice interactions (14s+)
+
+**Performance Benchmarks (Raspberry Pi 5):**
+| Model | Cold Start | Warm Response | Tool Support | Quality |
+|-------|-----------|---------------|--------------|---------|
+| qwen2.5:0.5b | ~3.2s | ~1s | Yes (limited) | Good |
+| qwen2.5:1.5b | ~16s | ~4.6s | Yes (strong) | Better |
+| qwen3:1.7b | ~14s | ~14s | Yes | Best |
+
+**Why qwen2.5:0.5b?**
+- 93% faster than qwen3:1.7b (warm inference)
+- Supports tool calling (for future MQTT device control)
+- Small enough for fast inference on Pi 5 without GPU
+- Total voice pipeline: **~7 seconds** (vs 27s with qwen3:1.7b) - **74% improvement**
+
+**For Next.js/LangChain (Oracle module):**
+- **Primary:** `qwen2.5:3b` or `gemma2:2b` - Better for complex reasoning
+- **Alternative:** `phi-3.5-mini-instruct` - Good instruction following
+
+### Whisper Model Recommendations (Updated October 2025)
+
+**For Voice Gateway:**
+- **Primary:** `ggml-tiny.bin` - Fast transcription (~1.5s), good accuracy for clear speech
+- **Alternative:** `ggml-base.bin` - Better accuracy in noisy environments (4x slower, ~6s)
+- **Not Recommended:** `ggml-turbo` - Designed for cloud/GPU, not optimized for edge devices
+
+**Performance Benchmarks (Raspberry Pi 5):**
+| Model | Size | Memory | Transcription Time | Quality |
+|-------|------|--------|-------------------|---------|
+| tiny | 75 MB | ~273 MB | ~1.5s | Good |
+| base | 142 MB | ~388 MB | ~6s | Better |
+
+**Why ggml-tiny.bin?**
+- 75% faster than base model
+- 47% smaller file size
+- Good accuracy for clear voice commands
+- Sufficient for home automation queries
+
+**See [Performance Optimization Guide](docs/performance-optimization.md) for detailed benchmarks and optimization techniques.**
 
 ### Coding Standards
 - Always use TypeScript with strict typing
@@ -270,6 +310,8 @@ See `docs/notes.md` "MQTT Integration - Dual Approach Strategy" for complete imp
 - **Connection:** HTTP API (default port 11434)
 - **Models:** Downloaded locally, not bundled
 - **Configuration:** Model selection configurable via env vars
+- **Voice Gateway Model:** `qwen2.5:0.5b` (optimized for speed)
+- **Oracle Model:** `qwen2.5:3b` or larger (optimized for accuracy)
 
 ---
 
@@ -302,7 +344,8 @@ MQTT_WEBSOCKET_URL=ws://10.0.0.58:30000/mqtt
 
 # Ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3:1.7b
+OLLAMA_MODEL=qwen2.5:0.5b  # For voice-gateway-oww (speed optimized)
+# OLLAMA_MODEL=qwen2.5:3b   # For oracle module (accuracy optimized)
 
 # App
 NODE_ENV=development
@@ -486,10 +529,13 @@ console.log('Device turned on');
 - Optimize images with next/image
 
 **Ollama:**
+- **Choose the right model size:** Use `qwen2.5:0.5b` for speed, `qwen2.5:1.5b`+ for accuracy
+- **System prompts matter:** Explicitly disable verbose output (e.g., `<think>` tags)
 - Cache model responses when appropriate
 - Use streaming for real-time responses
-- Consider model quantization for speed
+- All Qwen2.5 models are already quantized (Q4_K_M)
 - Monitor token usage
+- **Performance tip:** First query after model load is always slower (cold start)
 
 **MQTT:**
 - Batch multiple commands when possible
@@ -588,10 +634,11 @@ mqttClient.on('message', (topic, message) => {
 ### 18. Troubleshooting Tips
 
 **If Ollama is slow:**
-- Check model size (use smaller models)
-- Verify CPU/RAM usage
-- Try different quantization levels
-- Consider GPU acceleration (if available)
+- **Switch to smaller model:** `qwen2.5:0.5b` (3s) vs `qwen3:1.7b` (14s)
+- **Optimize system prompt:** Add "Keep answers under 2 sentences. Do not include <think> tags"
+- Verify CPU/RAM usage with `htop`
+- Check if it's cold start (first query is always slower)
+- Consider GPU acceleration (if available, but not required for qwen2.5:0.5b)
 
 **If MQTT is unreliable:**
 - Check broker logs

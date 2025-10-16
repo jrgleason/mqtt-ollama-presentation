@@ -16,8 +16,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 
 const MODELS_DIR = path.join(projectRoot, 'models');
-const WHISPER_MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
-const WHISPER_MODEL_PATH = path.join(MODELS_DIR, 'ggml-base.bin');
+const WHISPER_MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin';
+const WHISPER_MODEL_PATH = path.join(MODELS_DIR, 'ggml-tiny.bin');
 
 // OpenWakeWord base URL
 const OWW_BASE_URL = 'https://github.com/dscripka/openWakeWord/releases/download/v0.5.1';
