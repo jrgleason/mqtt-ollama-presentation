@@ -217,7 +217,7 @@ Component Performance (from logs):
 ### NOT Recommended
 
 **Whisper:**
-- ❌ **turbo** - Designed for cloud/GPU, not optimized for Whisper.cpp on Pi
+- ❌ **turbo** - Designed for cloud/GPU, not optimized for whisper.cpp on Pi
   - Would require ~6 GB RAM
   - Model file ~2-3 GB
   - Not well-tested for ARM/edge deployment
@@ -269,7 +269,7 @@ Component Performance (from logs):
 **For Raspberry Pi 5:**
 - ✅ Use quantized models (Q4_K_M)
 - ✅ Prefer models < 2GB
-- ✅ Choose ARM-optimized implementations (Whisper.cpp over Python Whisper)
+- ✅ Choose ARM-optimized implementations (whisper.cpp over Python Whisper)
 - ✅ Monitor cold start vs warm inference
 
 ---
@@ -349,4 +349,4 @@ Test with variety of queries:
 
 **Last Updated:** October 16, 2025
 **Hardware:** Raspberry Pi 5 (16GB RAM)
-**Software:** Node.js 20+, Ollama 0.6+, Whisper.cpp latest
+**Software:** Node.js 20+, Ollama 0.6+, whisper.cpp latest
