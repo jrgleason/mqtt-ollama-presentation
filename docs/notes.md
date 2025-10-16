@@ -17,7 +17,6 @@ After real-world testing, we discovered that **Qwen 3 series does NOT support to
 
 **Models Confirmed to FAIL with Tool Calling:**
 - ❌ `qwen3:1.7b` - Does not support tools
-- ❌ `qwen3:1.7b` - Does not support tools
 - ❌ `gemma2:2b` - No function calling support
 - ❌ `phi3:3.8b` - Does not support tools
 - ❌ `phi3.5:3.8b` - No tool calling capability
