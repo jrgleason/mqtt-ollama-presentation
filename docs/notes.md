@@ -6,25 +6,24 @@
 
 **IMPORTANT DISCOVERY (October 2025):** Not all small models support tool calling!
 
-After real-world testing, we discovered that **Qwen 2.5 series does NOT support tool/function calling** despite initial research suggesting otherwise. This is a critical requirement for our LangChain ToolCallingAgent architecture.
+After real-world testing, we discovered that **Qwen 3 series does NOT support tool/function calling** despite initial research suggesting otherwise. This is a critical requirement for our LangChain ToolCallingAgent architecture.
 
 **Models Confirmed to WORK with Tool Calling:**
 - ✅ `llama3.2:1b` (1.3GB) - **RECOMMENDED** for Raspberry Pi
 - ✅ `llama3.2:3b` (2GB) - Better accuracy, acceptable speed
-- ✅ `qwen3:1.7b` (1.9GB) - Note: Qwen**3**, not Qwen 2.5
+- ✅ `qwen3:1.7b` (1.9GB)
 - ✅ `mistral` (4.1GB) - Best accuracy but slow on Pi
 - ✅ `smollm2:1.7b` (1.7GB) - Experimental, fast
 
 **Models Confirmed to FAIL with Tool Calling:**
-- ❌ `qwen2.5:3b` - Does not support tools
-- ❌ `qwen2.5:1.5b` - Does not support tools
+- ❌ `qwen3:1.7b` - Does not support tools
 - ❌ `gemma2:2b` - No function calling support
 - ❌ `phi3:3.8b` - Does not support tools
 - ❌ `phi3.5:3.8b` - No tool calling capability
 
 **Error Message When Using Incompatible Model:**
 ```
-Error: registry.ollama.ai/library/qwen2.5:3b does not support tools
+Error: registry.ollama.ai/library/qwen3:1.7b does not support tools
 ```
 
 ### Recommended: llama3.2:1b (UPDATED)
@@ -40,7 +39,7 @@ Error: registry.ollama.ai/library/qwen2.5:3b does not support tools
 2. **Performance Metrics**
    - Achieves ~20+ tokens/second on Raspberry Pi 5
    - <1 second response time for simple commands
-   - Memory usage: ~1.3GB (leaves more headroom than Qwen 2.5)
+   - Memory usage: ~1.3GB (leaves more headroom than Qwen 3)
    - Optimized for ARM architecture (Raspberry Pi's Cortex-A76)
 
 3. **Model Design**
@@ -67,8 +66,8 @@ Error: registry.ollama.ai/library/qwen2.5:3b does not support tools
 - Better suited for more powerful hardware
 
 **References:**
-- [DFRobot: Run Qwen2.5 on Raspberry Pi 5](https://www.dfrobot.com/blog-15784.html)
-- [Qwen2.5 Official Blog](https://qwenlm.github.io/blog/qwen2.5/)
+- [DFRobot: Run Qwen3 on Raspberry Pi 5](https://www.dfrobot.com/blog-15784.html)
+- [Qwen3 Official Blog](https://qwenlm.github.io/blog/qwen3/)
 - [Best Ollama Models 2025 Performance Guide](https://collabnix.com/best-ollama-models-in-2025-complete-performance-comparison/)
 - [Qwen Function Calling Documentation](https://qwen.readthedocs.io/en/latest/framework/function_call.html)
 - [Stratosphere Lab: LLMs on Raspberry Pi 5](https://www.stratosphereips.org/blog/2025/6/5/how-well-do-llms-perform-on-a-raspberry-pi-5)
@@ -139,7 +138,7 @@ Error: registry.ollama.ai/library/qwen2.5:3b does not support tools
 
 ## Summary Comparison
 
-| Metric | Raspberry Pi 5 (Qwen2.5:1.5b) | Mac Studio 96GB (DeepSeek-R1 70B) |
+| Metric | Raspberry Pi 5 (Qwen3:1.7b) | Mac Studio 96GB (DeepSeek-R1 70B) |
 |--------|-------------------------------|-----------------------------------|
 | Model Size | 1.5B parameters | 70B parameters |
 | Memory Usage | ~5.4GB | ~42.5GB |
@@ -154,7 +153,7 @@ Error: registry.ollama.ai/library/qwen2.5:3b does not support tools
 - **Mac Studio:** Prioritize quality over raw speed (showcase quality)
 - Both models support Ollama's native tool calling
 - Both can achieve sub-2-second responses for basic commands
-- Qwen2.5 is the only model proven to meet <1 sec on Pi 5
+- Qwen3 is the only model proven to meet <1 sec on Pi 5
 
 ---
 
@@ -208,7 +207,7 @@ export async function POST(req: Request) {
 
   const model = new ChatOllama({
     baseUrl: 'http://localhost:11434',
-    model: 'qwen2.5:3b',
+    model: 'qwen3:1.7b',
     streaming: true,
   });
 
@@ -272,7 +271,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = await streamText({
-    model: ollama('qwen2.5:3b'),
+    model: ollama('qwen3:1.7b'),
     messages,
   });
 
@@ -331,7 +330,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const model = new ChatOllama({
-    model: 'qwen2.5:3b',
+    model: 'qwen3:1.7b',
   }).bind({
     tools: [createMQTTTool()],
   });
@@ -410,7 +409,7 @@ Regardless of the backend approach, these are the top UI solutions for chat inte
 1. **Tool calling is essential** - Project requires MQTT device control via LangChain tools
 2. **Future RAG capabilities** - May want to add knowledge base for device manuals, troubleshooting
 3. **Agent architecture** - Need multi-step reasoning for complex commands
-4. **Model flexibility** - Want to easily test different Ollama models (Qwen2.5:3b vs others)
+4. **Model flexibility** - Want to easily test different Ollama models (Qwen3:1.7b vs others)
 5. **No Vercel lock-in** - Could deploy to Railway, Fly.io, or self-host
 6. **Production UI** - shadcn/ui provides polished interface without extra dependencies
 
@@ -1373,9 +1372,9 @@ Z-Wave JS UI → Z-Wave Devices
 
 ### Research Date: January 2026
 
-**Research Question:** Can we run Qwen2.5, Next.js frontend, MQTT MCP server, and zwave-js-ui all on a single Raspberry Pi 5 (8GB) and get reasonably good results?
+**Research Question:** Can we run Qwen3, Next.js frontend, MQTT MCP server, and zwave-js-ui all on a single Raspberry Pi 5 (8GB) and get reasonably good results?
 
-**TL;DR Answer:** ✅ **Yes, but use Qwen2.5:1.5b instead of 3b** - With the 1.5b model and proper optimizations, all components will run comfortably with 38% RAM headroom.
+**TL;DR Answer:** ✅ **Yes, but use Qwen3:1.7b instead of 3b** - With the 1.5b model and proper optimizations, all components will run comfortably with 38% RAM headroom.
 
 ---
 
@@ -1406,27 +1405,27 @@ Z-Wave JS UI → Z-Wave Devices
 
 ### Component Resource Requirements
 
-#### 1. Ollama + Qwen2.5
+#### 1. Ollama + Qwen3
 
-**Qwen2.5:3b (Original Plan):**
+**Qwen3:1.7b (Original Plan):**
 - **RAM Usage:** 5.4 GB (confirmed from testing)
 - **Performance:** 10-20 tokens/second
 - **Issue:** ⚠️ Too large for multi-service setup
 
-**Qwen2.5:1.5b (RECOMMENDED):**
+**Qwen3:1.7b (RECOMMENDED):**
 - **RAM Usage:** ~3.5 GB (estimated)
 - **Performance:** ~20 tokens/second
 - **Accuracy:** Still excellent for command parsing
 - **Status:** ✅ Perfect fit
 
-**Qwen2.5:0.5b-int4 (Backup Option):**
+**Qwen3:0.5b-int4 (Backup Option):**
 - **RAM Usage:** 398 MB (extremely lightweight)
 - **Performance:** ~20+ tokens/second
 - **Accuracy:** Basic but functional
 - **Status:** ⚠️ Use if RAM is critically tight
 
 **References:**
-- [DFRobot: Run Qwen2.5 on Raspberry Pi 5](https://www.dfrobot.com/blog-15784.html)
+- [DFRobot: Run Qwen3 on Raspberry Pi 5](https://www.dfrobot.com/blog-15784.html)
 - [Stratosphere Lab: LLMs on Raspberry Pi 5](https://www.stratosphereips.org/blog/2025/6/5/how-well-do-llms-perform-on-a-raspberry-pi-5)
 - [It's FOSS: 9 Popular LLMs on Raspberry Pi 5](https://itsfoss.com/llms-for-raspberry-pi/)
 
@@ -1563,12 +1562,12 @@ autosave_interval 0
 
 ### Resource Allocation Analysis
 
-#### Scenario A: Qwen2.5:3b (RISKY ⚠️)
+#### Scenario A: Qwen3:1.7b (RISKY ⚠️)
 
 ```
 Total Available:     8192 MB
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Qwen2.5:3b           5400 MB (66%)
+Qwen3:1.7b           5400 MB (66%)
 Next.js (optimized)   500 MB (6%)
 zwave-js-ui           150 MB (2%)
 MQTT MCP              100 MB (1%)
@@ -1587,12 +1586,12 @@ BUFFER:              1192 MB (15%)
 
 ---
 
-#### Scenario B: Qwen2.5:1.5b (RECOMMENDED ✅)
+#### Scenario B: Qwen3:1.7b (RECOMMENDED ✅)
 
 ```
 Total Available:     8192 MB
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Qwen2.5:1.5b         3500 MB (43%)
+Qwen3:1.7b         3500 MB (43%)
 Next.js (optimized)   500 MB (6%)
 zwave-js-ui           150 MB (2%)
 MQTT MCP              100 MB (1%)
@@ -1646,7 +1645,7 @@ MQTT MCP Server → Mosquitto Broker
 zwave-js-ui → Z-Wave Device (RF)
 
 Total Expected Latency:
-- AI processing: 1-3 seconds (Qwen2.5:1.5b inference)
+- AI processing: 1-3 seconds (Qwen3:1.7b inference)
 - MQTT routing: <50ms
 - Z-Wave command: <500ms
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1667,7 +1666,7 @@ TOTAL: 1.5-4 seconds (acceptable for demo)
 
 ```yaml
 Hardware: Raspberry Pi 5 (8GB)
-Model: Qwen2.5:1.5b  # NOT 3b
+Model: Qwen3:1.7b  # NOT 3b
 Next.js: Production build with optimizations
 zwave-js-ui: Docker with 200M memory limit
 MQTT MCP: Default FastMCP installation
@@ -1687,7 +1686,7 @@ Mosquitto: Persistence disabled for demo
 
 ```yaml
 Hardware: Raspberry Pi 5 (8GB)
-Model: Qwen2.5:3b  # TOO BIG
+Model: Qwen3:1.7b  # TOO BIG
 Next.js: Development mode  # TOO HEAVY
 All services: No resource limits  # TOO RISKY
 ```
@@ -1702,7 +1701,7 @@ All services: No resource limits  # TOO RISKY
 
 #### ❌ NO - Don't Even Try
 
-- Running Qwen2.5:7b or larger (requires 12+ GB)
+- Running Qwen3:7b or larger (requires 12+ GB)
 - Using Raspberry Pi 4 or lower (insufficient CPU/RAM)
 - Next.js development mode (uses 2-3× more RAM)
 - No memory optimizations (will crash)
@@ -1715,7 +1714,7 @@ If single Pi proves unstable in testing:
 
 ```
 Raspberry Pi 5 (8GB):
-  - Ollama + Qwen2.5:3b (can use larger model)
+  - Ollama + Qwen3:1.7b (can use larger model)
   - zwave-js-ui
   - Mosquitto MQTT
 
@@ -1726,7 +1725,7 @@ Laptop/Desktop (for CodeMash):
 
 **Advantages:**
 - ✅ Each component has ample resources
-- ✅ Can use Qwen2.5:3b on Pi
+- ✅ Can use Qwen3:1.7b on Pi
 - ✅ Better troubleshooting
 - ✅ Higher demo reliability (95%+)
 
@@ -1743,7 +1742,7 @@ Laptop/Desktop (for CodeMash):
 ```bash
 # Start with just Ollama
 docker run -d ollama/ollama
-ollama pull qwen2.5:1.5b
+ollama pull qwen3:1.7b
 
 # Monitor resources
 htop
@@ -1823,7 +1822,7 @@ top -o %MEM
 ```bash
 # 1. Reduce Ollama context size
 curl http://localhost:11434/api/generate -d '{
-  "model": "qwen2.5:1.5b",
+  "model": "qwen3:1.7b",
   "prompt": "test",
   "options": {
     "num_ctx": 2048  # Reduce from default 4096
@@ -1840,7 +1839,7 @@ sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 pkill -f "next dev"
 
 # 5. Switch to lighter model
-ollama pull qwen2.5:0.5b-int4
+ollama pull qwen3:0.5b-int4
 # Update config to use 0.5b model
 ```
 
@@ -1851,7 +1850,7 @@ ollama pull qwen2.5:0.5b-int4
 #### Single Pi Setup (Recommended)
 
 **Costs:**
-- Requires Qwen2.5:1.5b (slightly less accurate than 3b)
+- Requires Qwen3:1.7b (slightly less accurate than 3b)
 - Need extensive optimization and testing
 - ~15% risk of demo issues
 
@@ -1870,7 +1869,7 @@ ollama pull qwen2.5:0.5b-int4
 - Less impressive demo narrative
 
 **Benefits:**
-- ✅ Can use Qwen2.5:3b (better accuracy)
+- ✅ Can use Qwen3:1.7b (better accuracy)
 - ✅ Higher reliability (95%+ vs 85%)
 - ✅ Easier troubleshooting
 - ✅ More headroom for features
@@ -1880,7 +1879,7 @@ ollama pull qwen2.5:0.5b-int4
 ### Final Verdict
 
 **Question:** Can we run all four components on one Raspberry Pi 5?
-**Answer:** ✅ **Yes, with Qwen2.5:1.5b and heavy optimization**
+**Answer:** ✅ **Yes, with Qwen3:1.7b and heavy optimization**
 
 **Question:** Should we run all four on one Raspberry Pi 5?
 **Answer:**
@@ -1893,7 +1892,7 @@ ollama pull qwen2.5:0.5b-int4
 
 **Primary Plan:** All-in-One Pi 5
 ```
-1. Use Qwen2.5:1.5b (NOT 3b)
+1. Use Qwen3:1.7b (NOT 3b)
 2. Optimize Next.js for production
 3. Set Docker memory limits
 4. Test extensively (4+ hour stress test)
@@ -1906,7 +1905,7 @@ ollama pull qwen2.5:0.5b-int4
 If testing reveals instability:
 1. Move Next.js + MCP to laptop
 2. Keep Ollama + Z-Wave on Pi
-3. Can upgrade to Qwen2.5:3b on Pi
+3. Can upgrade to Qwen3:1.7b on Pi
 4. Network connection between devices
 ```
 

@@ -232,7 +232,7 @@ await server.connect(transport);
 **Setup (one-time, requires internet):**
 - `npm install @emqx-ai/mcp-mqtt-sdk`
 - Docker images: hivemq, ollama, zwave-js-ui
-- Ollama model: qwen2.5:3b
+- Ollama model: qwen3:1.7b
 
 **Demo (local only, zero internet):**
 - ✅ All components on local network

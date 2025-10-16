@@ -38,7 +38,7 @@ sequenceDiagram
     participant ChatUI as Chat UI Component
     participant API as /api/chat Route
     participant LC as LangChain Agent
-    participant Ollama as Ollama (Qwen2.5:3b)
+    participant Ollama as Ollama (Qwen3:1.7b)
     participant MQTT as MQTT Broker
     participant Device as Z-Wave Device
 
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
   // 3. Initialize LangChain agent
   const model = new ChatOllama({
     baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-    model: process.env.OLLAMA_MODEL || 'qwen2.5:3b',
+    model: process.env.OLLAMA_MODEL || 'qwen3:1.7b',
     temperature: 0.1,
   });
 
@@ -483,7 +483,7 @@ export default {
 
 | Metric | Target | Optimization |
 |--------|--------|-------------|
-| **First message response** | < 3s | Qwen2.5:3b model, temp=0.1 |
+| **First message response** | < 3s | Qwen3:1.7b model, temp=0.1 |
 | **Streaming latency** | < 100ms | TransformStream, SSE |
 | **UI update rate** | 60 FPS | React 18 concurrent rendering |
 | **Message history load** | < 500ms | SQLite indexed queries |
@@ -491,7 +491,7 @@ export default {
 ### Optimization Strategies
 
 1. **Ollama Model Selection**
-   - Qwen2.5:3b for speed (20 tokens/sec on Pi 5)
+   - Qwen3:1.7b for speed (20 tokens/sec on Pi 5)
    - Temperature 0.1 for consistent, fast responses
    - Tool calling optimization
 
@@ -677,7 +677,7 @@ function validateTopic(topic: string): boolean {
 # .env.local
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_MODEL=qwen3:1.7b
 MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=demo
 MQTT_PASSWORD=demo123

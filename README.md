@@ -103,7 +103,7 @@ Download from https://ollama.com/download
 
 **Pull Recommended Model:**
 ```bash
-ollama pull qwen2.5:3b
+ollama pull qwen3:1.7b
 # or
 ollama pull gemma2:2b
 ```
@@ -134,7 +134,7 @@ MQTT_PASSWORD=''
 
 # Ollama Configuration
 OLLAMA_BASE_URL='http://localhost:11434'
-OLLAMA_MODEL='qwen2.5:3b'
+OLLAMA_MODEL='qwen3:1.7b'
 
 # Database
 DATABASE_URL='file:./dev.db'
@@ -218,9 +218,9 @@ Using zwave-js-ui's built-in MQTT support (no fork needed):
 - Well-maintained and documented
 - Supports comprehensive Z-Wave device types
 
-### LLM: Ollama with Qwen2.5 or Gemma2 ✅
+### LLM: Ollama with Qwen3 or Gemma2 ✅
 Running locally on Raspberry Pi 5 or development machine:
-- **Recommended models**: Qwen2.5:3b or Gemma2:2b
+- **Recommended models**: Qwen3:1.7b or Gemma2:2b
 - Models under 3B parameters for Pi 5 compatibility
 - Q5/Q6 quantization, low temperature (~0.1) for deterministic responses
 
@@ -505,7 +505,7 @@ See [docs/tasks.md](docs/tasks.md) for detailed progress tracking.
 **Key Decisions Made:**
 1. **Frontend:** Next.js with App Router (vs React Native Web)
 2. **Authentication:** Auth0 Next.js SDK v4
-3. **LLM:** Ollama with Qwen2.5:3b or Gemma2:2b
+3. **LLM:** Ollama with Qwen3:1.7b or Gemma2:2b
 4. **Architecture:** Local-first with minimal cloud dependencies
 
 ---

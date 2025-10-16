@@ -18,7 +18,7 @@ The system consists of a Next.js web application that integrates LangChain.js wi
 
 ### Critical Discovery: Model Compatibility
 **IMPORTANT:** Not all Ollama models support LangChain tool calling:
-- ❌ **Failed Models:** qwen2.5:3b, gemma2:2b, phi3:3.8b (error: "model does not support tools")
+- ❌ **Failed Models:** qwen3:1.7b, gemma2:2b, phi3:3.8b (error: "model does not support tools")
 - ✅ **Working Models:** llama3.2:1b (recommended for Pi), llama3.2:3b, mistral
 - **Verification:** Look for "Using [tool_name]..." in logs during testing
 
@@ -399,7 +399,7 @@ OLLAMA_BASE_URL="http://localhost:11435" # Mock server
 
 ### Optimization Strategies
 1. **LLM Optimization**
-   - Use smaller models (Qwen2.5:3b, Gemma2:2b)
+   - Use smaller models (Qwen3:1.7b, Gemma2:2b)
    - Low temperature (0.1) for consistent responses
    - Prompt optimization for faster inference
 
@@ -584,7 +584,7 @@ services:
 | llama3.2:1b | ✅ Confirmed | ~20 tok/sec (Pi 5) | Production/Edge |
 | llama3.2:3b | ✅ Confirmed | ~15 tok/sec (Pi 5) | Balanced |
 | mistral | ✅ Confirmed | Variable | Alternative |
-| qwen2.5:3b | ❌ Failed | N/A | Avoid |
+| qwen3:1.7b | ❌ Failed | N/A | Avoid |
 | gemma2:2b | ❌ Failed | N/A | Avoid |
 | DeepSeek-R1 70B | ✅ Excellent | ~8 tok/sec (Mac) | Demo/Dev |
 

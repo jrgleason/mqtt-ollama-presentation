@@ -25,7 +25,7 @@ services:
 
       # Ollama
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:1.7b}
     volumes:
       - oracle-data:/app/prisma
     depends_on:

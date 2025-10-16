@@ -11,7 +11,7 @@
 ### 1. Backend Infrastructure ✅
 
 **Ollama Client Wrapper** (`src/lib/ollama/client.ts`)
-- Configured ChatOllama with Qwen2.5:3b model
+- Configured ChatOllama with Qwen3:1.7b model
 - Temperature set to 0.1 for consistent responses
 - Streaming enabled for real-time responses
 - Environment variable configuration
@@ -179,7 +179,7 @@ ollama serve
 
 ### 2. Verify Ollama has the model
 ```bash
-ollama list | grep qwen2.5
+ollama list | grep qwen3
 ```
 
 ### 3. Start Development Server
@@ -209,7 +209,7 @@ Try these example commands:
 - ✅ Extensible for RAG, agents, complex workflows
 - ✅ Large ecosystem and community
 
-### Why Qwen2.5:3b?
+### Why Qwen3:1.7b?
 - ✅ Excellent tool calling support
 - ✅ Fast on Raspberry Pi 5 (~20 tokens/sec)
 - ✅ Small model size (1.9 GB)

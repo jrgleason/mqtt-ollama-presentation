@@ -73,15 +73,26 @@ fi
 
 # Step 3: Download Piper voice model
 echo ""
-print_info "Step 3: Downloading Piper voice model (en_US-amy-medium)..."
+print_info "Step 3: Downloading Piper voice models..."
 mkdir -p models/piper
 mkdir -p "$HOME/.local/share/piper_tts"
 
-# Check if already downloaded
-if [[ -f "models/piper/en_US-amy-medium.onnx" ]]; then
-    print_success "Voice model already exists"
-else
-    # Download directly from Hugging Face using curl (more reliable than Python urllib)
+# Ask user which voice to download
+echo ""
+echo "Which voice would you like to use?"
+echo "  1) en_US-amy-medium (Default - Female, 63MB)"
+echo "  2) en-us-glados-high (GLaDOS from Portal - 100MB)"
+echo "  3) Both voices"
+echo ""
+read -p "Enter choice [1-3] (default: 1): " VOICE_CHOICE
+VOICE_CHOICE=${VOICE_CHOICE:-1}
+
+download_amy_voice() {
+    if [[ -f "models/piper/en_US-amy-medium.onnx" ]]; then
+        print_success "Amy voice model already exists"
+        return 0
+    fi
+
     MODEL_BASE_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium"
     MODEL_FILE="en_US-amy-medium.onnx"
     CONFIG_FILE="en_US-amy-medium.onnx.json"
@@ -90,18 +101,62 @@ else
     if curl -L --progress-bar "${MODEL_BASE_URL}/${MODEL_FILE}" -o "models/piper/${MODEL_FILE}"; then
         print_info "Downloading $CONFIG_FILE..."
         if curl -L --progress-bar "${MODEL_BASE_URL}/${CONFIG_FILE}" -o "models/piper/${CONFIG_FILE}"; then
-            # Copy to standard piper location for compatibility
             cp "models/piper/${MODEL_FILE}" "$HOME/.local/share/piper_tts/" 2>/dev/null || true
             cp "models/piper/${CONFIG_FILE}" "$HOME/.local/share/piper_tts/" 2>/dev/null || true
-            print_success "Voice model downloaded"
+            print_success "Amy voice model downloaded"
+            return 0
         else
-            print_error "Failed to download config file"
+            print_error "Failed to download Amy config file"
+            return 1
         fi
     else
-        print_error "Failed to download voice model"
-        print_warning "You can try running: ./download-voice.sh"
+        print_error "Failed to download Amy voice model"
+        return 1
     fi
-fi
+}
+
+download_glados_voice() {
+    if [[ -f "models/piper/en-us-glados-high.onnx" ]]; then
+        print_success "GLaDOS voice model already exists"
+        return 0
+    fi
+
+    print_info "Downloading GLaDOS voice model (~100MB)..."
+    GLADOS_URL="https://github.com/Nold360/piper-voice-glados/releases/download/0.1/voice-en-us-glados-high.tar.gz"
+
+    if curl -L --progress-bar "$GLADOS_URL" -o /tmp/glados-voice.tar.gz; then
+        print_info "Extracting GLaDOS voice..."
+        if tar -xzf /tmp/glados-voice.tar.gz -C models/piper/; then
+            rm /tmp/glados-voice.tar.gz
+            print_success "GLaDOS voice model downloaded"
+            return 0
+        else
+            print_error "Failed to extract GLaDOS voice"
+            rm /tmp/glados-voice.tar.gz
+            return 1
+        fi
+    else
+        print_error "Failed to download GLaDOS voice model"
+        return 1
+    fi
+}
+
+case $VOICE_CHOICE in
+    1)
+        download_amy_voice
+        ;;
+    2)
+        download_glados_voice
+        ;;
+    3)
+        download_amy_voice
+        download_glados_voice
+        ;;
+    *)
+        print_warning "Invalid choice, downloading default Amy voice"
+        download_amy_voice
+        ;;
+esac
 
 # Step 4: Create .env file if it doesn't exist
 echo ""
@@ -125,16 +180,16 @@ if command -v ollama &> /dev/null; then
     if curl -s http://localhost:11434/api/version &> /dev/null; then
         print_success "Ollama is running"
 
-        # Check if Qwen2.5:3b model is available
-        if ollama list | grep -q "Qwen2.5:3b"; then
-            print_success "Qwen2.5:3b model is available"
+        # Check if Qwen3:1.7b model is available
+        if ollama list | grep -q "Qwen3:1.7b"; then
+            print_success "Qwen3:1.7b model is available"
         else
-            print_warning "Qwen2.5:3b model not found"
-            print_info "Downloading Qwen2.5:3b model (this may take a while)..."
-            if ollama pull Qwen2.5:3b; then
-                print_success "Qwen2.5:3b model downloaded"
+            print_warning "Qwen3:1.7b model not found"
+            print_info "Downloading Qwen3:1.7b model (this may take a while)..."
+            if ollama pull Qwen3:1.7b; then
+                print_success "Qwen3:1.7b model downloaded"
             else
-                print_error "Failed to download Qwen2.5:3b model"
+                print_error "Failed to download Qwen3:1.7b model"
             fi
         fi
     else

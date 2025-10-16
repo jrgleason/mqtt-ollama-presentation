@@ -38,6 +38,9 @@ async function synthesizeSpeech(text, options = {}) {
     originalLength: text.length,
     speechLength: speechText.length,
     preview: speechText.substring(0, 50),
+    speed: speed,
+    lengthScale: (1.0 / speed).toFixed(3),
+    volume: volume,
   });
 
   // Create temporary Python script
@@ -85,8 +88,9 @@ except Exception as e:
       // Clean up script
       try {
         unlinkSync(scriptPath);
+        logger.debug('🗑️ Cleaned up Python script', { scriptPath });
       } catch (e) {
-        // Ignore cleanup errors
+        logger.warn('⚠️ Failed to clean up Python script', { scriptPath, error: e.message });
       }
 
       if (code !== 0) {
@@ -107,8 +111,9 @@ except Exception as e:
         // Clean up WAV file
         try {
           unlinkSync(wavPath);
+          logger.debug('🗑️ Cleaned up WAV file', { wavPath });
         } catch (e) {
-          // Ignore cleanup errors
+          logger.warn('⚠️ Failed to clean up WAV file', { wavPath, error: e.message });
         }
 
         const duration = Date.now() - startTime;

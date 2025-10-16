@@ -1,5 +1,6 @@
 /tmp
 /out-tsc
+dev.db
 
 node_modules
 npm-debug.log*
@@ -15,3 +16,6 @@ dist
 out
 .vscode
 build
+.next
+generated
+dev.db

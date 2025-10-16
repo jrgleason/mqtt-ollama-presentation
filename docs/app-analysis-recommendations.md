@@ -200,7 +200,7 @@ apps/oracle/
 ```env
 # Good structure, but missing validation
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_MODEL=qwen3:1.7b
 MQTT_BROKER_URL=mqtt://localhost:1883
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
@@ -1583,7 +1583,7 @@ npm run type-check
    - If no: Mark as stretch goal and defer
 
 2. **Which Ollama model for demo?**
-   - Recommended: Qwen2.5:3b (best balance)
+   - Recommended: Qwen3:1.7b (best balance)
    - Alternative: Gemma2:2b (faster, less accurate)
 
 3. **Auth0 integration status?**
