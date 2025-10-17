@@ -56,7 +56,7 @@ User=pi
 WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
-Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="OLLAMA_BASE_URL=http://localhost:11434"
 Environment="OLLAMA_MODEL=llama3.2:3b"
 Environment="DATABASE_URL=file:./dev.db"
@@ -88,10 +88,12 @@ WantedBy=multi-user.target
 
 3. **ExecStart - Application path:** Must match WorkingDirectory
    - Full path: `<node-binary> <WorkingDirectory>/node_modules/.bin/next start`
+   - Using `next start` directly is more reliable than `npm start` for production deployments
 
 4. **Environment variables:** All required variables must be defined in the service file
    - Add Auth0 credentials if using authentication
    - Adjust MQTT broker URL if not running locally
+   - Environment PATH must include NVM's node binary location
 
 ### 3. Enable and Start Service
 
