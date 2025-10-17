@@ -22,6 +22,7 @@
     "@modelcontextprotocol/sdk": "latest",
     "mqtt": "latest",
     "node-fetch": "latest",
+    "socket.io-client": "latest",
     "zod": "latest"
   },
   "devDependencies": {

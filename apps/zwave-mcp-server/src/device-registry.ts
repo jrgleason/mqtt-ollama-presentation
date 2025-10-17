@@ -31,20 +31,40 @@ export class DeviceRegistryBuilder {
   }
 
   private detectDeviceType(node: any): { type: DeviceRegistryEntry['type']; commandClass: number } {
-    // This is a simplified detection - in reality, you'd inspect node.values or node.commandClasses
-    // For now, we'll default to switch (command class 38)
+    const values = node?.values ? Object.values(node.values) : [];
+    const commandClasses = new Set<number>();
 
-    // Common Z-Wave command classes:
-    // 37 = Binary Switch (on/off)
-    // 38 = Multilevel Switch (dimmable)
-    // 64 = Thermostat
-    // 49 = Sensor Multilevel
+    for (const value of values) {
+      const valueObj = value as any;
+      const cc = Number(valueObj?.commandClass);
+      if (Number.isFinite(cc)) {
+        commandClasses.add(cc);
+      }
+    }
 
-    // You would inspect the node object to determine actual command class
-    // For now, default to Binary Switch
+    if (commandClasses.has(38)) {
+      return { type: 'dimmer', commandClass: 38 };
+    }
+
+    if (commandClasses.has(37)) {
+      return { type: 'switch', commandClass: 37 };
+    }
+
+    if (commandClasses.has(64)) {
+      return { type: 'thermostat', commandClass: 64 };
+    }
+
+    if (commandClasses.has(49)) {
+      return { type: 'sensor', commandClass: 49 };
+    }
+
+    const defaultCommandClass = commandClasses.values().next().value as number | undefined;
+
     return {
-      type: 'switch',
-      commandClass: 37,
+      type: 'unknown',
+      commandClass: Number.isFinite(defaultCommandClass) && defaultCommandClass !== undefined
+        ? defaultCommandClass
+        : 37,
     };
   }
 

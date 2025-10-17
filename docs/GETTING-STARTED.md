@@ -405,7 +405,15 @@ Wait 30-60 seconds for the driver to initialize.
 
 ## 8. MQTT Broker Setup
 
+MQTT (Message Queuing Telemetry Transport) is the messaging backbone for your home automation system. It allows ZWave-JS-UI, the Oracle app, and other services to communicate about device states and commands.
+
+**For detailed MQTT configuration, see the [MQTT Setup Guide][mqtt-setup].**
+
+This section provides quick setup steps. For advanced configuration, troubleshooting, ACLs, and WebSocket support, refer to the detailed guide.
+
 ### Install Mosquitto
+
+Mosquitto is a lightweight, open-source MQTT broker.
 
 ```bash
 sudo apt install -y mosquitto mosquitto-clients
@@ -413,17 +421,72 @@ sudo apt install -y mosquitto mosquitto-clients
 
 ### Configure Mosquitto
 
-For development, allow anonymous connections:
+Create a custom configuration file:
 
 ```bash
 sudo nano /etc/mosquitto/conf.d/custom.conf
 ```
 
-Add:
+**For Development (Anonymous Access):**
+
+Add this configuration:
 
 ```conf
 # Development configuration - DO NOT use in production!
+# This allows connections without authentication
+
+# Allow anonymous connections (no username/password)
 allow_anonymous true
+
+# Listen on all network interfaces
+listener 1883 0.0.0.0
+
+# Enable message persistence (survive broker restarts)
+persistence true
+persistence_location /var/lib/mosquitto/
+
+# Logging configuration
+log_dest file /var/log/mosquitto/mosquitto.log
+log_dest stdout
+log_type error
+log_type warning
+log_type notice
+log_type information
+
+# Log when clients connect/disconnect
+connection_messages true
+
+# Allow retained messages
+retain_available true
+
+# Maximum queued messages per client
+max_queued_messages 1000
+```
+
+**For Production (With Authentication):**
+
+If you want to enable authentication (recommended for production):
+
+```bash
+# Create password file
+sudo mosquitto_passwd -c /etc/mosquitto/passwd zwave
+
+# You'll be prompted to enter a password for 'zwave' user
+
+# Add more users
+sudo mosquitto_passwd /etc/mosquitto/passwd oracle
+```
+
+Then update `/etc/mosquitto/conf.d/custom.conf`:
+
+```conf
+# Production configuration with authentication
+
+# Disable anonymous access
+allow_anonymous false
+
+# Use password file
+password_file /etc/mosquitto/passwd
 
 # Listen on all interfaces
 listener 1883 0.0.0.0
@@ -441,52 +504,295 @@ log_type notice
 log_type information
 
 connection_messages true
+retain_available true
+max_queued_messages 1000
 ```
 
-### Start Mosquitto
+### Verify Mosquitto Service
 
 ```bash
-sudo systemctl enable mosquitto
-sudo systemctl start mosquitto
+# Check if Mosquitto is enabled to start on boot
+sudo systemctl is-enabled mosquitto
+# Should output: enabled
+
+# Check service status
 sudo systemctl status mosquitto
+
+# If not running, start it
+sudo systemctl start mosquitto
+
+# Enable auto-start on boot
+sudo systemctl enable mosquitto
 ```
 
-### Test MQTT
+### Test MQTT Connection
 
-Open two terminal windows:
+Open **two terminal windows** to test the broker:
 
-**Terminal 1 - Subscribe:**
+**Terminal 1 - Subscribe (Receiver):**
 ```bash
+# Subscribe to test topic
 mosquitto_sub -h localhost -t "test/topic" -v
+
+# With authentication (if enabled):
+mosquitto_sub -h localhost -t "test/topic" -v -u zwave -P your-password
 ```
 
-**Terminal 2 - Publish:**
+**Terminal 2 - Publish (Sender):**
 ```bash
+# Publish a test message
 mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT!"
+
+# With authentication (if enabled):
+mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT!" -u zwave -P your-password
 ```
 
-You should see the message in Terminal 1.
+You should see `test/topic Hello MQTT!` appear in Terminal 1.
 
-### Configure ZWave-JS-UI MQTT
+**Tip:** Keep Terminal 1 running while testing other integrations to monitor messages.
 
-1. Open `http://<pi-ip>:8091`
-2. Go to **Settings** → **MQTT**
-3. Configure:
-   - **Host:** `localhost`
+### Configure ZWave-JS-UI MQTT Integration
+
+Now connect ZWave-JS-UI to your MQTT broker:
+
+1. **Open ZWave-JS-UI Web Interface:**
+   ```
+   http://<pi-ip>:8091
+   ```
+
+2. **Navigate to Settings:**
+   - Click **Settings** in the left sidebar
+   - Click **MQTT** tab
+
+3. **Configure MQTT Connection:**
+
+   **Basic Settings:**
+   - **Name:** `Mosquitto Local`
+   - **Host:** `localhost` (or `127.0.0.1`)
    - **Port:** `1883`
-   - **Prefix:** `zwave`
-   - **Username/Password:** Leave blank (anonymous)
-4. Click **Save**
-5. Enable **Gateway** mode if not already enabled
+   - **Reconnect Period (ms):** `3000`
+   - **Prefix:** `zwave` (all topics will start with `zwave/`)
 
-### Verify MQTT Messages
+   **Authentication (if enabled):**
+   - **Username:** `zwave`
+   - **Password:** `your-password`
+   - Leave blank if using anonymous mode
+
+   **Advanced Settings:**
+   - **QoS:** `1` (at least once delivery)
+   - **Retain:** `true` (retain state messages)
+   - **Clean:** `true`
+
+4. **Enable MQTT Gateway:**
+   - Scroll down to **Gateway** section
+   - Toggle **Gateway Enabled** to ON
+   - **Gateway Type:** `Manual` (recommended for control)
+   - **Payload Type:** `JSON with time`
+   - **Send Z-Wave Events:** ON (to publish device state changes)
+   - **Include Node Info:** ON (useful for debugging)
+
+5. **Click Save:**
+   - Green success message should appear
+   - Connection status should show: **Connected**
+
+6. **Verify Connection Status:**
+   - Look for green **Connected** indicator in MQTT section
+   - If red/disconnected, check broker status and credentials
+
+### Verify MQTT Messages from ZWave-JS-UI
+
+Now test that ZWave-JS-UI is publishing messages to MQTT:
+
+**Terminal 1 - Monitor all Z-Wave topics:**
+```bash
+# Subscribe to all topics under zwave/
+mosquitto_sub -h localhost -t "zwave/#" -v
+
+# With authentication:
+mosquitto_sub -h localhost -t "zwave/#" -v -u zwave -P your-password
+```
+
+**Expected Output (when you toggle a device in ZWave-JS-UI):**
+
+```
+zwave/Living Room Light/switch_binary/currentValue/set {"time":1697558400,"value":true}
+zwave/Living Room Light/status {"status":"alive","lastSeen":1697558400}
+zwave/_CLIENTS/ZWAVE_GATEWAY-mqtt-client/status {"value":true,"time":1697558400}
+```
+
+**Test in ZWave-JS-UI:**
+1. Go to **Control Panel**
+2. Find your Z-Wave device
+3. Click **On** or **Off** toggle
+4. Watch Terminal 1 - you should see MQTT messages appear immediately
+
+### Understanding MQTT Topic Structure
+
+ZWave-JS-UI publishes messages in this format:
+
+```
+<prefix>/<node_name>/<command_class>/<property>/set
+```
+
+**Examples:**
 
 ```bash
-# Subscribe to all Z-Wave topics
-mosquitto_sub -h localhost -t "zwave/#" -v
+# Binary switch (on/off)
+zwave/Living Room Light/switch_binary/currentValue/set
+# Payload: {"time":1697558400,"value":true}
+
+# Multilevel switch (dimmer, 0-99)
+zwave/Bedroom Dimmer/switch_multilevel/currentValue/set
+# Payload: {"time":1697558400,"value":75}
+
+# Sensor data (motion, temperature, etc.)
+zwave/Motion Sensor/notification/status
+# Payload: {"time":1697558400,"value":"motion detected"}
+
+# Node status
+zwave/Living Room Light/status
+# Payload: {"status":"alive","lastSeen":1697558400}
 ```
 
-Toggle a Z-Wave device in ZWave-JS-UI and you should see MQTT messages.
+### Control Devices via MQTT
+
+You can also **send commands** to devices via MQTT:
+
+```bash
+# Turn device ON
+mosquitto_pub -h localhost -t "zwave/Living Room Light/switch_binary/targetValue/set" -m '{"value":true}'
+
+# Turn device OFF
+mosquitto_pub -h localhost -t "zwave/Living Room Light/switch_binary/targetValue/set" -m '{"value":false}'
+
+# Set dimmer level to 50%
+mosquitto_pub -h localhost -t "zwave/Bedroom Dimmer/switch_multilevel/targetValue/set" -m '{"value":50}'
+```
+
+**Note:** The topic uses `targetValue` (command to send) vs `currentValue` (state update from device).
+
+### MQTT Monitoring Tools
+
+**Option 1: Command Line (mosquitto_sub)**
+```bash
+# All topics
+mosquitto_sub -h localhost -t "#" -v
+
+# Only Z-Wave topics
+mosquitto_sub -h localhost -t "zwave/#" -v
+
+# Specific device
+mosquitto_sub -h localhost -t "zwave/Living Room Light/#" -v
+```
+
+**Option 2: MQTT Explorer (GUI Tool)**
+```bash
+# Install MQTT Explorer (on your laptop, not Pi)
+# Download from: https://mqtt-explorer.com/
+
+# Connect to your Pi's MQTT broker
+Host: <pi-ip>
+Port: 1883
+Username/Password: (if configured)
+```
+
+MQTT Explorer provides a visual tree of all topics and messages.
+
+**Option 3: Node-RED (Advanced)**
+```bash
+# Install Node-RED for visual MQTT workflow automation
+sudo npm install -g --unsafe-perm node-red
+
+# Start Node-RED
+node-red
+
+# Access at http://<pi-ip>:1880
+```
+
+### Troubleshooting MQTT
+
+**Mosquitto won't start:**
+```bash
+# Check logs
+sudo journalctl -u mosquitto -n 50
+
+# Check configuration syntax
+sudo mosquitto -c /etc/mosquitto/mosquitto.conf -v
+
+# Common issues:
+# 1. Port already in use
+sudo lsof -i :1883
+
+# 2. Permission errors
+sudo chown -R mosquitto:mosquitto /var/lib/mosquitto
+sudo chmod 755 /var/lib/mosquitto
+```
+
+**ZWave-JS-UI shows "Disconnected":**
+```bash
+# 1. Verify Mosquitto is running
+sudo systemctl status mosquitto
+
+# 2. Test connection from command line
+mosquitto_sub -h localhost -t "test" -v
+
+# 3. Check authentication credentials (if enabled)
+# Username/password must match /etc/mosquitto/passwd
+
+# 4. Check ZWave-JS-UI logs
+sudo journalctl -u zwave-js-ui -n 50
+```
+
+**No messages appearing in mosquitto_sub:**
+```bash
+# 1. Verify you're subscribed to the right topic
+mosquitto_sub -h localhost -t "#" -v  # Subscribe to ALL topics
+
+# 2. Check MQTT Gateway is enabled in ZWave-JS-UI
+# Settings → MQTT → Gateway Enabled: ON
+
+# 3. Verify device is responding in ZWave-JS-UI
+# Control Panel → Toggle device → Check for "Success" message
+
+# 4. Check QoS level
+# Try QoS 0 (faster but less reliable)
+mosquitto_sub -h localhost -t "zwave/#" -q 0 -v
+```
+
+**Authentication errors:**
+```bash
+# Verify password file exists
+sudo cat /etc/mosquitto/passwd
+
+# Reset password
+sudo mosquitto_passwd /etc/mosquitto/passwd zwave
+
+# Restart Mosquitto
+sudo systemctl restart mosquitto
+```
+
+**High memory usage:**
+```bash
+# Check number of retained messages
+# Edit /etc/mosquitto/conf.d/custom.conf
+max_queued_messages 100  # Reduce from 1000
+
+# Clear retained messages (careful!)
+mosquitto_sub -h localhost -t "#" -v --retained-only --remove-retained
+```
+
+### Next Steps
+
+With MQTT working, you can now:
+- ✅ See real-time device state changes
+- ✅ Control devices via command line
+- ✅ Build integrations that react to device events
+- ✅ Monitor all home automation messages in one place
+
+**Coming up:**
+- Section 9: Install Nginx to expose the Oracle web app
+- Section 10: Install Ollama for local AI processing
+- Section 11: Set up the Oracle app to control devices via AI chat
 
 ---
 
@@ -979,6 +1285,7 @@ For more detailed information on specific components:
 - **[Project README][readme]** - Main project overview and quick start
 - **[Raspberry Pi 5 Setup][pi-setup]** - Detailed Pi configuration with Z-Pi 7 HAT
 - **[ZWave-JS-UI Deployment][zwave-deploy]** - Z-Wave controller setup
+- **[MQTT Broker Setup][mqtt-setup]** - Comprehensive MQTT configuration guide
 - **[Oracle Systemd Setup][oracle-setup]** - Oracle service configuration
 - **[Voice Gateway][voice-readme]** - Voice command integration
 - **[ALSA Audio Setup][alsa-setup]** - Detailed audio configuration
@@ -1035,6 +1342,7 @@ df -h                          # Disk space
 [pi-setup]: raspberry-pi-setup.md
 [zwave-deploy]: zwave-js-ui-deploy.md
 [oracle-setup]: oracle-systemd-setup.md
+[mqtt-setup]: mqtt-setup.md
 [voice-readme]: ../apps/voice-gateway-oww/README.md
 
 <!-- Additional Documentation -->

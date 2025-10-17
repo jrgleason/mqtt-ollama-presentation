@@ -2,12 +2,15 @@
 
 export interface ZWaveNode {
   id: number;
-  name: string;
-  loc: string;
-  values?: any[];
+  name?: string;
+  loc?: string;
   ready?: boolean;
+  available?: boolean;
+  failed?: boolean;
   status?: string;
-  hassDevices?: any;
+  lastActive?: number;
+  values?: Record<string, any>;
+  hassDevices?: Record<string, any>;
 }
 
 export interface DeviceRegistryEntry {
@@ -32,8 +35,8 @@ export interface ZWaveConfig {
 
 export interface MQTTConfig {
   brokerUrl: string;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
 }
 
 export interface ZWaveUIConfig {
@@ -41,4 +44,17 @@ export interface ZWaveUIConfig {
   username?: string;
   password?: string;
   authEnabled: boolean;
+  socketTimeoutMs?: number;
+}
+
+export interface ToolDeviceSummary {
+  name: string;
+  nodeId: number;
+  location?: string;
+  available: boolean;
+  ready: boolean;
+  status?: string;
+  lastActiveIso?: string;
+  primaryValueSummary?: string;
+  topics: DeviceRegistryEntry['topics'];
 }

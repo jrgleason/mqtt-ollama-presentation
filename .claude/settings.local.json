@@ -13,7 +13,13 @@
       "mcp__playwright__browser_evaluate",
       "Bash(mkdir:*)",
       "mcp__playwright__browser_close",
-      "WebFetch(domain:docs.emqx.com)"
+      "WebFetch(domain:docs.emqx.com)",
+      "WebFetch(domain:zwave-js.github.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "Read(//home/pi/Downloads/**)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
