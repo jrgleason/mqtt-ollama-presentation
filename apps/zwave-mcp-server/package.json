@@ -25,6 +25,7 @@
     "dotenv": "^17.2.3",
     "mqtt": "latest",
     "node-fetch": "latest",
-    "socket.io-client": "latest"
+    "socket.io-client": "latest",
+    "zod": "latest"
   }
 }

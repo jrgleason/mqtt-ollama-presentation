@@ -211,6 +211,7 @@ Navigate to http://localhost:3000
 - **[Getting Started Guide][getting-started]** - Complete step-by-step setup from scratch
 - **[Raspberry Pi 5 Setup][pi-setup]** - Detailed Pi 5 configuration with Z-Pi 7 HAT
 - **[ZWave-JS-UI Deployment][zwave-deploy]** - Z-Wave controller setup and configuration
+- **[MQTT Broker Setup][mqtt-setup]** - Comprehensive MQTT configuration and integration guide
 - **[Oracle Systemd Setup][oracle-setup]** - Configure Oracle app to run on boot
 - **[Voice Gateway Setup][voice-readme]** - Voice command integration (optional)
 
@@ -561,6 +562,7 @@ See [Task Tracking][tasks] for detailed progress tracking.
 [getting-started]: docs/GETTING-STARTED.md
 [pi-setup]: docs/raspberry-pi-setup.md
 [zwave-deploy]: docs/zwave-js-ui-deploy.md
+[mqtt-setup]: docs/mqtt-setup.md
 [oracle-setup]: docs/oracle-systemd-setup.md
 [voice-readme]: apps/voice-gateway-oww/README.md
 
