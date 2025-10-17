@@ -1,12 +1,18 @@
 # Oracle App - Systemd Service Setup
 
+**[← Back to README][readme]** | **[Getting Started Guide][getting-started]** | **[Raspberry Pi Setup][pi-setup]**
+
+---
+
 This guide explains how to configure the Oracle Next.js app to start automatically on boot using systemd.
 
 **Prerequisites:**
 - Oracle app checked out to `~/code/mqtt-ollama-presentation/oracle`
-- Node.js installed
+- Node.js installed (see [Node.js Installation][pi-setup-node])
 - Dependencies installed (`npm install`)
 - Production build completed (`npm run build`)
+
+For complete setup from scratch, see the [Getting Started Guide][getting-started].
 
 ---
 
@@ -39,7 +45,8 @@ User=pi
 WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/oracle
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
-ExecStart=/usr/bin/npm start
+Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/pi/.nvm/versions/node/current/bin/npm start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -53,7 +60,10 @@ PrivateTmp=true
 WantedBy=multi-user.target
 ```
 
-**Note:** If your username is not `pi`, replace `User=pi` and the path accordingly.
+**Note:**
+- If your username is not `pi`, replace `User=pi` and the path accordingly
+- We use `/home/pi/.nvm/versions/node/current/bin/npm` which references the Node symlink
+- This allows Node version upgrades without editing this service file (see [Raspberry Pi Setup Guide](raspberry-pi-setup.md#3-create-node-version-symlink-important))
 
 ### 3. Enable and Start Service
 
@@ -233,7 +243,8 @@ User=$USER
 WorkingDirectory=$SCRIPT_DIR
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
-ExecStart=/usr/bin/npm start
+Environment="PATH=/home/$USER/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/$USER/.nvm/versions/node/current/bin/npm start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -461,4 +472,18 @@ Before going to production:
 
 ---
 
-**Last Updated:** December 10, 2025
+**Last Updated:** October 17, 2025
+
+**[← Back to README][readme]** | **[Getting Started Guide][getting-started]** | **[All Documentation][docs-dir]**
+
+---
+
+<!-- Reference Links - All links defined here for easy maintenance -->
+
+<!-- Internal Documentation -->
+[readme]: ../README.md
+[getting-started]: GETTING-STARTED.md
+[pi-setup]: raspberry-pi-setup.md
+[pi-setup-node]: raspberry-pi-setup.md#3-create-node-version-symlink-important
+[zwave-deploy]: zwave-js-ui-deploy.md
+[docs-dir]: .

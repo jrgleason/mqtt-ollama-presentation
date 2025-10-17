@@ -1,5 +1,9 @@
 # Raspberry Pi 5 Setup Guide
 
+**[← Back to README][readme]** | **[Getting Started Guide][getting-started]** | **[Oracle Setup][oracle-setup]**
+
+---
+
 **Hardware:**
 - Raspberry Pi 5 (8GB recommended)
 - Aeotec Z-Pi 7 HAT (Z-Wave 700 series controller)
@@ -9,7 +13,7 @@
 - Raspberry Pi OS (64-bit)
 - zwave-js-ui (Z-Wave MQTT gateway)
 - Ollama (Local LLM runtime)
-- Qwen3:1.7b model
+- llama3.2:1b or llama3.2:3b model
 
 ---
 
@@ -43,18 +47,58 @@ sudo apt update && sudo apt upgrade -y
 # Install essential tools
 sudo apt install -y git curl wget vim nano build-essential
 
-# Install Node.js (required for zwave-js-ui)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+# Install NVM (Node Version Manager) - Recommended
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Load NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Install Node.js LTS
+nvm install 20
+nvm use 20
 
 # Verify Node.js installation
 node --version  # Should be v20.x
 npm --version
 ```
 
+### 3. Create Node Version Symlink (Important!)
+
+This allows you to upgrade Node versions without updating service files:
+
+```bash
+# Create a "current" symlink pointing to your active Node version
+ln -sfn ~/.nvm/versions/node/$(node --version | sed 's/v//') ~/.nvm/versions/node/current
+
+# Verify symlink was created
+ls -la ~/.nvm/versions/node/
+# Should show: current -> /home/pi/.nvm/versions/node/v20.x.x
+```
+
+**Why use a symlink?**
+- Services reference `/home/pi/.nvm/versions/node/current/bin/node`
+- When you upgrade Node, just update the symlink
+- No need to edit service files
+
+**To upgrade Node.js in the future:**
+
+```bash
+# Install new version
+nvm install 22
+nvm use 22
+
+# Update the symlink
+ln -sfn ~/.nvm/versions/node/v22.0.0 ~/.nvm/versions/node/current
+
+# Restart services that use Node
+sudo systemctl restart zwave-js-ui
+sudo systemctl restart oracle
+```
+
 ---
 
-## Z-Pi 7 HAT Configuration
+## 4. Z-Pi 7 HAT Configuration
 
 The Aeotec Z-Pi 7 uses the GPIO UART (`/dev/ttyAMA0`) which conflicts with the Linux console by default.
 
@@ -230,13 +274,16 @@ After=network.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/code/zwave-js-ui
-ExecStart=/usr/bin/npm start
+Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/pi/.nvm/versions/node/current/bin/node --preserve-symlinks server/bin/www.js
 Restart=on-failure
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+**Note:** We use `/home/pi/.nvm/versions/node/current/bin/node` which references the symlink created earlier. This allows Node version upgrades without editing this file.
 
 ```bash
 # Enable and start service
@@ -808,10 +855,10 @@ If Pi gets hot (>70°C):
 
 ## Reference Links
 
-- **Z-Pi 7 User Guide:** https://aeotec.freshdesk.com/support/solutions/articles/6000230551-z-pi-7-user-guide-
-- **ZWaveJsUI Documentation:** https://zwave-js.github.io/zwave-js-ui/
-- **Ollama Documentation:** https://github.com/ollama/ollama
-- **Raspberry Pi UART Configuration:** https://www.raspberrypi.com/documentation/computers/configuration.html#configuring-uarts
+- **[Z-Pi 7 User Guide][z-pi7-guide]**
+- **[ZWaveJsUI Documentation][zwave-docs]**
+- **[Ollama Documentation][ollama-docs]**
+- **[Raspberry Pi UART Configuration][pi-uart-docs]**
 
 ---
 
@@ -822,9 +869,28 @@ After completing this setup:
 1. **Pair Z-Wave Devices** via ZWaveJsUI web interface
 2. **Import Devices to Database** using `scripts/discover-zwave-devices.ts`
 3. **Test Device Control** via MQTT commands
-4. **Install Oracle App** (Next.js + LangChain) - see main README: `../README.md`
-5. **Configure Oracle as System Service** - see `oracle-systemd-setup.md` for auto-start on boot
+4. **Install Oracle App** (Next.js + LangChain) - see [Getting Started Guide][getting-started] or [main README][readme]
+5. **Configure Oracle as System Service** - see [Oracle Systemd Setup][oracle-setup] for auto-start on boot
 
 ---
 
-**Last Updated:** October 5, 2025
+**Last Updated:** October 17, 2025
+
+**[← Back to README][readme]** | **[Getting Started Guide][getting-started]** | **[All Documentation][docs-dir]**
+
+---
+
+<!-- Reference Links - All links defined here for easy maintenance -->
+
+<!-- Internal Documentation -->
+[readme]: ../README.md
+[getting-started]: GETTING-STARTED.md
+[oracle-setup]: oracle-systemd-setup.md
+[zwave-deploy]: zwave-js-ui-deploy.md
+[docs-dir]: .
+
+<!-- External Documentation -->
+[z-pi7-guide]: https://aeotec.freshdesk.com/support/solutions/articles/6000230551-z-pi-7-user-guide-
+[zwave-docs]: https://zwave-js.github.io/zwave-js-ui/
+[ollama-docs]: https://github.com/ollama/ollama
+[pi-uart-docs]: https://www.raspberrypi.com/documentation/computers/configuration.html#configuring-uarts

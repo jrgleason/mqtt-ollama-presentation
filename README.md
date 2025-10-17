@@ -5,6 +5,20 @@
 
 A demonstration of local AI-powered home automation using Ollama, MQTT, and Z-Wave - running entirely on your local network without cloud dependencies.
 
+---
+
+## 🚀 New to This Project? Start Here!
+
+**Complete Setup Guide:** See [**GETTING STARTED**][getting-started] for step-by-step instructions to set up everything from scratch on a Raspberry Pi 5.
+
+**Quick Links:**
+- **Raspberry Pi Setup:** [Raspberry Pi 5 Setup Guide][pi-setup]
+- **ZWave-JS-UI Setup:** [ZWave-JS-UI Deployment][zwave-deploy]
+- **Oracle App Setup:** [Oracle Service Setup][oracle-setup]
+- **Voice Gateway:** [Voice Gateway README][voice-readme]
+
+---
+
 ## 🎯 Project Overview
 
 Tired of smart home devices that need the internet to turn on a light bulb? Fed up with voice assistants that mishear "dim the bedroom" as "order three tons of cat food"?
@@ -77,6 +91,8 @@ Unlike corporate voice assistants that maintain corporate politeness, your local
 - NVMe SSD via PCIe
 - USB Z-Wave controller
 
+See [Raspberry Pi 5 Setup Guide][pi-setup] for detailed hardware requirements.
+
 ### Optional Hardware
 - Z-Wave devices (switches, dimmers, sensors)
 - ESP32 dev board with sensors/LEDs
@@ -84,14 +100,28 @@ Unlike corporate voice assistants that maintain corporate politeness, your local
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Option 1: Complete Setup on Raspberry Pi 5 (Recommended)
+
+Follow the comprehensive [**Getting Started Guide**][getting-started] which covers:
+1. Hardware setup (Pi 5, Z-Pi 7 HAT, USB audio)
+2. Z-Wave configuration
+3. MQTT broker installation
+4. Ollama setup
+5. Oracle app deployment
+6. Complete testing procedures
+
+**Estimated time:** 2-3 hours
+
+### Option 2: Docker Development Environment
+
+**1. Clone the Repository**
 
 ```bash
 git clone https://github.com/yourusername/mqtt-ollama-presentation.git
 cd mqtt-ollama-presentation
 ```
 
-### 2. Install Ollama
+**2. Install Ollama**
 
 **Linux/Mac:**
 ```bash
@@ -99,16 +129,16 @@ curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 **Windows:**
-Download from https://ollama.com/download
+Download from [ollama.com/download][ollama-download]
 
 **Pull Recommended Model:**
 ```bash
-ollama pull qwen3:1.7b
+ollama pull llama3.2:1b
 # or
-ollama pull gemma2:2b
+ollama pull llama3.2:3b
 ```
 
-### 3. Setup Environment Variables
+**3. Setup Environment Variables**
 
 Create a `.env.local` file in the `oracle` directory:
 
@@ -134,7 +164,7 @@ MQTT_PASSWORD=''
 
 # Ollama Configuration
 OLLAMA_BASE_URL='http://localhost:11434'
-OLLAMA_MODEL='qwen3:1.7b'
+OLLAMA_MODEL='llama3.2:1b'
 
 # Database
 DATABASE_URL='file:./dev.db'
@@ -149,7 +179,7 @@ openssl rand -hex 32
 - Allowed Callback URLs: `http://localhost:3000/auth/callback`
 - Allowed Logout URLs: `http://localhost:3000`
 
-### 4. Start with Docker Compose
+**4. Start with Docker Compose**
 
 ```bash
 docker-compose up -d
@@ -160,7 +190,7 @@ This starts:
 - Next.js app on port 3000
 - Note: MQTT Broker (HiveMQ) runs separately in Kubernetes at 10.0.0.58:31883
 
-### 5. Install Dependencies & Run
+**5. Install Dependencies & Run**
 
 ```bash
 cd apps/oracle
@@ -175,23 +205,27 @@ pnpm run dev
 
 Navigate to http://localhost:3000
 
-## 📚 Documentation
+## 📚 Setup Guides
 
-### Task Tracking
-- **[Tasks Overview](docs/tasks.md)** - Current sprint and progress summary
-- **[Active Tasks](docs/tasks-active.md)** - Detailed remaining work by phase
-- **[Delivered Features](docs/delivered.md)** - Completed work and achievements
+### Complete Setup Documentation
+- **[Getting Started Guide][getting-started]** - Complete step-by-step setup from scratch
+- **[Raspberry Pi 5 Setup][pi-setup]** - Detailed Pi 5 configuration with Z-Pi 7 HAT
+- **[ZWave-JS-UI Deployment][zwave-deploy]** - Z-Wave controller setup and configuration
+- **[Oracle Systemd Setup][oracle-setup]** - Configure Oracle app to run on boot
+- **[Voice Gateway Setup][voice-readme]** - Voice command integration (optional)
 
-### Technical Documentation
-- **[Requirements](docs/requirements.md)** - Detailed technical requirements
-- **[Questions](docs/questions.md)** - Architecture decisions and clarifying questions
-- **[Architecture Decision: Next.js vs React Native](docs/architecture-decision-nextjs-vs-react-native.md)** - Detailed comparison and rationale
-- **[Network Dependencies](docs/network-dependencies.md)** - Complete list of network/internet requirements and mitigation strategies
-- **[CLAUDE.md](CLAUDE.md)** - Guidelines for AI-assisted development
+### Additional Documentation
+- **[Task Tracking][tasks]** - Current sprint and progress summary
+- **[Active Tasks][tasks-active]** - Detailed remaining work by phase
+- **[Delivered Features][delivered]** - Completed work and achievements
+- **[Requirements][requirements]** - Detailed technical requirements
+- **[Architecture Decisions][questions]** - Key decisions and rationale
+- **[Network Dependencies][network-deps]** - Internet requirements and mitigation
+- **[CLAUDE.md][claude]** - Guidelines for AI-assisted development
 
 ## 🏛️ Architecture Decisions
 
-Key architectural decisions have been documented in [docs/questions.md](docs/questions.md):
+Key architectural decisions have been documented in [Architecture Decisions][questions]:
 
 ### Frontend: Next.js with App Router ✅
 After evaluating Next.js vs React Native Web, **Next.js with App Router** was chosen because:
@@ -202,7 +236,7 @@ After evaluating Next.js vs React Native Web, **Next.js with App Router** was ch
 - Lower complexity and risk for one-hour live demo
 - No mobile app requirement in project scope
 
-See [detailed comparison](docs/architecture-decision-nextjs-vs-react-native.md) for full analysis.
+See [detailed comparison][arch-nextjs-vs-rn] for full analysis.
 
 ### Authentication: Auth0 Next.js SDK v4 ✅
 Using Auth0's official Next.js SDK for authentication:
@@ -218,11 +252,11 @@ Using zwave-js-ui's built-in MQTT support (no fork needed):
 - Well-maintained and documented
 - Supports comprehensive Z-Wave device types
 
-### LLM: Ollama with Qwen3 or Gemma2 ✅
+### LLM: Ollama with Llama 3.2 ✅
 Running locally on Raspberry Pi 5 or development machine:
-- **Recommended models**: Qwen3:1.7b or Gemma2:2b
-- Models under 3B parameters for Pi 5 compatibility
-- Q5/Q6 quantization, low temperature (~0.1) for deterministic responses
+- **Recommended models**: llama3.2:1b or llama3.2:3b
+- Models with tool calling support (required for device control)
+- Fast inference on Pi 5 without GPU acceleration
 
 ## 🎭 Demo Commands
 
@@ -292,6 +326,10 @@ mqtt-ollama-presentation/
 │   │   └── package.json
 │   └── README.md                  # Apps overview
 ├── docs/                          # Project documentation
+│   ├── GETTING-STARTED.md         # Complete setup guide
+│   ├── raspberry-pi-setup.md      # Pi 5 setup guide
+│   ├── zwave-js-ui-deploy.md      # ZWave setup
+│   ├── oracle-systemd-setup.md    # Oracle service setup
 │   ├── requirements.md
 │   ├── tasks-active.md
 │   ├── voice-gateway-architecture.md
@@ -407,7 +445,7 @@ helm install mqtt-ollama ./mqtt-ollama-chart
 
 ### Raspberry Pi 5
 
-Follow the [Raspberry Pi Setup Guide](docs/raspberry-pi-setup.md)
+Follow the [Raspberry Pi Setup Guide][pi-setup] and [Getting Started Guide][getting-started].
 
 ## 🎤 Presentation
 
@@ -450,8 +488,8 @@ This is a presentation project, but contributions are welcome!
 
 - **Presenter:** [Your Name]
 - **Email:** your.email@example.com
-- **GitHub:** https://github.com/yourusername
-- **LinkedIn:** https://linkedin.com/in/yourprofile
+- **GitHub:** [github.com/yourusername][github]
+- **LinkedIn:** [linkedin.com/in/yourprofile][linkedin]
 
 ## 🎯 Roadmap
 
@@ -481,31 +519,32 @@ This is a presentation project, but contributions are welcome!
 
 - Voice recognition may have latency on slower hardware (stretch goal)
 - Some Z-Wave devices require polling for state updates
-- **Auth0 requires internet connection** - See [Network Dependencies](docs/network-dependencies.md) for mitigation strategies
+- **Auth0 requires internet connection** - See [Network Dependencies][network-deps] for mitigation strategies
   - Backup options: Pre-authenticated session, phone hotspot, or temporary mock auth
 
-See [Issues](https://github.com/yourusername/mqtt-ollama-presentation/issues) for full list
+See [GitHub Issues][issues] for full list
 
-**Note:** This project prioritizes local-first architecture. Only Auth0 authentication requires internet during demo. All AI processing, device control, and data storage happens locally. See [docs/network-dependencies.md](docs/network-dependencies.md) for complete network requirements and offline mitigation strategies.
+**Note:** This project prioritizes local-first architecture. Only Auth0 authentication requires internet during demo. All AI processing, device control, and data storage happens locally. See [Network Dependencies][network-deps] for complete network requirements and offline mitigation strategies.
 
 ## 📊 Project Status
 
 **Current Phase:** Phase 1 - Documentation & Planning ✅
 
 **Recent Updates:**
-- ✅ Next.js vs React Native architectural decision ([detailed analysis](docs/architecture-decision-nextjs-vs-react-native.md))
+- ✅ Next.js vs React Native architectural decision ([detailed analysis][arch-nextjs-vs-rn])
 - ✅ Auth0 Next.js SDK v4 configuration documented
 - ✅ Network dependencies tracked and justified
 - ✅ Complete project documentation structure
+- ✅ Comprehensive Getting Started Guide created
 
 **Next Up:** Phase 2 - Next.js + LangChain Setup
 
-See [docs/tasks.md](docs/tasks.md) for detailed progress tracking.
+See [Task Tracking][tasks] for detailed progress tracking.
 
 **Key Decisions Made:**
 1. **Frontend:** Next.js with App Router (vs React Native Web)
 2. **Authentication:** Auth0 Next.js SDK v4
-3. **LLM:** Ollama with Qwen3:1.7b or Gemma2:2b
+3. **LLM:** Ollama with llama3.2:1b or llama3.2:3b
 4. **Architecture:** Local-first with minimal cloud dependencies
 
 ---
@@ -513,3 +552,30 @@ See [docs/tasks.md](docs/tasks.md) for detailed progress tracking.
 **Built with ❤️ for CodeMash 2026**
 
 *No clouds were harmed in the making of this smart home system.*
+
+---
+
+<!-- Reference Links - All links defined here for easy maintenance -->
+
+<!-- Setup Guides -->
+[getting-started]: docs/GETTING-STARTED.md
+[pi-setup]: docs/raspberry-pi-setup.md
+[zwave-deploy]: docs/zwave-js-ui-deploy.md
+[oracle-setup]: docs/oracle-systemd-setup.md
+[voice-readme]: apps/voice-gateway-oww/README.md
+
+<!-- Documentation -->
+[tasks]: docs/tasks.md
+[tasks-active]: docs/tasks-active.md
+[delivered]: docs/delivered.md
+[requirements]: docs/requirements.md
+[questions]: docs/questions.md
+[network-deps]: docs/network-dependencies.md
+[claude]: CLAUDE.md
+[arch-nextjs-vs-rn]: docs/architecture-decision-nextjs-vs-react-native.md
+
+<!-- External Links -->
+[ollama-download]: https://ollama.com/download
+[github]: https://github.com/yourusername
+[linkedin]: https://linkedin.com/in/yourprofile
+[issues]: https://github.com/yourusername/mqtt-ollama-presentation/issues
