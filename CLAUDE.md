@@ -61,13 +61,14 @@ mqtt-ollama-presentation/
 │   ├── requirements.md        # Technical requirements
 │   ├── tasks.md               # Implementation task list
 │   └── architecture.md        # System architecture
-├── oracle/                    # Next.js + LangChain module (main app)
-│   ├── src/
-│   ├── package.json
-│   ├── Dockerfile
-│   └── helm/
-├── zwave-js-ui/               # Z-Wave integration (submodule or reference)
-├── esp32-example/             # Optional ESP32 firmware
+├── apps/                      # All application modules
+│   ├── oracle/                # Next.js + LangChain module (main app)
+│   │   ├── src/
+│   │   ├── package.json
+│   │   ├── Dockerfile
+│   │   └── helm/
+│   ├── voice-gateway-oww/     # Voice command service
+│   └── zwave-mcp-server/      # Z-Wave MCP server
 ├── deployment/
 │   └── docker-compose.yml
 ├── presentation/
@@ -694,6 +695,120 @@ mqttClient.on('message', (topic, message) => {
 
 ---
 
+### 21. Deployment & Production
+
+**IMPORTANT: Before deploying to production (systemd service, Docker, etc.):**
+
+### Pre-Deployment Checklist
+
+**For Oracle (Next.js App):**
+- [ ] Run `npm run build` in `/apps/oracle` directory
+- [ ] Verify `.next` directory was created successfully
+- [ ] Test the production build locally with `npm start`
+- [ ] Check all environment variables are set correctly
+- [ ] Verify database migrations are up to date
+- [ ] Test MQTT connection and device control
+- [ ] Verify Ollama is accessible and models are downloaded
+
+**For Systemd Service Setup:**
+- [ ] Verify working directory path is correct (`/apps/oracle` not `/oracle`)
+- [ ] Check Node.js binary path is correct (especially if using NVM)
+- [ ] Verify all environment variables are defined in service file
+- [ ] Test service starts successfully: `systemctl status oracle.service`
+- [ ] Check logs for errors: `journalctl -u oracle.service -n 50`
+- [ ] Verify service restarts on failure
+- [ ] Test service survives system reboot
+
+**Common Deployment Issues:**
+
+1. **"Could not find a production build in the '.next' directory"**
+   - **Cause:** Missing production build
+   - **Fix:** Run `npm run build` in the application directory before starting
+   - **Prevention:** Add build step to deployment automation
+
+2. **"Changing to the requested working directory failed: No such file or directory"**
+   - **Cause:** Incorrect `WorkingDirectory` path in systemd service file
+   - **Fix:** Update service file to use correct path (e.g., `/home/pi/code/mqtt-ollama-presentation/apps/oracle`)
+   - **Prevention:** Always verify directory structure before creating service files
+
+3. **Service fails silently or restarts continuously**
+   - **Check logs:** `journalctl -u oracle.service -n 50 --no-pager`
+   - **Common causes:** Missing env vars, database not accessible, MQTT broker unreachable
+   - **Debug:** Run the ExecStart command manually to see real-time errors
+
+### Systemd Service Template
+
+**Location:** `/etc/systemd/system/oracle.service`
+
+**Correct configuration:**
+```ini
+[Unit]
+Description=Oracle - AI Home Automation Assistant
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="OLLAMA_BASE_URL=http://localhost:11434"
+Environment="OLLAMA_MODEL=llama3.2:3b"
+Environment="DATABASE_URL=file:./dev.db"
+Environment="MQTT_BROKER_URL=mqtt://127.0.0.1:1883"
+ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Key points:**
+- ✅ `WorkingDirectory` must point to `/apps/oracle` (NOT `/oracle`)
+- ✅ `ExecStart` must use absolute path to Node.js binary
+- ✅ `ExecStart` must use absolute path to `next` executable
+- ✅ Must run `npm run build` BEFORE starting the service
+- ✅ All required environment variables must be defined
+- ✅ Service should depend on network and ollama being ready
+
+**Service management:**
+```bash
+# After creating/editing service file
+sudo systemctl daemon-reload
+sudo systemctl enable oracle.service
+sudo systemctl start oracle.service
+
+# Check status
+systemctl status oracle.service
+journalctl -u oracle.service -n 50 --no-pager
+
+# Restart after code changes
+sudo systemctl restart oracle.service
+```
+
+**Nginx reverse proxy setup:**
+
+If using nginx to proxy to the Next.js app:
+- Next.js runs on port 3000
+- Nginx should proxy to `http://127.0.0.1:3000`
+- If nginx returns 502 Bad Gateway, check if oracle.service is running
+- Check nginx logs: `sudo tail -50 /var/log/nginx/error.log`
+
+**Docker deployment:**
+
+See README.md for Docker Compose and Kubernetes/Helm deployment options.
+
+---
+
 ## Summary Checklist
 
 Before committing code, verify:
@@ -706,5 +821,13 @@ Before committing code, verify:
 - [ ] Feature branch (not main)
 - [ ] Meaningful commit message
 - [ ] No server commands left running
+
+**Before deploying to production:**
+- [ ] Run `npm run build` successfully
+- [ ] Verify `.next` directory exists
+- [ ] Verify correct directory paths in systemd service file
+- [ ] Test service starts and runs successfully
+- [ ] Check logs for errors
+- [ ] Test the application is accessible
 
 **Remember:** This project is for a presentation. Code quality, demo reliability, and documentation are equally important!
