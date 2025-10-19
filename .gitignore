@@ -25,3 +25,6 @@ dev.db
 
 # Kiro AI project files (local only)
 .kiro/
+
+# macOS system files
+.DS_Store
