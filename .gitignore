@@ -19,3 +19,9 @@ build
 .next
 generated
 dev.db
+
+# Claude Code settings (local user settings only, not agents)
+.claude/settings.local.json
+
+# Kiro AI project files (local only)
+.kiro/
