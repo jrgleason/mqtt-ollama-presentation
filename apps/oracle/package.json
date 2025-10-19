@@ -13,48 +13,38 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "db:seed": "tsx prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@langchain/core": "latest",
     "@langchain/ollama": "latest",
+    "@modelcontextprotocol/sdk": "1.20.0",
     "@prisma/client": "latest",
     "class-variance-authority": "latest",
     "clsx": "latest",
     "langchain": "latest",
     "lucide-react": "latest",
     "mqtt": "latest",
-    "next": "latest",
+    "next": "15.5.6",
     "prisma": "latest",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest",
     "tailwindcss-animate": "latest",
-    "zod": "latest"
+    "zod": "latest",
+    "zwave-mcp-server": "file:../zwave-mcp-server"
   },
   "devDependencies": {
     "@eslint/eslintrc": "latest",
     "@tailwindcss/postcss": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
-    "@types/jest": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
     "concurrently": "latest",
     "dotenv": "latest",
     "eslint": "latest",
     "eslint-config-next": "latest",
     "jest": "latest",
     "postcss": "latest",
-    "tailwindcss": "latest",
-    "ts-jest": "latest",
-    "ts-node": "latest",
-    "tsx": "latest",
-    "typescript": "latest"
+    "tailwindcss": "latest"
   }
 }

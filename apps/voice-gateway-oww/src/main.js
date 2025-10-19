@@ -17,6 +17,7 @@ import { queryOllama, checkOllamaHealth } from './ollama-client.js';
 import { connectMQTT, publishTranscription, publishAIResponse } from './mqtt-client.js';
 import { conversationManager } from './conversation-manager.js';
 import { synthesizeSpeech, checkPiperHealth } from './piper-tts.js';
+import { initializeMCPClient, getDevicesForAI, shutdownMCPClient } from './mcp-zwave-client.js';
 
 // OpenWakeWord constants
 const SAMPLE_RATE = 16000;
@@ -337,7 +338,27 @@ async function backgroundTranscribe(audioSamples) {
 
         try {
           conversationManager.addUserMessage(transcription);
-          const systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
+
+          // Check if user is asking about devices
+          const deviceKeywords = ['device', 'light', 'switch', 'sensor', 'what do i have', 'what devices', 'list', 'show me'];
+          const isDeviceQuery = deviceKeywords.some(keyword =>
+            transcription.toLowerCase().includes(keyword)
+          );
+
+          let systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
+
+          // Add device information to context if asking about devices
+          if (isDeviceQuery) {
+            try {
+              logger.debug('📡 Device query detected, fetching device list...');
+              const deviceInfo = await getDevicesForAI();
+              systemPrompt += `\n\n${deviceInfo}`;
+              logger.debug('✅ Device information added to context');
+            } catch (error) {
+              logger.warn('⚠️ Failed to fetch devices for AI', { error: error.message });
+            }
+          }
+
           const messages = conversationManager.getMessages(systemPrompt);
           const convSummary = conversationManager.getSummary();
           logger.debug('Conversation context', convSummary);
@@ -456,6 +477,16 @@ async function main() {
       logger.error('❌ ALSA device check failed', { device: config.audio.micDevice, error: err.message });
       logger.warn('⚠️  Continuing anyway - mic library will try to use device');
     }
+  }
+
+  // Initialize MCP ZWave Client
+  try {
+    logger.info('🔌 Initializing ZWave MCP client...');
+    await initializeMCPClient();
+    logger.info('✅ ZWave MCP client ready');
+  } catch (err) {
+    logger.error('❌ ZWave MCP client initialization failed', { error: err.message });
+    logger.warn('⚠️ Continuing without device information - device queries will not work');
   }
 
   try {
@@ -694,15 +725,17 @@ async function main() {
       }
     });
 
-    process.on('SIGINT', () => {
+    process.on('SIGINT', async () => {
       logger.info('SIGINT received, shutting down...');
       micInstance.stop();
+      await shutdownMCPClient();
       process.exit(0);
     });
 
-    process.on('uncaughtException', (err) => {
+    process.on('uncaughtException', async (err) => {
       logger.error('Uncaught exception', { error: err.message });
       micInstance.stop();
+      await shutdownMCPClient();
       process.exit(1);
     });
 

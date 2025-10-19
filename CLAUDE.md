@@ -15,6 +15,27 @@ This is a **multi-module CodeMash presentation project** demonstrating local AI-
 
 ## Important Project Rules
 
+### 0. JavaScript Only - NO TypeScript!
+
+**🚫 CRITICAL RULE: NEVER USE TYPESCRIPT IN THIS PROJECT 🚫**
+
+**Absolutely forbidden:**
+- ❌ NO `.ts` or `.tsx` files
+- ❌ NO type annotations (`: string`, `: number`, etc.)
+- ❌ NO TypeScript interfaces or types
+- ❌ NO `tsconfig.json` files
+- ❌ NO TypeScript-specific syntax
+
+**Always use:**
+- ✅ JavaScript files (`.js` and `.jsx` only)
+- ✅ Plain ES6+ JavaScript
+- ✅ Zod for runtime validation (instead of TypeScript types)
+- ✅ JSDoc comments for documentation (optional)
+
+**Why:** This project has been converted to pure JavaScript for simplicity and to avoid TypeScript overhead.
+
+---
+
 ### 1. Server Commands
 **NEVER run server commands like:**
 - `npm run dev`
@@ -40,7 +61,7 @@ This is a **multi-module CodeMash presentation project** demonstrating local AI-
 **Why:** Playwright provides better access and avoids permission issues that WebFetch sometimes encounters.
 
 **Example usage:**
-```typescript
+```javascript
 // Good ✅
 await mcp__playwright__browser_navigate({ url: "https://nextjs.org/docs" });
 await mcp__playwright__browser_snapshot();
@@ -195,7 +216,7 @@ See `docs/network-dependencies.md` for complete list and rationale.
 ### 8. Technology Stack
 
 ### Core Technologies
-- **Language:** TypeScript (strict mode)
+- **Language:** JavaScript (ES6+) - **NEVER use TypeScript**
 - **Framework:** Next.js 14+ with App Router
 - **LLM Integration:** LangChain.js + Ollama
 - **Database:** SQLite with Prisma or Drizzle ORM
@@ -249,13 +270,16 @@ See `docs/network-dependencies.md` for complete list and rationale.
 **See [Performance Optimization Guide](docs/performance-optimization.md) for detailed benchmarks and optimization techniques.**
 
 ### Coding Standards
-- Always use TypeScript with strict typing
+- **NEVER use TypeScript** - Always use plain JavaScript (ES6+)
+- **NO .ts or .tsx files** - Use .js and .jsx only
+- **NO type annotations** - Keep code clean and simple
 - Use functional components in React
 - Prefer async/await over promises
-- Use Zod for runtime validation
+- Use Zod for runtime validation (not TypeScript types)
 - Follow Next.js App Router conventions
 - Use server components by default
 - Use client components only when needed
+- Use JSDoc comments for documentation if needed
 
 ---
 
@@ -383,27 +407,35 @@ npm run test:e2e
 
 ### 11. Code Style
 
-### TypeScript
-```typescript
-// ✅ Good: Explicit types, clear function signatures
-interface DeviceCommand {
-  deviceId: string;
-  action: 'on' | 'off' | 'dim';
-  value?: number;
-}
-
-async function controlDevice(command: DeviceCommand): Promise<void> {
-  // Implementation
-}
-
-// ❌ Avoid: Implicit any, unclear types
+### JavaScript (NO TypeScript!)
+```javascript
+// ✅ Good: Clear function with JSDoc comments
+/**
+ * Controls a smart home device
+ * @param {Object} command - Device command object
+ * @param {string} command.deviceId - Device identifier
+ * @param {'on'|'off'|'dim'} command.action - Action to perform
+ * @param {number} [command.value] - Optional value for dimming
+ */
 async function controlDevice(command) {
-  // Implementation
+  // Implementation with Zod validation
+  const schema = z.object({
+    deviceId: z.string(),
+    action: z.enum(['on', 'off', 'dim']),
+    value: z.number().optional()
+  });
+  const validated = schema.parse(command);
+  // ... rest of implementation
+}
+
+// ❌ Avoid: TypeScript syntax
+async function controlDevice(command: DeviceCommand): Promise<void> {
+  // NO! This is TypeScript - NEVER use this!
 }
 ```
 
 ### React Components
-```typescript
+```javascript
 // ✅ Good: Server component by default
 export default async function DevicesPage() {
   const devices = await getDevices();
@@ -419,7 +451,7 @@ export function ChatInput() {
 ```
 
 ### LangChain Tools
-```typescript
+```javascript
 // ✅ Good: Well-documented tool with clear description
 export const listDevicesTool = new DynamicTool({
   name: 'list_devices',
@@ -437,7 +469,7 @@ export const listDevicesTool = new DynamicTool({
 
 **Always handle errors gracefully:**
 
-```typescript
+```javascript
 // ✅ Good: Comprehensive error handling
 try {
   await mqttClient.publish(topic, message);
@@ -455,7 +487,7 @@ try {
 ```
 
 **Error response format:**
-```typescript
+```javascript
 {
   error: {
     code: 'DEVICE_UNAVAILABLE',
@@ -471,7 +503,7 @@ try {
 
 **Use structured logging:**
 
-```typescript
+```javascript
 import { logger } from '@/lib/logger';
 
 // ✅ Good: Structured logs with context
@@ -577,12 +609,12 @@ console.log('Device turned on');
 ### 17. Common Patterns
 
 ### API Route (App Router)
-```typescript
-// app/api/devices/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+```javascript
+// app/api/devices/route.js
+import { NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 
-export async function GET(request: NextRequest) {
+export async function GET(request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -594,14 +626,14 @@ export async function GET(request: NextRequest) {
 ```
 
 ### LangChain Tool
-```typescript
+```javascript
 import { DynamicTool } from '@langchain/core/tools';
 
-export function createDeviceControlTool(mqttClient: MQTTClient) {
+export function createDeviceControlTool(mqttClient) {
   return new DynamicTool({
     name: 'control_device',
     description: 'Controls a smart home device. Parameters: deviceId (string), action (on|off|dim), value (number, optional for dim)',
-    func: async (input: string) => {
+    func: async (input) => {
       const params = JSON.parse(input);
       await mqttClient.publish(`home/device/${params.deviceId}/set`, {
         action: params.action,
@@ -614,7 +646,7 @@ export function createDeviceControlTool(mqttClient: MQTTClient) {
 ```
 
 ### MQTT Subscribe
-```typescript
+```javascript
 mqttClient.on('connect', () => {
   mqttClient.subscribe('home/+/status', (err) => {
     if (err) {
@@ -809,12 +841,282 @@ See README.md for Docker Compose and Kubernetes/Helm deployment options.
 
 ---
 
+### Voice Gateway OWW Deployment
+
+**IMPORTANT: Voice Gateway requires audio devices and Python dependencies**
+
+### Pre-Deployment Checklist
+
+**For Voice Gateway OWW:**
+- [ ] Verify Python virtual environment exists at `/apps/voice-gateway-oww/.venv`
+- [ ] Install Piper TTS in venv: `pip install piper-tts`
+- [ ] Download Whisper model (e.g., `ggml-tiny.bin` or `ggml-base.bin`)
+- [ ] Download OpenWakeWord models (melspectrogram, embedding, wake word model)
+- [ ] Download Piper voice model (e.g., `en_US-amy-medium.onnx`)
+- [ ] Test audio devices: `arecord -l` and `aplay -l`
+- [ ] Verify ALSA device names in `.env` file
+- [ ] Test MQTT connection to broker
+- [ ] Verify Ollama is running and model is downloaded
+- [ ] Test microphone: `arecord -D plughw:3,0 -f S16_LE -r 16000 -d 3 test.wav`
+
+### Systemd Service Template
+
+**Location:** `/etc/systemd/system/voice-gateway-oww.service`
+
+**Correct configuration:**
+```ini
+[Unit]
+Description=Voice Gateway OWW - Wake Word Detection and Voice Commands
+After=network.target ollama.service
+Wants=ollama.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww
+Environment="NODE_ENV=production"
+Environment="LOG_LEVEL=info"
+Environment="VIRTUAL_ENV=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv"
+Environment="PATH=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+
+# OpenWakeWord Configuration
+Environment="OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx"
+Environment="OWW_THRESHOLD=0.25"
+Environment="OWW_INFERENCE_FRAMEWORK=onnx"
+
+# Audio Configuration
+Environment="AUDIO_MIC_DEVICE=plughw:3,0"
+Environment="AUDIO_SPEAKER_DEVICE=plughw:2,0"
+Environment="AUDIO_SAMPLE_RATE=16000"
+Environment="AUDIO_CHANNELS=1"
+
+# Voice Activity Detection (VAD)
+Environment="VAD_TRAILING_SILENCE_MS=1500"
+Environment="VAD_MAX_UTTERANCE_MS=10000"
+
+# Whisper Speech-to-Text
+Environment="WHISPER_MODEL=tiny"
+Environment="WHISPER_MODEL_PATH=models/ggml-tiny.bin"
+
+# MQTT Broker
+Environment="MQTT_BROKER_URL=mqtt://10.0.0.58:31883"
+Environment="MQTT_CLIENT_ID=voice-gateway-oww"
+Environment="MQTT_USERNAME="
+Environment="MQTT_PASSWORD="
+
+# Health Check
+Environment="HEALTHCHECK_PORT=3002"
+
+# Ollama AI Configuration
+Environment="OLLAMA_BASE_URL=http://localhost:11434"
+Environment="OLLAMA_MODEL=qwen2.5:0.5b"
+
+# Text-to-Speech (Piper TTS)
+Environment="TTS_ENABLED=true"
+Environment="TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx"
+Environment="TTS_VOLUME=1.0"
+Environment="TTS_SPEED=3.0"
+
+ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Key points:**
+- ✅ **CRITICAL:** Set `VIRTUAL_ENV` and prepend `.venv/bin` to `PATH` for Piper TTS to work
+- ✅ `WorkingDirectory` must point to `/apps/voice-gateway-oww`
+- ✅ `ExecStart` must use absolute path to Node.js binary
+- ✅ All audio device names must match your hardware (use `arecord -l` to find)
+- ✅ Service should depend on network and ollama being ready
+- ✅ Adjust `OWW_THRESHOLD` based on your environment (0.01-0.5)
+
+### Installation Steps
+
+```bash
+# 1. Create service file in the app directory (for version control)
+cd /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww
+
+# 2. Copy service file to systemd directory
+sudo cp voice-gateway-oww.service /etc/systemd/system/
+
+# 3. Reload systemd daemon
+sudo systemctl daemon-reload
+
+# 4. Enable service to start on boot
+sudo systemctl enable voice-gateway-oww.service
+
+# 5. Start the service
+sudo systemctl start voice-gateway-oww.service
+
+# 6. Check status
+systemctl status voice-gateway-oww.service
+```
+
+### Viewing Logs
+
+**Real-time log monitoring:**
+```bash
+# Follow logs in real-time (most useful)
+journalctl -u voice-gateway-oww.service -f
+
+# Follow logs with timestamps
+journalctl -u voice-gateway-oww.service -f --output=short-iso
+```
+
+**Historical logs:**
+```bash
+# Show last 50 lines
+journalctl -u voice-gateway-oww.service -n 50 --no-pager
+
+# Show last 100 lines
+journalctl -u voice-gateway-oww.service -n 100 --no-pager
+
+# Show logs since last boot
+journalctl -u voice-gateway-oww.service -b
+
+# Show logs from specific time range
+journalctl -u voice-gateway-oww.service --since "2025-10-17 20:00:00" --until "2025-10-17 21:00:00"
+
+# Show logs from last hour
+journalctl -u voice-gateway-oww.service --since "1 hour ago"
+```
+
+**Filtering logs:**
+```bash
+# Search for errors only
+journalctl -u voice-gateway-oww.service -p err
+
+# Search for specific keywords
+journalctl -u voice-gateway-oww.service --no-pager | grep "wake word"
+journalctl -u voice-gateway-oww.service --no-pager | grep "TTS"
+journalctl -u voice-gateway-oww.service --no-pager | grep "Piper"
+
+# Show logs with context (before/after)
+journalctl -u voice-gateway-oww.service --no-pager | grep -C 5 "error"
+```
+
+**Exporting logs:**
+```bash
+# Export to file
+journalctl -u voice-gateway-oww.service --no-pager > voice-gateway-logs.txt
+
+# Export last 1000 lines to file
+journalctl -u voice-gateway-oww.service -n 1000 --no-pager > voice-gateway-logs.txt
+```
+
+### Service Management
+
+```bash
+# Start service
+sudo systemctl start voice-gateway-oww.service
+
+# Stop service
+sudo systemctl stop voice-gateway-oww.service
+
+# Restart service (after config changes)
+sudo systemctl restart voice-gateway-oww.service
+
+# Check status
+systemctl status voice-gateway-oww.service
+
+# Enable auto-start on boot
+sudo systemctl enable voice-gateway-oww.service
+
+# Disable auto-start on boot
+sudo systemctl disable voice-gateway-oww.service
+
+# Reload service file after editing
+sudo systemctl daemon-reload
+sudo systemctl restart voice-gateway-oww.service
+```
+
+### Common Deployment Issues
+
+1. **"ModuleNotFoundError: No module named 'piper'"**
+   - **Cause:** Python virtual environment not activated in systemd service
+   - **Fix:** Ensure `VIRTUAL_ENV` and `PATH` with `.venv/bin` are set in service file
+   - **Verify:** Check that piper-tts is installed: `source .venv/bin/activate && pip list | grep piper`
+
+2. **"arecord: device not found" or microphone errors**
+   - **Cause:** Incorrect ALSA device name
+   - **Fix:** Find correct device with `arecord -l`, update `AUDIO_MIC_DEVICE` in service file
+   - **Common devices:** `hw:2,0`, `plughw:3,0`, `default`
+   - **Test:** `arecord -D plughw:3,0 -f S16_LE -r 16000 -d 3 test.wav`
+
+3. **Wake word not detected**
+   - **Cause:** Threshold too high or microphone level too low
+   - **Fix:** Lower `OWW_THRESHOLD` (try 0.01 for testing, then increase to 0.25-0.5)
+   - **Check logs:** Look for detection scores in logs to see if wake word is being heard
+   - **Test mic:** `arecord -D plughw:3,0 -f S16_LE -r 16000 test.wav` and play back
+
+4. **Service fails silently or restarts continuously**
+   - **Check logs:** `journalctl -u voice-gateway-oww.service -n 100 --no-pager`
+   - **Common causes:**
+     - Missing models (whisper, OpenWakeWord, Piper)
+     - MQTT broker unreachable
+     - Ollama not running
+     - Audio device permissions
+   - **Debug:** Run command manually: `cd /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww && node src/main.js`
+
+5. **TTS not working (no spoken responses)**
+   - **Cause:** Piper TTS not installed or venv not activated
+   - **Fix:** Install piper-tts in venv and verify `VIRTUAL_ENV` is set
+   - **Verify:** Check logs for "✅ Welcome message spoken" on startup
+   - **Test:** `source .venv/bin/activate && python -c "from piper import PiperVoice"`
+
+6. **High CPU usage or slow responses**
+   - **Cause:** Using large Ollama model or Whisper model
+   - **Fix:**
+     - Use `qwen2.5:0.5b` for Ollama (fastest)
+     - Use `ggml-tiny.bin` for Whisper (1.5s vs 6s for base)
+   - **Monitor:** `htop` to check CPU usage
+
+### Testing the Deployment
+
+After deploying, verify everything works:
+
+```bash
+# 1. Check service is running
+systemctl status voice-gateway-oww.service
+
+# 2. Watch logs in real-time
+journalctl -u voice-gateway-oww.service -f
+
+# 3. Look for these messages in logs:
+# ✅ "Voice Gateway (OpenWakeWord) starting..."
+# ✅ "OpenWakeWord initialized"
+# ✅ "Voice Gateway (OpenWakeWord) is ready"
+# ✅ "Welcome message spoken" (if TTS enabled)
+# ✅ "Listening for wake word..."
+
+# 4. Test wake word detection
+# Say "Hey Jarvis" followed by a question
+# Watch logs for:
+# 🎤 "Wake word detected!"
+# 📝 "You said: [your question]"
+# 🤖 "AI Response: [response]"
+
+# 5. Verify MQTT publishing (if broker configured)
+# Use MQTT client to subscribe to topics and verify messages
+```
+
+---
+
 ## Summary Checklist
 
 Before committing code, verify:
 - [ ] All tests pass
 - [ ] No console.errors or warnings
-- [ ] TypeScript compiles without errors
+- [ ] Code uses JavaScript only (no .ts or .tsx files)
 - [ ] Updated docs/tasks.md
 - [ ] Updated relevant documentation
 - [ ] No secrets in code

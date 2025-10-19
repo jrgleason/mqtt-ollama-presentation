@@ -34,7 +34,9 @@
     "onnxruntime-node": "latest",
     "uuid": "latest",
     "wav": "latest",
-    "xstate": "latest"
+    "xstate": "latest",
+    "@modelcontextprotocol/sdk": "1.20.0",
+    "zwave-mcp-server": "file:../zwave-mcp-server"
   },
   "devDependencies": {
     "eslint": "latest",

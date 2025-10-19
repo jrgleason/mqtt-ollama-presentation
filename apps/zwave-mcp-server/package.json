@@ -1,14 +1,16 @@
 {
   "name": "zwave-mcp-server",
   "version": "1.0.0",
-  "description": "Custom TypeScript MCP server for Z-Wave device control via MQTT",
+  "description": "Custom MCP server for Z-Wave device control via MQTT",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./src/mcp-client.js"
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "node dist/index.js",
-    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js"
+    "start": "node src/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector node src/index.js"
   },
   "keywords": [
     "mcp",
@@ -20,13 +22,9 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
+    "dotenv": "^17.2.3",
     "mqtt": "latest",
     "node-fetch": "latest",
-    "socket.io-client": "latest",
-    "zod": "latest"
-  },
-  "devDependencies": {
-    "@types/node": "latest",
-    "typescript": "latest"
+    "socket.io-client": "latest"
   }
 }

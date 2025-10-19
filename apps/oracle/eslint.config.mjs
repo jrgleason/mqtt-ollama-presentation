@@ -10,7 +10,7 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...compat.extends("next/core-web-vitals"),
   {
     ignores: [
       "node_modules/**",
@@ -22,15 +22,10 @@ const eslintConfig = [
       "src/generated/prisma/**",
     ],
     rules: {
-      // Globally allow explicit any where necessary
-      '@typescript-eslint/no-explicit-any': 'off',
       // Turn off unused vars rule globally (per user request)
-      '@typescript-eslint/no-unused-vars': 'off',
-      // Also disable base no-unused-vars in case it's active
       'no-unused-vars': 'off',
-      // Turn off unused-expressions rules (base + TypeScript plugin)
+      // Turn off unused-expressions rules
       'no-unused-expressions': 'off',
-      '@typescript-eslint/no-unused-expressions': 'off',
     },
   },
 
@@ -38,11 +33,8 @@ const eslintConfig = [
   {
     files: ["src/generated/**", "src/**/generated/**"],
     rules: {
-      '@typescript-eslint/no-unused-expressions': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
       'no-unused-expressions': 'off',
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];
