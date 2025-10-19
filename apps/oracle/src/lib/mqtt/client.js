@@ -89,11 +89,27 @@ class MQTTClientSingleton {
   }
 
   async publish(topic, message, options = {}) {
+    console.log('[MQTT] publish() called', {
+      topic,
+      message,
+      connected: this.client?.connected,
+      clientExists: !!this.client
+    });
+
     if (!this.client || !this.client.connected) {
+      console.log('[MQTT] Not connected, attempting to connect...');
       await this.connect();
+      console.log('[MQTT] Connected successfully, broker:', MQTT_BROKER_URL);
     }
 
     const payload = typeof message === 'string' ? message : JSON.stringify(message);
+
+    console.log('[MQTT] About to publish:', {
+      topic,
+      payload,
+      qos: options.qos || 0,
+      brokerUrl: MQTT_BROKER_URL
+    });
 
     return new Promise((resolve, reject) => {
       this.client.publish(topic, payload, { qos: options.qos || 0 }, (error) => {
@@ -101,7 +117,7 @@ class MQTTClientSingleton {
           console.error('[MQTT] Publish error:', error);
           reject(error);
         } else {
-          console.log('[MQTT] Published to', topic, ':', payload);
+          console.log('[MQTT] ✅ Publish SUCCESS to', topic, ':', payload);
           resolve();
         }
       });

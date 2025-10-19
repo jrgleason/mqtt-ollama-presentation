@@ -260,7 +260,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           return matchesFilter && (includeInactive || isActive);
         })
-        .map((node) => buildDeviceSummary(node, registry))
+        .map((node) => {
+          // Simplified device summary for AI - only essential fields
+          const name = node.name || `Node ${node.id}`;
+          const status = (node.ready && node.available) ? 'online' : 'offline';
+          return {
+            name,
+            nodeId: node.id,
+            location: node.loc || undefined,
+            status
+          };
+        })
         .sort((a, b) => a.name.localeCompare(b.name));
 
       // Return JSON for programmatic use
@@ -375,8 +385,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // TODO: Send MQTT command - requires MQTT client initialization
       // For now, return success message with the topic/value that would be sent
       const response = action === 'dim'
-        ? `Successfully dimmed ${device.name} to ${level}% (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic})`
-        : `Successfully turned ${action} ${device.name} (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic})`;
+        ? `Dry-run: Would dim ${device.name} to ${level}% (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`
+        : `Dry-run: Would turn ${action} ${device.name} (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`;
 
       return {
         content: [

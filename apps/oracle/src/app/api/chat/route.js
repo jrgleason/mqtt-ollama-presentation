@@ -36,13 +36,13 @@ export async function POST(req) {
       role: 'system',
       content: `You are a helpful home automation assistant.
 
-Only use tools when the user explicitly asks to:
-- List devices or check device status (use list_devices tool)
-- Control devices (use control_device tool)
-- Perform calculations (use calculator tool)
-
-For general conversation, greetings, or questions that don't require device interaction
-or calculations, respond directly without using any tools.`
+IMPORTANT RULES:
+1. When user asks to list devices, you MUST call the list_devices tool. DO NOT make up device names.
+2. When user asks to control a device, you MUST:
+   a. First call list_devices to get exact device names
+   b. Then call control_device with the EXACT name from the list
+3. NEVER invent or guess device names. Always use list_devices first.
+4. For greetings or general questions, respond normally without tools.`
     };
 
     const allMessages = [systemMessage, ...messages];
@@ -51,12 +51,18 @@ or calculations, respond directly without using any tools.`
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          // First, invoke the model to see if it wants to use tools
-          const response = await modelWithTools.invoke(allMessages);
+          let currentMessages = allMessages;
+          let response = await modelWithTools.invoke(currentMessages);
+          const maxIterations = 5; // Prevent infinite loops
+          let iteration = 0;
 
-          // Check if model wants to call tools
-          if (response.tool_calls && response.tool_calls.length > 0) {
-            // Execute tool calls
+          // Keep processing tool calls until the model stops requesting tools
+          while (response.tool_calls && response.tool_calls.length > 0 && iteration < maxIterations) {
+            iteration++;
+
+            // Execute all tool calls in this iteration
+            const toolResults = [];
+
             for (const toolCall of response.tool_calls) {
               const tool = tools.find(t => t.name === toolCall.name);
               if (tool) {
@@ -67,11 +73,15 @@ or calculations, respond directly without using any tools.`
                 })}\n\n`;
                 controller.enqueue(encoder.encode(toolData));
 
-                // Execute the tool with specific error handling
-                // For DynamicStructuredTool, pass args directly (not JSON string)
+                // Execute the tool
                 let toolResult;
                 try {
                   toolResult = await tool.func(toolCall.args);
+                  toolResults.push({
+                    role: 'tool',
+                    content: toolResult,
+                    tool_call_id: toolCall.id
+                  });
                 } catch (toolError) {
                   console.error(`Error executing tool "${toolCall.name}":`, toolError);
                   const errorChunk = `data: ${JSON.stringify({
@@ -82,37 +92,27 @@ or calculations, respond directly without using any tools.`
                   controller.close();
                   return;
                 }
-
-                // Add tool result to messages and get final response
-                const messagesWithToolResult = [
-                  ...allMessages,
-                  { role: 'assistant', content: response.content, tool_calls: response.tool_calls },
-                  { role: 'tool', content: toolResult, tool_call_id: toolCall.id }
-                ];
-
-                // Get final response from model
-                const finalResponse = await model.invoke(messagesWithToolResult);
-
-                const data = `data: ${JSON.stringify({
-                  type: 'content',
-                  content: finalResponse.content
-                })}\n\n`;
-                controller.enqueue(encoder.encode(data));
               }
             }
-          } else {
-            // No tools needed, stream the response directly
-            const stream = await model.stream(allMessages);
 
-            for await (const chunk of stream) {
-              if (chunk.content) {
-                const data = `data: ${JSON.stringify({
-                  type: 'content',
-                  content: chunk.content
-                })}\n\n`;
-                controller.enqueue(encoder.encode(data));
-              }
-            }
+            // Add assistant message with tool calls and tool results to conversation
+            currentMessages = [
+              ...currentMessages,
+              { role: 'assistant', content: response.content, tool_calls: response.tool_calls },
+              ...toolResults
+            ];
+
+            // Get next response from model (might have more tool calls)
+            response = await modelWithTools.invoke(currentMessages);
+          }
+
+          // Final response (no more tool calls)
+          if (response.content) {
+            const data = `data: ${JSON.stringify({
+              type: 'content',
+              content: response.content
+            })}\n\n`;
+            controller.enqueue(encoder.encode(data));
           }
 
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));

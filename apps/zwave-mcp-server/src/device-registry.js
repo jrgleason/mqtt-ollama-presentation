@@ -21,16 +21,17 @@ export class DeviceRegistryBuilder {
 
       const nodeId = Number.parseInt(nodeIdStr, 10);
       const deviceName = node.name || `Node ${nodeId}`;
+      const location = node.loc || '';
 
       const { type, commandClass } = this.detectDeviceType(node);
 
       registry[deviceName] = {
         nodeId,
         name: deviceName,
-        location: node.loc || '',
+        location,
         topics: {
-          control: this.buildControlTopic(nodeId, commandClass),
-          state: this.buildStateTopic(nodeId, commandClass),
+          control: this.buildControlTopic(location, deviceName, commandClass),
+          state: this.buildStateTopic(location, deviceName, commandClass),
         },
         type,
         commandClass,
@@ -83,19 +84,49 @@ export class DeviceRegistryBuilder {
   }
 
   /**
-   * @param {number} nodeId
+   * Map command class number to MQTT topic name
    * @param {number} commandClass
+   * @returns {string}
    */
-  buildControlTopic(nodeId, commandClass) {
-    return `zwave/${nodeId}/${commandClass}/0/targetValue/set`;
+  getCommandClassName(commandClass) {
+    const mapping = {
+      37: 'switch_binary',
+      38: 'switch_multilevel',
+      49: 'sensor_multilevel',
+      64: 'thermostat_mode',
+    };
+    return mapping[commandClass] || `cc_${commandClass}`;
   }
 
   /**
-   * @param {number} nodeId
+   * Format name for MQTT topic (replace spaces with underscores)
+   * @param {string} name
+   * @returns {string}
+   */
+  formatTopicName(name) {
+    return name.replace(/ /g, '_');
+  }
+
+  /**
+   * @param {string} location
+   * @param {string} deviceName
    * @param {number} commandClass
    */
-  buildStateTopic(nodeId, commandClass) {
-    return `zwave/${nodeId}/${commandClass}/0/currentValue`;
+  buildControlTopic(location, deviceName, commandClass) {
+    const formattedName = this.formatTopicName(deviceName);
+    const commandClassName = this.getCommandClassName(commandClass);
+    return `zwave/${location}/${formattedName}/${commandClassName}/endpoint_0/targetValue/set`;
+  }
+
+  /**
+   * @param {string} location
+   * @param {string} deviceName
+   * @param {number} commandClass
+   */
+  buildStateTopic(location, deviceName, commandClass) {
+    const formattedName = this.formatTopicName(deviceName);
+    const commandClassName = this.getCommandClassName(commandClass);
+    return `zwave/${location}/${formattedName}/${commandClassName}/endpoint_0/currentValue`;
   }
 
   /**
