@@ -731,6 +731,43 @@ mqttClient.on('message', (topic, message) => {
 
 **IMPORTANT: Before deploying to production (systemd service, Docker, etc.):**
 
+### Quick Reference: Service Log Commands
+
+**Check Oracle (Next.js) service:**
+```bash
+# View status
+systemctl status oracle.service
+
+# View logs (last 100 lines)
+journalctl -u oracle.service -n 100 --no-pager
+
+# Follow logs in real-time
+journalctl -u oracle.service -f
+```
+
+**Check Voice Gateway service:**
+```bash
+# View status
+systemctl status voice-gateway-oww.service
+
+# View logs (last 100 lines)
+journalctl -u voice-gateway-oww.service -n 100 --no-pager
+
+# Follow logs in real-time
+journalctl -u voice-gateway-oww.service -f
+```
+
+**Check all running services:**
+```bash
+# List all active services
+systemctl list-units --type=service --state=running
+
+# Check failed services
+systemctl list-units --type=service --state=failed
+```
+
+---
+
 ### Pre-Deployment Checklist
 
 **For Oracle (Next.js App):**
@@ -747,7 +784,7 @@ mqttClient.on('message', (topic, message) => {
 - [ ] Check Node.js binary path is correct (especially if using NVM)
 - [ ] Verify all environment variables are defined in service file
 - [ ] Test service starts successfully: `systemctl status oracle.service`
-- [ ] Check logs for errors: `journalctl -u oracle.service -n 50`
+- [ ] Check logs for errors: `journalctl -u oracle.service -n 100 --no-pager`
 - [ ] Verify service restarts on failure
 - [ ] Test service survives system reboot
 
@@ -764,7 +801,7 @@ mqttClient.on('message', (topic, message) => {
    - **Prevention:** Always verify directory structure before creating service files
 
 3. **Service fails silently or restarts continuously**
-   - **Check logs:** `journalctl -u oracle.service -n 50 --no-pager`
+   - **Check logs:** `journalctl -u oracle.service -n 100 --no-pager`
    - **Common causes:** Missing env vars, database not accessible, MQTT broker unreachable
    - **Debug:** Run the ExecStart command manually to see real-time errors
 
@@ -821,10 +858,37 @@ sudo systemctl start oracle.service
 
 # Check status
 systemctl status oracle.service
-journalctl -u oracle.service -n 50 --no-pager
+
+# Check logs (most recent 100 lines)
+journalctl -u oracle.service -n 100 --no-pager
+
+# Follow logs in real-time
+journalctl -u oracle.service -f
 
 # Restart after code changes
 sudo systemctl restart oracle.service
+```
+
+**Verifying the service is running correctly:**
+```bash
+# 1. Check service status (should show "active (running)")
+systemctl status oracle.service
+
+# 2. View recent logs to check for errors
+journalctl -u oracle.service -n 100 --no-pager
+
+# 3. Look for these success indicators in logs:
+# ✅ "Server started on http://localhost:3000"
+# ✅ "ready - started server on"
+# ❌ Look for ERROR, ECONNREFUSED, or exit codes
+
+# 4. Test the application is accessible
+curl http://localhost:3000
+
+# 5. Check if Next.js is listening on port 3000
+sudo netstat -tlnp | grep 3000
+# OR
+ss -tlnp | grep 3000
 ```
 
 **Nginx reverse proxy setup:**
@@ -1058,7 +1122,14 @@ sudo systemctl restart voice-gateway-oww.service
    - **Check logs:** Look for detection scores in logs to see if wake word is being heard
    - **Test mic:** `arecord -D plughw:3,0 -f S16_LE -r 16000 test.wav` and play back
 
-4. **Service fails silently or restarts continuously**
+4. **"spawn whisper-cli ENOENT" or transcription fails**
+   - **Cause:** whisper-cli not in PATH
+   - **Fix:** Add whisper.cpp build directory to PATH in service file
+   - **Update PATH:** `Environment="PATH=/home/pi/code/whisper.cpp/build/bin:..."`
+   - **Verify:** Check that whisper-cli exists: `ls -l /home/pi/code/whisper.cpp/build/bin/whisper-cli`
+   - **Symptom:** Wake word detected (beep), but no transcription or AI response
+
+5. **Service fails silently or restarts continuously**
    - **Check logs:** `journalctl -u voice-gateway-oww.service -n 100 --no-pager`
    - **Common causes:**
      - Missing models (whisper, OpenWakeWord, Piper)
@@ -1067,13 +1138,13 @@ sudo systemctl restart voice-gateway-oww.service
      - Audio device permissions
    - **Debug:** Run command manually: `cd /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww && node src/main.js`
 
-5. **TTS not working (no spoken responses)**
+6. **TTS not working (no spoken responses)**
    - **Cause:** Piper TTS not installed or venv not activated
    - **Fix:** Install piper-tts in venv and verify `VIRTUAL_ENV` is set
    - **Verify:** Check logs for "✅ Welcome message spoken" on startup
    - **Test:** `source .venv/bin/activate && python -c "from piper import PiperVoice"`
 
-6. **High CPU usage or slow responses**
+7. **High CPU usage or slow responses**
    - **Cause:** Using large Ollama model or Whisper model
    - **Fix:**
      - Use `qwen2.5:0.5b` for Ollama (fastest)
@@ -1085,29 +1156,59 @@ sudo systemctl restart voice-gateway-oww.service
 After deploying, verify everything works:
 
 ```bash
-# 1. Check service is running
+# 1. Check service status (should show "active (running)")
 systemctl status voice-gateway-oww.service
 
-# 2. Watch logs in real-time
-journalctl -u voice-gateway-oww.service -f
+# 2. View recent logs to verify startup
+journalctl -u voice-gateway-oww.service -n 100 --no-pager
 
-# 3. Look for these messages in logs:
+# 3. Look for these success indicators in logs:
 # ✅ "Voice Gateway (OpenWakeWord) starting..."
+# ✅ "ZWave MCP client ready"
 # ✅ "OpenWakeWord initialized"
 # ✅ "Voice Gateway (OpenWakeWord) is ready"
-# ✅ "Welcome message spoken" (if TTS enabled)
 # ✅ "Listening for wake word..."
+# ✅ "Welcome message spoken" (if TTS enabled)
+#
+# ❌ Look for these error indicators:
+# ❌ "spawn whisper-cli ENOENT" - whisper-cli not in PATH
+# ❌ "ModuleNotFoundError: No module named 'piper'" - Piper not installed
+# ❌ "ALSA device check failed" - audio device issues
+# ❌ "Failed to connect to MQTT broker" - MQTT connection issues
 
-# 4. Test wake word detection
+# 4. Follow logs in real-time for testing
+journalctl -u voice-gateway-oww.service -f
+
+# 5. Test wake word detection
 # Say "Hey Jarvis" followed by a question
-# Watch logs for:
-# 🎤 "Wake word detected!"
-# 📝 "You said: [your question]"
-# 🤖 "AI Response: [response]"
+# Watch logs for the complete flow:
+# 🎤 "Wake word detected!" - wake word heard
+# 📝 "You said: [your question]" - transcription succeeded
+# 🤖 "AI Response: [response]" - Ollama responded
+# ✅ "AI response playback complete" - TTS played audio
+#
+# If you hear beeps but nothing else, check logs for errors
 
-# 5. Verify MQTT publishing (if broker configured)
+# 6. Verify all components
+# Check Ollama is running
+curl http://localhost:11434/api/tags
+
+# Check MQTT broker (if configured)
 # Use MQTT client to subscribe to topics and verify messages
+
+# Check audio devices
+arecord -l  # List microphones
+aplay -l    # List speakers
 ```
+
+**Quick verification checklist:**
+- [ ] Service shows "active (running)" in status
+- [ ] Logs show "Voice Gateway (OpenWakeWord) is ready"
+- [ ] Logs show "Listening for wake word..."
+- [ ] Wake word detection triggers beep
+- [ ] Speech is transcribed (check logs for "You said:")
+- [ ] AI responds (check logs for "AI Response:")
+- [ ] TTS plays audio (if enabled)
 
 ---
 
