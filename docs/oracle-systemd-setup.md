@@ -61,7 +61,7 @@ Environment="OLLAMA_BASE_URL=http://localhost:11434"
 Environment="OLLAMA_MODEL=llama3.2:3b"
 Environment="DATABASE_URL=file:./dev.db"
 Environment="MQTT_BROKER_URL=mqtt://127.0.0.1:1883"
-ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
+ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -81,10 +81,10 @@ WantedBy=multi-user.target
    - Common mistake: Using `/home/pi/code/mqtt-ollama-presentation/oracle`
    - ✅ Correct: `/home/pi/code/mqtt-ollama-presentation/apps/oracle`
 
-2. **ExecStart - Node path:** Use absolute path to Node binary
-   - Find yours with: `which node`
-   - Example: `/home/pi/.nvm/versions/node/v24.9.0/bin/node`
-   - Replace `v24.9.0` with your actual Node version
+2. **ExecStart - Node path:** Use the `current` symlink for easy version management
+   - Recommended: `/home/pi/.nvm/versions/node/current/bin/node`
+   - This symlink points to your active Node version (created in [Raspberry Pi setup](raspberry-pi-setup.md#3-create-node-version-symlink-important))
+   - Alternative: Use specific version path like `/home/pi/.nvm/versions/node/v24.9.0/bin/node` (requires editing service file when upgrading Node)
 
 3. **ExecStart - Application path:** Must match WorkingDirectory
    - Full path: `<node-binary> <WorkingDirectory>/node_modules/.bin/next start`
@@ -383,7 +383,7 @@ sudo cat /etc/systemd/system/oracle.service | grep WorkingDirectory
 2. Update BOTH `WorkingDirectory` and `ExecStart` to use `/apps/oracle`:
    ```ini
    WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
-   ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
+   ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
    ```
 
 3. Reload and restart:

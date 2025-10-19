@@ -13,7 +13,7 @@
 - Raspberry Pi OS (64-bit)
 - zwave-js-ui (Z-Wave MQTT gateway)
 - Ollama (Local LLM runtime)
-- llama3.2:1b or llama3.2:3b model
+- llama3.2:1b or llama3.2:3b model, or qwen2.5:0.5b model (recommended for voice gateway per [performance optimization documentation](performance-optimization.md))
 
 ---
 

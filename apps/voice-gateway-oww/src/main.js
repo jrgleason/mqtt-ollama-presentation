@@ -109,6 +109,14 @@ const generateDualBeep = (freq1 = 600, freq2 = 900, toneDuration = 80, gapDurati
   return Buffer.concat([tone1, gapBuffer, tone2]);
 };
 
+// Pre-generate common beep patterns to avoid repeated computation during voice pipeline
+// These buffers are created once at module initialization for better performance
+const BEEPS = {
+  wakeWord: generateBeep(800, 150),        // 800Hz for 150ms (wake word detected)
+  processing: generateBeep(500, 100),      // 500Hz for 100ms (processing query)
+  response: generateDualBeep(600, 900, 80, 30) // Dual-tone ascending (response ready)
+};
+
 /**
  * Play audio through speaker using aplay (Linux) or afplay (macOS)
  * @param {Buffer} pcmAudio - Raw 16kHz S16LE PCM audio
@@ -365,10 +373,9 @@ async function backgroundTranscribe(audioSamples) {
 
           // Play processing beep (lower pitch than wake word beep)
           try {
-            const processingBeep = generateBeep(500, 100); // 500Hz for 100ms (lower/shorter)
-            await playAudio(processingBeep);
+            await playAudio(BEEPS.processing);
           } catch (beepError) {
-            logger.debug('⚠️ Failed to play processing beep', { error: beepError.message });
+            logger.debug('⚠️ Failed to play processing beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
           }
 
           const aiResponse = await queryOllama(null, { messages });
@@ -378,10 +385,9 @@ async function backgroundTranscribe(audioSamples) {
 
           // Play response received beep (dual-tone ascending)
           try {
-            const responseBeep = generateDualBeep(600, 900, 80, 30); // Two tones: 600Hz → 900Hz
-            await playAudio(responseBeep);
+            await playAudio(BEEPS.response);
           } catch (beepError) {
-            logger.debug('⚠️ Failed to play response beep', { error: beepError.message });
+            logger.debug('⚠️ Failed to play response beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
           }
 
           await publishAIResponse(transcription, aiResponse, {
@@ -670,10 +676,9 @@ async function main() {
 
             // Play acknowledgment beep
             try {
-              const beep = generateBeep(800, 150); // 800Hz for 150ms
-              await playAudio(beep);
+              await playAudio(BEEPS.wakeWord);
             } catch (beepError) {
-              logger.debug('⚠️ Failed to play beep', { error: beepError.message });
+              logger.debug('⚠️ Failed to play beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
             }
 
             voiceService.send({ type: 'TRIGGER', ts });

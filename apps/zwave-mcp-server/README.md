@@ -69,7 +69,7 @@ DEFAULT_USERNAME=admin
 DEFAULT_PASSWORD=your_secure_password
 ```
 
-**IMPORTANT**: Even though ZWaveJSUI runs locally on the Pi, you **MUST** enable authentication to prevent unauthorized access to your Z-Wave network.
+**IMPORTANT**: Even though Z-Wave JS UI runs locally on the Pi, you **MUST** enable authentication to prevent unauthorized access to your Z-Wave network.
 
 ### 2. Configure MCP Server
 

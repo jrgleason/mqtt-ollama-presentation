@@ -76,8 +76,7 @@ export class DeviceRegistryBuilder {
 
     return {
       type: 'unknown',
-      commandClass:
-        Number.isFinite(defaultCommandClass) && defaultCommandClass !== undefined
+      commandClass: Number.isFinite(defaultCommandClass)
           ? defaultCommandClass
           : 37,
     };
