@@ -22,6 +22,8 @@ export function createDeviceListTool() {
       try {
         const devices = await listDevices();
 
+        console.log('[device-list-tool] Devices received from MCP:', JSON.stringify(devices, null, 2));
+
         if (devices.length === 0) {
           return 'No devices found. Please pair some Z-Wave devices using ZWave-JS-UI first.';
         }
@@ -36,6 +38,8 @@ export function createDeviceListTool() {
             if (device.location) {
               parts.push(`Location: ${device.location}`);
             }
+
+            console.log(`[device-list-tool] Device ${device.name}: available=${device.available}, ready=${device.ready}`);
 
             const status = device.available && device.ready ? 'Online' : 'Offline';
             parts.push(`Status: ${status}`);

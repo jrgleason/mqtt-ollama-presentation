@@ -65,8 +65,15 @@ export function createDeviceControlTool() {
           return `Error: Invalid action "${action}"`;
         }
 
+        console.log('[device-control-tool] Publishing to MQTT:', {
+          topic: controlTopic,
+          payload: { value: mqttValue }
+        });
+
         // Publish to MQTT
         await mqttClient.publish(controlTopic, { value: mqttValue });
+
+        console.log('[device-control-tool] MQTT publish complete');
 
         const response =
           action === 'dim'
