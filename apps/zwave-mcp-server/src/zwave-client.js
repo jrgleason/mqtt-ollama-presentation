@@ -5,6 +5,8 @@ import { io } from 'socket.io-client';
 /** @typedef {import('./types.js').ZWaveConfig} ZWaveConfig */
 /** @typedef {import('./types.js').ZWaveNode} ZWaveNode */
 
+const DEFAULT_SOCKET_TIMEOUT_MS = 5000;
+
 export class ZWaveUIClient {
   /**
    * @param {ZWaveUIConfig} config
@@ -75,7 +77,7 @@ export class ZWaveUIClient {
 
   async fetchNodesViaSocket() {
     const { endpoint, path } = this.buildSocketConnection();
-    const timeoutMs = this.config.socketTimeoutMs ?? 5000;
+    const timeoutMs = this.config.socketTimeoutMs ?? DEFAULT_SOCKET_TIMEOUT_MS;
 
     const connectionUrl = this.authToken
       ? `${endpoint}?token=${encodeURIComponent(this.authToken)}`

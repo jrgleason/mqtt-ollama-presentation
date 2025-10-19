@@ -67,9 +67,21 @@ or calculations, respond directly without using any tools.`
                 })}\n\n`;
                 controller.enqueue(encoder.encode(toolData));
 
-                // Execute the tool
+                // Execute the tool with specific error handling
                 // For DynamicStructuredTool, pass args directly (not JSON string)
-                const toolResult = await tool.func(toolCall.args);
+                let toolResult;
+                try {
+                  toolResult = await tool.func(toolCall.args);
+                } catch (toolError) {
+                  console.error(`Error executing tool "${toolCall.name}":`, toolError);
+                  const errorChunk = `data: ${JSON.stringify({
+                    type: 'error',
+                    content: `Error using tool "${toolCall.name}": ${toolError instanceof Error ? toolError.message : String(toolError)}`,
+                  })}\n\n`;
+                  controller.enqueue(encoder.encode(errorChunk));
+                  controller.close();
+                  return;
+                }
 
                 // Add tool result to messages and get final response
                 const messagesWithToolResult = [

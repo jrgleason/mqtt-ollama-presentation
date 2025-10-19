@@ -83,7 +83,7 @@ const generateBeep = (frequency = 800, duration = 200) => {
 
   for (let i = 0; i < numSamples; i++) {
     const t = i / sampleRate;
-    const sample = Math.sin(2 * Math.PI * frequency * t) * 0.3; // 30% volume
+    const sample = Math.sin(2 * Math.PI * frequency * t) * config.audio.beepVolume;
     const int16Sample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
     pcmData.writeInt16LE(int16Sample, i * 2);
   }
