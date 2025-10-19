@@ -348,9 +348,15 @@ async function backgroundTranscribe(audioSamples) {
           conversationManager.addUserMessage(transcription);
 
           // Check if user is asking about devices
-          const deviceKeywords = ['device', 'light', 'switch', 'sensor', 'what do i have', 'what devices', 'list', 'show me'];
-          const isDeviceQuery = deviceKeywords.some(keyword =>
-            transcription.toLowerCase().includes(keyword)
+          // Use more specific patterns and word boundaries to avoid false positives
+          const deviceQueryPatterns = [
+            /\b(list|show|what)\s+(devices?|lights?|switch(es)?|sensors?)\b/i,
+            /\bwhat do i have\b/i,
+            /\bshow me (the )?(devices?|lights?|switch(es)?|sensors?)\b/i,
+            /\bdevices?\b/i // Only match 'device' or 'devices' as a whole word
+          ];
+          const isDeviceQuery = deviceQueryPatterns.some(pattern =>
+            pattern.test(transcription)
           );
 
           let systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
