@@ -375,8 +375,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // TODO: Send MQTT command - requires MQTT client initialization
       // For now, return success message with the topic/value that would be sent
       const response = action === 'dim'
-        ? `Successfully dimmed ${device.name} to ${level}% (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic})`
-        : `Successfully turned ${action} ${device.name} (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic})`;
+        ? `Dry-run: Would dim ${device.name} to ${level}% (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`
+        : `Dry-run: Would turn ${action} ${device.name} (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`;
 
       return {
         content: [
