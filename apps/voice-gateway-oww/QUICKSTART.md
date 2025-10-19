@@ -66,7 +66,13 @@ Expected output:
 **Piper TTS provides local, offline speech synthesis so the AI can talk back to you!**
 
 ```bash
-# Install Piper TTS
+# Create Python virtual environment for Piper TTS
+python3 -m venv venvs/piper-tts
+
+# Activate the virtual environment
+source venvs/piper-tts/bin/activate
+
+# Install Piper TTS in the venv
 pip install piper-tts
 
 # Download a voice model (amy is a good general-purpose voice)
@@ -77,6 +83,31 @@ python3 -m piper.download_voices en_US-amy-medium
 mkdir -p models/piper
 ln -s ~/.local/share/piper_tts/en_US-amy-medium.onnx models/piper/
 ln -s ~/.local/share/piper_tts/en_US-amy-medium.onnx.json models/piper/
+
+# Deactivate venv when done
+deactivate
+```
+
+**Using Piper TTS:**
+
+The application needs access to the venv's piper installation. The app will automatically use the venv if it exists:
+
+```bash
+# The app looks for piper in these locations (in order):
+# 1. ./venvs/piper-tts/bin/piper  (recommended)
+# 2. System-wide piper installation
+```
+
+To use the venv:
+```bash
+# Option 1: Run with venv activated (recommended for development)
+source venvs/piper-tts/bin/activate
+npm run dev
+# (venv stays active - press Ctrl+C to stop, then run 'deactivate')
+
+# Option 2: Let the app find it automatically
+npm run dev
+# (app will use venvs/piper-tts/bin/piper if it exists)
 ```
 
 **Available voices:**
@@ -316,13 +347,22 @@ Normal on Raspberry Pi:
 
 1. **Check if Piper is installed:**
    ```bash
+   # Activate venv first
+   source venvs/piper-tts/bin/activate
    python3 -c "import piper"
    # Should return nothing if installed, error if not
+   deactivate
    ```
 
 2. **Install Piper if missing:**
    ```bash
+   # Create venv if it doesn't exist
+   python3 -m venv venvs/piper-tts
+
+   # Activate and install
+   source venvs/piper-tts/bin/activate
    pip install piper-tts
+   deactivate
    ```
 
 3. **Check if voice model exists:**
@@ -333,10 +373,15 @@ Normal on Raspberry Pi:
 
 4. **Download voice if missing:**
    ```bash
+   # Activate venv first
+   source venvs/piper-tts/bin/activate
+
    python3 -m piper.download_voices en_US-amy-medium
    mkdir -p models/piper
    ln -s ~/.local/share/piper_tts/en_US-amy-medium.onnx models/piper/
    ln -s ~/.local/share/piper_tts/en_US-amy-medium.onnx.json models/piper/
+
+   deactivate
    ```
 
 5. **Check speaker device:**

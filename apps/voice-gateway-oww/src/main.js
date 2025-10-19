@@ -17,6 +17,7 @@ import { queryOllama, checkOllamaHealth } from './ollama-client.js';
 import { connectMQTT, publishTranscription, publishAIResponse } from './mqtt-client.js';
 import { conversationManager } from './conversation-manager.js';
 import { synthesizeSpeech, checkPiperHealth } from './piper-tts.js';
+import { initializeMCPClient, getDevicesForAI, shutdownMCPClient } from './mcp-zwave-client.js';
 
 // OpenWakeWord constants
 const SAMPLE_RATE = 16000;
@@ -67,6 +68,53 @@ const safeDetectorReset = (detector, context = 'general') => {
   } catch (err) {
     logger.debug(`Detector reset failed (${context})`, { error: err && err.message ? err.message : String(err) });
   }
+};
+
+/**
+ * Generate a simple beep tone (sine wave)
+ * @param {number} frequency - Frequency in Hz (default 800Hz)
+ * @param {number} duration - Duration in milliseconds (default 200ms)
+ * @returns {Buffer} - PCM audio buffer (16-bit signed integer)
+ */
+const generateBeep = (frequency = 800, duration = 200) => {
+  const sampleRate = SAMPLE_RATE;
+  const numSamples = Math.floor((duration / 1000) * sampleRate);
+  const pcmData = Buffer.alloc(numSamples * 2); // 2 bytes per sample (16-bit)
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const sample = Math.sin(2 * Math.PI * frequency * t) * config.audio.beepVolume;
+    const int16Sample = Math.max(-32768, Math.min(32767, Math.floor(sample * 32767)));
+    pcmData.writeInt16LE(int16Sample, i * 2);
+  }
+
+  return pcmData;
+};
+
+/**
+ * Generate a two-tone beep pattern (ascending)
+ * @param {number} freq1 - First frequency in Hz
+ * @param {number} freq2 - Second frequency in Hz
+ * @param {number} toneDuration - Duration of each tone in milliseconds
+ * @param {number} gapDuration - Gap between tones in milliseconds
+ * @returns {Buffer} - PCM audio buffer (16-bit signed integer)
+ */
+const generateDualBeep = (freq1 = 600, freq2 = 900, toneDuration = 80, gapDuration = 30) => {
+  const tone1 = generateBeep(freq1, toneDuration);
+  const tone2 = generateBeep(freq2, toneDuration);
+  const gapSamples = Math.floor((gapDuration / 1000) * SAMPLE_RATE);
+  const gapBuffer = Buffer.alloc(gapSamples * 2); // Silent gap
+
+  // Concatenate: tone1 + gap + tone2
+  return Buffer.concat([tone1, gapBuffer, tone2]);
+};
+
+// Pre-generate common beep patterns to avoid repeated computation during voice pipeline
+// These buffers are created once at module initialization for better performance
+const BEEPS = {
+  wakeWord: generateBeep(800, 150),        // 800Hz for 150ms (wake word detected)
+  processing: generateBeep(500, 100),      // 500Hz for 100ms (processing query)
+  response: generateDualBeep(600, 900, 80, 30) // Dual-tone ascending (response ready)
 };
 
 /**
@@ -298,15 +346,56 @@ async function backgroundTranscribe(audioSamples) {
 
         try {
           conversationManager.addUserMessage(transcription);
-          const systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 3 sentences. Do not include non-English text in your responses.';
+
+          // Check if user is asking about devices
+          // Use more specific patterns and word boundaries to avoid false positives
+          const deviceQueryPatterns = [
+            /\b(list|show|what)\s+(devices?|lights?|switch(es)?|sensors?)\b/i,
+            /\bwhat do i have\b/i,
+            /\bshow me (the )?(devices?|lights?|switch(es)?|sensors?)\b/i,
+            /\bdevices?\b/i // Only match 'device' or 'devices' as a whole word
+          ];
+          const isDeviceQuery = deviceQueryPatterns.some(pattern =>
+            pattern.test(transcription)
+          );
+
+          let systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
+
+          // Add device information to context if asking about devices
+          if (isDeviceQuery) {
+            try {
+              logger.debug('📡 Device query detected, fetching device list...');
+              const deviceInfo = await getDevicesForAI();
+              systemPrompt += `\n\n${deviceInfo}`;
+              logger.debug('✅ Device information added to context');
+            } catch (error) {
+              logger.warn('⚠️ Failed to fetch devices for AI', { error: error.message });
+            }
+          }
+
           const messages = conversationManager.getMessages(systemPrompt);
           const convSummary = conversationManager.getSummary();
           logger.debug('Conversation context', convSummary);
+
+          // Play processing beep (lower pitch than wake word beep)
+          try {
+            await playAudio(BEEPS.processing);
+          } catch (beepError) {
+            logger.debug('⚠️ Failed to play processing beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
+          }
 
           const aiResponse = await queryOllama(null, { messages });
           conversationManager.addAssistantMessage(aiResponse);
 
           logger.info(`🤖 AI Response: "${aiResponse}"`);
+
+          // Play response received beep (dual-tone ascending)
+          try {
+            await playAudio(BEEPS.response);
+          } catch (beepError) {
+            logger.debug('⚠️ Failed to play response beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
+          }
+
           await publishAIResponse(transcription, aiResponse, {
             model: config.ollama.model,
             conversationTurns: Math.floor(convSummary.totalMessages / 2)
@@ -400,6 +489,16 @@ async function main() {
       logger.error('❌ ALSA device check failed', { device: config.audio.micDevice, error: err.message });
       logger.warn('⚠️  Continuing anyway - mic library will try to use device');
     }
+  }
+
+  // Initialize MCP ZWave Client
+  try {
+    logger.info('🔌 Initializing ZWave MCP client...');
+    await initializeMCPClient();
+    logger.info('✅ ZWave MCP client ready');
+  } catch (err) {
+    logger.error('❌ ZWave MCP client initialization failed', { error: err.message });
+    logger.warn('⚠️ Continuing without device information - device queries will not work');
   }
 
   try {
@@ -580,6 +679,14 @@ async function main() {
               score: score.toFixed(3),
               serviceState: snapshot2 && snapshot2.value ? snapshot2.value : String(snapshot2)
             });
+
+            // Play acknowledgment beep
+            try {
+              await playAudio(BEEPS.wakeWord);
+            } catch (beepError) {
+              logger.debug('⚠️ Failed to play beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
+            }
+
             voiceService.send({ type: 'TRIGGER', ts });
           }
         } catch (err) {
@@ -629,15 +736,17 @@ async function main() {
       }
     });
 
-    process.on('SIGINT', () => {
+    process.on('SIGINT', async () => {
       logger.info('SIGINT received, shutting down...');
       micInstance.stop();
+      await shutdownMCPClient();
       process.exit(0);
     });
 
-    process.on('uncaughtException', (err) => {
+    process.on('uncaughtException', async (err) => {
       logger.error('Uncaught exception', { error: err.message });
       micInstance.stop();
+      await shutdownMCPClient();
       process.exit(1);
     });
 

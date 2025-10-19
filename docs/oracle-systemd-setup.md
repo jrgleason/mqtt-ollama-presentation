@@ -1,12 +1,22 @@
 # Oracle App - Systemd Service Setup
 
+**[← Back to README][readme]** | **[Getting Started Guide][getting-started]** | **[Raspberry Pi Setup][pi-setup]**
+
+---
+
 This guide explains how to configure the Oracle Next.js app to start automatically on boot using systemd.
 
 **Prerequisites:**
-- Oracle app checked out to `~/code/mqtt-ollama-presentation/oracle`
-- Node.js installed
+- Oracle app checked out to `~/code/mqtt-ollama-presentation/apps/oracle`
+- Node.js installed (see [Node.js Installation][pi-setup-node])
 - Dependencies installed (`npm install`)
 - Production build completed (`npm run build`)
+
+**IMPORTANT:** This guide reflects lessons learned from production deployment. The two most common issues are:
+1. Incorrect directory path (must be `/apps/oracle` not `/oracle`)
+2. Missing production build (must run `npm run build` first)
+
+For complete setup from scratch, see the [Getting Started Guide][getting-started].
 
 ---
 
@@ -14,9 +24,16 @@ This guide explains how to configure the Oracle Next.js app to start automatical
 
 ### 1. Build the Production App
 
+**CRITICAL FIRST STEP:** You MUST build the production bundle before starting the service.
+
 ```bash
-cd ~/code/mqtt-ollama-presentation/oracle
+cd ~/code/mqtt-ollama-presentation/apps/oracle
 npm run build
+```
+
+Verify the build succeeded by checking for the `.next` directory:
+```bash
+ls -la .next/
 ```
 
 ### 2. Create Systemd Service File
@@ -36,16 +53,21 @@ Wants=ollama.service
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/oracle
+WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
-ExecStart=/usr/bin/npm start
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="OLLAMA_BASE_URL=http://localhost:11434"
+Environment="OLLAMA_MODEL=llama3.2:3b"
+Environment="DATABASE_URL=file:./dev.db"
+Environment="MQTT_BROKER_URL=mqtt://127.0.0.1:1883"
+ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
-# Security settings (optional but recommended)
+# Security settings
 NoNewPrivileges=true
 PrivateTmp=true
 
@@ -53,7 +75,23 @@ PrivateTmp=true
 WantedBy=multi-user.target
 ```
 
-**Note:** If your username is not `pi`, replace `User=pi` and the path accordingly.
+**IMPORTANT Configuration Notes:**
+
+1. **WorkingDirectory:** Must be `/apps/oracle` NOT `/oracle`
+   - Common mistake: Using `/home/pi/code/mqtt-ollama-presentation/oracle`
+   - ✅ Correct: `/home/pi/code/mqtt-ollama-presentation/apps/oracle`
+
+2. **ExecStart - Node path:** Use the `current` symlink for easy version management
+   - Recommended: `/home/pi/.nvm/versions/node/current/bin/node`
+   - This symlink points to your active Node version (created in [Raspberry Pi setup](raspberry-pi-setup.md#3-create-node-version-symlink-important))
+   - Alternative: Use specific version path like `/home/pi/.nvm/versions/node/v24.9.0/bin/node` (requires editing service file when upgrading Node)
+
+3. **ExecStart - Application path:** Must match WorkingDirectory
+   - Full path: `<node-binary> <WorkingDirectory>/node_modules/.bin/next start`
+
+4. **Environment variables:** All required variables must be defined in the service file
+   - Add Auth0 credentials if using authentication
+   - Adjust MQTT broker URL if not running locally
 
 ### 3. Enable and Start Service
 
@@ -123,7 +161,7 @@ sudo systemctl enable oracle
 Create production environment file:
 
 ```bash
-cd ~/code/mqtt-ollama-presentation/oracle
+cd ~/code/mqtt-ollama-presentation/apps/oracle
 cp .env.example .env
 nano .env
 ```
@@ -189,7 +227,7 @@ sudo systemctl restart oracle
 
 ## Complete Installation Script
 
-Save this as `~/code/mqtt-ollama-presentation/oracle/install-service.sh`:
+Save this as `~/code/mqtt-ollama-presentation/apps/oracle/install-service.sh`:
 
 ```bash
 #!/bin/bash
@@ -233,7 +271,8 @@ User=$USER
 WorkingDirectory=$SCRIPT_DIR
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
-ExecStart=/usr/bin/npm start
+Environment="PATH=/home/$USER/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/$USER/.nvm/versions/node/current/bin/npm start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -279,7 +318,7 @@ echo ""
 Make it executable and run:
 
 ```bash
-cd ~/code/mqtt-ollama-presentation/oracle
+cd ~/code/mqtt-ollama-presentation/apps/oracle
 chmod +x install-service.sh
 ./install-service.sh
 ```
@@ -288,7 +327,84 @@ chmod +x install-service.sh
 
 ## Troubleshooting
 
-### Service fails to start
+### Critical Issues (Based on Production Experience)
+
+#### Issue 1: "Could not find a production build in the '.next' directory"
+
+**Symptoms:**
+- Service fails immediately after starting
+- Logs show: `Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'`
+
+**Cause:**
+The Next.js production build was not created before starting the service.
+
+**Fix:**
+```bash
+cd ~/code/mqtt-ollama-presentation/apps/oracle
+npm run build
+sudo systemctl restart oracle.service
+```
+
+**Verify build completed:**
+```bash
+ls -la .next/
+```
+
+**Prevention:**
+Always run `npm run build` before deploying or updating the service. Consider adding a pre-deployment script to automate this.
+
+---
+
+#### Issue 2: "Changing to the requested working directory failed: No such file or directory"
+
+**Symptoms:**
+- Service shows status code `200/CHDIR`
+- Service status shows: "activating (auto-restart)"
+- Logs show: `Main process exited, code=exited, status=200/CHDIR`
+
+**Cause:**
+The `WorkingDirectory` path in the service file is incorrect. This commonly happens when the path points to `/oracle` instead of `/apps/oracle`.
+
+**Diagnosis:**
+```bash
+# Check if the directory exists
+ls -la /home/pi/code/mqtt-ollama-presentation/apps/oracle
+
+# Check current service configuration
+sudo cat /etc/systemd/system/oracle.service | grep WorkingDirectory
+```
+
+**Fix:**
+1. Edit the service file:
+   ```bash
+   sudo nano /etc/systemd/system/oracle.service
+   ```
+
+2. Update BOTH `WorkingDirectory` and `ExecStart` to use `/apps/oracle`:
+   ```ini
+   WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
+   ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
+   ```
+
+3. Reload and restart:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl restart oracle.service
+   ```
+
+4. Verify it's running:
+   ```bash
+   systemctl status oracle.service
+   ```
+
+**Prevention:**
+Double-check the directory structure before creating the service file. The correct structure is:
+- ✅ `/mqtt-ollama-presentation/apps/oracle`
+- ❌ `/mqtt-ollama-presentation/oracle`
+
+---
+
+### Other Common Issues
 
 **Check logs:**
 ```bash
@@ -297,17 +413,11 @@ sudo journalctl -u oracle -n 100 --no-pager
 
 **Common issues:**
 
-1. **Build not completed:**
+1. **Missing dependencies:**
    ```bash
-   cd ~/code/mqtt-ollama-presentation/oracle
-   npm run build
-   sudo systemctl restart oracle
-   ```
-
-2. **Missing dependencies:**
-   ```bash
-   cd ~/code/mqtt-ollama-presentation/oracle
+   cd ~/code/mqtt-ollama-presentation/apps/oracle
    npm install
+   npm run build
    sudo systemctl restart oracle
    ```
 
@@ -319,10 +429,10 @@ sudo journalctl -u oracle -n 100 --no-pager
    # Kill the process or change PORT in service file
    ```
 
-4. **Environment variables not set:**
+2. **Environment variables not set:**
    ```bash
    # Verify .env file exists and has correct values
-   cat ~/code/mqtt-ollama-presentation/oracle/.env
+   cat ~/code/mqtt-ollama-presentation/apps/oracle/.env
    ```
 
 5. **Permission errors:**
@@ -341,7 +451,7 @@ sudo systemctl show oracle | grep Environment
 
 **Test app manually first:**
 ```bash
-cd ~/code/mqtt-ollama-presentation/oracle
+cd ~/code/mqtt-ollama-presentation/apps/oracle
 npm start
 # Press Ctrl+C to stop
 ```
@@ -386,15 +496,17 @@ sudo journalctl -u oracle --all
 When you update the code:
 
 ```bash
-cd ~/code/mqtt-ollama-presentation/oracle
+cd ~/code/mqtt-ollama-presentation/apps/oracle
 
-# Pull latest changes
+# Pull latest changes (from repo root)
+cd /home/pi/code/mqtt-ollama-presentation
 git pull
+cd apps/oracle
 
 # Install dependencies (if package.json changed)
 npm install
 
-# Rebuild
+# Rebuild (CRITICAL - don't forget this!)
 npm run build
 
 # Restart service
@@ -402,6 +514,9 @@ sudo systemctl restart oracle
 
 # Verify it's running
 sudo systemctl status oracle
+
+# Check logs for errors
+journalctl -u oracle -n 50 --no-pager
 ```
 
 ---
@@ -442,6 +557,56 @@ curl http://localhost:3000
 curl http://localhost
 ```
 
+### Nginx 502 Bad Gateway Error
+
+**Symptoms:**
+- Nginx returns "502 Bad Gateway"
+- Nginx error log shows: `connect() failed (111: Connection refused) while connecting to upstream`
+
+**Cause:**
+The backend service (oracle.service) on port 3000 is not running or not accessible.
+
+**Diagnosis:**
+```bash
+# Check if oracle service is running
+systemctl status oracle.service
+
+# Check if port 3000 is listening
+ss -tlnp | grep 3000
+
+# Check nginx error logs
+sudo tail -50 /var/log/nginx/error.log
+```
+
+**Fix:**
+1. Ensure oracle service is running:
+   ```bash
+   sudo systemctl start oracle.service
+   systemctl status oracle.service
+   ```
+
+2. If service fails to start, check the logs:
+   ```bash
+   journalctl -u oracle.service -n 100 --no-pager
+   ```
+
+3. Common causes of service failure:
+   - Missing production build → Run `npm run build`
+   - Incorrect directory path → Fix `WorkingDirectory` in service file
+   - See "Critical Issues" in Troubleshooting section above
+
+4. After fixing, restart nginx:
+   ```bash
+   sudo systemctl restart oracle.service
+   sudo systemctl restart nginx
+   ```
+
+5. Test again:
+   ```bash
+   curl -I http://localhost
+   ```
+   Should return `HTTP/1.1 200 OK`
+
 ---
 
 ## Production Checklist
@@ -461,4 +626,18 @@ Before going to production:
 
 ---
 
-**Last Updated:** December 10, 2025
+**Last Updated:** October 17, 2025
+
+**[← Back to README][readme]** | **[Getting Started Guide][getting-started]** | **[All Documentation][docs-dir]**
+
+---
+
+<!-- Reference Links - All links defined here for easy maintenance -->
+
+<!-- Internal Documentation -->
+[readme]: ../README.md
+[getting-started]: GETTING-STARTED.md
+[pi-setup]: raspberry-pi-setup.md
+[pi-setup-node]: raspberry-pi-setup.md#3-create-node-version-symlink-important
+[zwave-deploy]: zwave-js-ui-deploy.md
+[docs-dir]: .
