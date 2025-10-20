@@ -1,4 +1,8 @@
 import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const nextConfig = {
   /* config options here */
@@ -7,7 +11,7 @@ const nextConfig = {
   output: 'standalone',
 
   // Set the workspace root to the oracle directory (multi-module project)
-  outputFileTracingRoot: path.join(import.meta.dirname),
+  outputFileTracingRoot: path.join(__dirname),
 
   // Avoid running ESLint during `next build` so generated Prisma client/runtime files
   // don't surface lint warnings that come from code generation.

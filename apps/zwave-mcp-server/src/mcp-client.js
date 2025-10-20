@@ -12,14 +12,13 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** @typedef {{name: string, nodeId: number, location?: string, available: boolean, ready: boolean, topics: {control: string, state: string}}} Device */
-
 export class MCPZWaveClient {
   constructor() {
     this.serverProcess = null;
     this.messageId = 0;
     this.pendingRequests = new Map();
     this.isReady = false;
+    this._recvBuffer = Buffer.alloc(0);
   }
 
   /**
@@ -37,37 +36,92 @@ export class MCPZWaveClient {
 
     console.log('🚀 Starting ZWave MCP server', { serverPath });
 
-    this.serverProcess = spawn('node', [serverPath], {
+    this.serverProcess = spawn(process.execPath, [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
       }
     });
 
-    // Handle stdout (MCP protocol messages)
-    this.serverProcess.stdout.on('data', (data) => {
-      this.handleServerMessage(data);
-    });
+    this.serverProcess.stdout.on('data', (data) => this._onStdoutData(data));
+    this.serverProcess.stderr.on('data', (data) => console.error('[mcp-server]', data.toString().trim()));
 
-    // Handle stderr (logs)
-    this.serverProcess.stderr.on('data', (data) => {
-      console.error('MCP server log:', data.toString().trim());
-    });
-
-    // Handle process exit
     this.serverProcess.on('exit', (code, signal) => {
-      console.warn('MCP server exited', { code, signal });
+      console.warn('[mcp] server exited', { code, signal });
       this.serverProcess = null;
       this.isReady = false;
-      this.pendingRequests.forEach((_, id) => {
-        const req = this.pendingRequests.get(id);
-        if (req) req.reject(new Error('MCP server exited unexpectedly'));
-      });
+      // Reject all pending requests on unexpected exit
+      for (const { reject } of this.pendingRequests.values()) {
+        try { reject(new Error('MCP server exited unexpectedly')); } catch (e) { /* ignore */ }
+      }
       this.pendingRequests.clear();
     });
 
     // Wait for server to be ready
     await this.initialize();
+  }
+
+  // Write a framed JSON message with Content-Length header
+  _writeMessage(obj) {
+    if (!this.serverProcess || !this.serverProcess.stdin.writable) {
+      throw new Error('MCP server stdin is not writable');
+    }
+    const body = JSON.stringify(obj);
+    const header = `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n`;
+    this.serverProcess.stdin.write(header + body, 'utf8');
+  }
+
+  // Handle incoming stdout data using Content-Length framing
+  _onStdoutData(chunk) {
+    this._recvBuffer = Buffer.concat([this._recvBuffer, chunk]);
+
+    while (true) {
+      const hdrEnd = this._recvBuffer.indexOf('\r\n\r\n');
+      if (hdrEnd === -1) break;
+
+      const header = this._recvBuffer.slice(0, hdrEnd).toString('ascii');
+      const m = header.match(/Content-Length:\s*(\d+)/i);
+      if (!m) {
+        // Malformed header: drop until after hdrEnd
+        console.error('[mcp] Missing Content-Length header, dropping malformed data');
+        this._recvBuffer = this._recvBuffer.slice(hdrEnd + 4);
+        continue;
+      }
+
+      const len = parseInt(m[1], 10);
+      const totalNeeded = hdrEnd + 4 + len;
+      if (this._recvBuffer.length < totalNeeded) break; // wait for more data
+
+      const bodyBuf = this._recvBuffer.slice(hdrEnd + 4, totalNeeded);
+      this._recvBuffer = this._recvBuffer.slice(totalNeeded);
+
+      try {
+        const message = JSON.parse(bodyBuf.toString('utf8'));
+        this._handleMessage(message);
+      } catch (err) {
+        console.error('[mcp] Failed to parse JSON message:', err);
+      }
+    }
+  }
+
+  _handleMessage(message) {
+    // Handle JSON-RPC response
+    if (message.id !== undefined && this.pendingRequests.has(message.id)) {
+      const { resolve, reject } = this.pendingRequests.get(message.id);
+      this.pendingRequests.delete(message.id);
+      if (message.error) {
+        reject(new Error(message.error.message || 'MCP request failed'));
+      } else {
+        resolve(message.result);
+      }
+      return;
+    }
+
+    // Handle notifications or other messages
+    if (message.method) {
+      // Emit or handle notifications as needed (application-specific)
+      console.debug('[mcp] notification:', message.method, message.params);
+    }
   }
 
   /**
@@ -107,57 +161,35 @@ export class MCPZWaveClient {
   }
 
   /**
-   * Handle messages from the MCP server
-   * @param {Buffer} data
+   * Send a request to the MCP server.
+   * @param {Object} message - JSON-RPC request object (must include `id`, `method`, `params`).
+   * @param {number} timeoutMs - Timeout in milliseconds for the request (default: 10000).
+   * @returns {Promise<any>} Resolves with the JSON-RPC result or rejects on error/timeout.
    */
-  handleServerMessage(data) {
-    const messages = data.toString().trim().split('\n');
-
-    for (const line of messages) {
-      if (!line.trim()) continue;
-
-      try {
-        const message = JSON.parse(line);
-
-        if (message.id !== undefined && this.pendingRequests.has(message.id)) {
-          const { resolve, reject } = this.pendingRequests.get(message.id);
-          this.pendingRequests.delete(message.id);
-
-          if (message.error) {
-            reject(new Error(message.error.message || 'MCP request failed'));
-          } else {
-            resolve(message.result);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to parse MCP message:', error.message);
-      }
-    }
-  }
-
-  /**
-   * Send a request to the MCP server
-   * @param {Object} message
-   * @returns {Promise<any>}
-   */
-  sendRequest(message) {
+  sendRequest(message, timeoutMs = 10000) {
     return new Promise((resolve, reject) => {
-      if (!this.serverProcess) {
-        return reject(new Error('MCP server not running'));
-      }
+      if (!this.serverProcess) return reject(new Error('MCP server not running'));
 
-      this.pendingRequests.set(message.id, { resolve, reject });
-
-      const data = JSON.stringify(message) + '\n';
-      this.serverProcess.stdin.write(data);
-
-      // Timeout after 10 seconds
-      setTimeout(() => {
+      const t = setTimeout(() => {
         if (this.pendingRequests.has(message.id)) {
           this.pendingRequests.delete(message.id);
           reject(new Error('MCP request timeout'));
         }
-      }, 10000);
+      }, timeoutMs);
+
+      const wrappedResolve = (res) => { clearTimeout(t); resolve(res); };
+      const wrappedReject = (err) => { clearTimeout(t); reject(err); };
+
+      // register the pending request with wrappers
+      this.pendingRequests.set(message.id, { resolve: wrappedResolve, reject: wrappedReject });
+
+      try {
+        this._writeMessage(message);
+      } catch (err) {
+        this.pendingRequests.delete(message.id);
+        clearTimeout(t);
+        return reject(err);
+      }
     });
   }
 
@@ -166,11 +198,11 @@ export class MCPZWaveClient {
    * @param {Object} message
    */
   sendNotification(message) {
-    if (!this.serverProcess) {
-      throw new Error('MCP server not running');
+    try {
+      this._writeMessage(message);
+    } catch (err) {
+      console.error('[mcp] failed to send notification:', err);
     }
-    const data = JSON.stringify(message) + '\n';
-    this.serverProcess.stdin.write(data);
   }
 
   /**
@@ -242,21 +274,16 @@ export class MCPZWaveClient {
       }
     };
 
-    try {
-      console.debug('📡 Sending device control command', { deviceName, action, level });
-      const result = await this.sendRequest(message);
+    console.debug('📡 Sending device control command', { deviceName, action, level });
+    const result = await this.sendRequest(message);
 
-      const content = result.content?.[0]?.text;
-      if (!content) {
-        throw new Error('No content in MCP response');
-      }
-
-      console.debug('✅ Device control successful');
-      return content;
-    } catch (error) {
-      console.error('❌ Failed to control device:', error.message);
-      throw error;
+    const content = result.content?.[0]?.text;
+    if (!content) {
+      throw new Error('No content in MCP response');
     }
+
+    console.debug('✅ Device control successful');
+    return content;
   }
 
   /**

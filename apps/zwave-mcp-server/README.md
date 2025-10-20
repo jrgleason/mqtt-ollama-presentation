@@ -133,17 +133,9 @@ npm run dev
 
 This will rebuild the project automatically when you make changes.
 
-## Security Considerations
+## Security
 
-### Why Authentication is Important
-
-Even though this runs locally on your Raspberry Pi:
-
-<<<<<<< HEAD
 1. **Network Access**: Anyone on your local network could access Z-Wave JS UI without authentication
-=======
-1. **Network Access**: Anyone on your local network could access ZWaveJSUI without authentication
->>>>>>> 3aa7c77 (Good place to commit)
 2. **Home Automation Control**: Unauthorized access means someone could control your lights, locks, thermostats, etc.
 3. **Privacy**: Device names and locations may contain sensitive information
 4. **Safety**: Some Z-Wave devices control critical systems (locks, thermostats, etc.)
@@ -151,62 +143,19 @@ Even though this runs locally on your Raspberry Pi:
 ### Best Practices
 
 1. **Always enable authentication** (`ZWAVE_UI_AUTH_ENABLED=true`)
-<<<<<<< HEAD
 2. **Use strong passwords** for both Z-Wave JS UI and MQTT
 3. **Keep credentials in `.env`** file (never commit to git)
 4. **Rotate passwords regularly** especially if you suspect unauthorized access
 5. **Use HTTPS/TLS** for production deployments (configure in Z-Wave JS UI)
-=======
-2. **Use strong passwords** for both ZWaveJSUI and MQTT
-3. **Keep credentials in `.env`** file (never commit to git)
-4. **Rotate passwords regularly** especially if you suspect unauthorized access
-5. **Use HTTPS/TLS** for production deployments (configure in ZWaveJSUI)
->>>>>>> 3aa7c77 (Good place to commit)
 
-## Architecture
-
-```
-┌─────────────┐
-│   Claude    │
-│    Code     │
-└──────┬──────┘
-       │ stdio
-       ▼
-┌─────────────────────┐
-│  Z-Wave MCP Server  │
-│  (This Package)     │
-└──────┬──────────────┘
-       │ HTTP + Socket.IO
-       │ (with Bearer Auth)
-       ▼
-┌─────────────────────┐      ┌────────────┐
-<<<<<<< HEAD
-│   Z-Wave JS UI         │◄─────┤  Z-Wave    │
-=======
-│   ZWaveJSUI         │◄─────┤  Z-Wave    │
->>>>>>> 3aa7c77 (Good place to commit)
-│   (Port 8091)       │      │  Devices   │
-└─────────────────────┘      └────────────┘
-```
-
-<<<<<<< HEAD
 ## Z-Wave JS UI API Endpoints Used
 
 - `POST /api/authenticate` - Authenticate and get bearer token
 - `GET /api/exportConfig` - Get all nodes configuration
 - `GET /api/settings` - Get Z-Wave JS UI settings
-=======
-## ZWaveJSUI API Endpoints Used
-
-- `POST /api/authenticate` - Authenticate and get bearer token
-- `GET /api/exportConfig` - Get all nodes configuration
-- `GET /api/settings` - Get ZWaveJSUI settings
->>>>>>> 3aa7c77 (Good place to commit)
 - `GET /api/driver/statistics` - Get network statistics
 - `POST /api/refreshNodeValues` - Refresh node values
 - `POST /api/refreshNodeInfo` - Re-interview node
-- `POST /api/writeValue` - Write value to device
-- Socket.IO `INITED` event - Get live node status
 
 ## Troubleshooting
 
@@ -214,24 +163,15 @@ Even though this runs locally on your Raspberry Pi:
 
 If you see "Authentication failed" errors:
 
-<<<<<<< HEAD
 1. Verify Z-Wave JS UI has authentication enabled
 2. Check that `ZWAVE_UI_USERNAME` and `ZWAVE_UI_PASSWORD` match your Z-Wave JS UI credentials
-=======
-1. Verify ZWaveJSUI has authentication enabled
-2. Check that `ZWAVE_UI_USERNAME` and `ZWAVE_UI_PASSWORD` match your ZWaveJSUI credentials
->>>>>>> 3aa7c77 (Good place to commit)
 3. Ensure `ZWAVE_UI_AUTH_ENABLED=true` in your `.env` file
 
 ### Connection Timeout
 
 If you see "Timed out while fetching nodes":
 
-<<<<<<< HEAD
 1. Verify Z-Wave JS UI is running: `curl http://localhost:8091/health`
-=======
-1. Verify ZWaveJSUI is running: `curl http://localhost:8091/health`
->>>>>>> 3aa7c77 (Good place to commit)
 2. Check the `ZWAVE_UI_URL` in your `.env` file
 3. Increase timeout: `ZWAVE_UI_SOCKET_TIMEOUT_MS=10000`
 
@@ -239,15 +179,9 @@ If you see "Timed out while fetching nodes":
 
 If `list_zwave_devices` returns empty:
 
-<<<<<<< HEAD
 1. Check that Z-Wave devices are paired in Z-Wave JS UI web UI
 2. Try with `includeInactive: true` to see all nodes
 3. Verify Z-Wave controller is connected to Z-Wave JS UI
-=======
-1. Check that Z-Wave devices are paired in ZWaveJSUI web UI
-2. Try with `includeInactive: true` to see all nodes
-3. Verify Z-Wave controller is connected to ZWaveJSUI
->>>>>>> 3aa7c77 (Good place to commit)
 
 ## License
 

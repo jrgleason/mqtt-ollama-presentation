@@ -1,4 +1,4 @@
-import {spawn, execSync} from 'child_process';
+import {execSync, spawn} from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
@@ -20,8 +20,12 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
             let whisperModelAbs = null;
             for (const c of candidates) {
                 try {
-                    if (fs.existsSync(c)) { whisperModelAbs = c; break; }
-                } catch (e) { /* ignore */ }
+                    if (fs.existsSync(c)) {
+                        whisperModelAbs = c;
+                        break;
+                    }
+                } catch (e) { /* ignore */
+                }
             }
             // Fallback to resolving as given if none of the candidates exist (we'll let the spawned process error)
             if (!whisperModelAbs) whisperModelAbs = path.isAbsolute(modelRel) ? modelRel : path.resolve(process.cwd(), modelRel);
@@ -36,12 +40,14 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
                         // if envPath points to a directory, check for whisper-cli inside it
                         const maybe = path.join(envPath, 'whisper-cli');
                         if (fs.existsSync(maybe)) return maybe;
-                    } catch (e) { /* ignore */ }
+                    } catch (e) { /* ignore */
+                    }
                 }
                 try {
-                    const whichOut = execSync('which whisper-cli', { encoding: 'utf8' }).trim();
+                    const whichOut = execSync('which whisper-cli', {encoding: 'utf8'}).trim();
                     if (whichOut) return whichOut;
-                } catch (e) { /* ignore */ }
+                } catch (e) { /* ignore */
+                }
 
                 // fallback: scan PATH
                 const pathEnv = process.env.PATH || '';
@@ -50,7 +56,8 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
                     try {
                         const candidate = path.join(p, 'whisper-cli');
                         if (fs.existsSync(candidate)) return candidate;
-                    } catch (e) { /* ignore */ }
+                    } catch (e) { /* ignore */
+                    }
                 }
                 return null;
             }
@@ -64,13 +71,13 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
             if (whisperCmd) {
                 // spawn using absolute path to avoid PATH issues
                 console.info(`[stt] using whisper executable: ${whisperCmd}`);
-                whisper = spawn(whisperCmd, whisperArgs, { env: process.env });
+                whisper = spawn(whisperCmd, whisperArgs, {env: process.env});
             } else {
                 // Last resort: spawn via a shell so the user's login PATH may be applied. This can
                 // avoid ENOENT in environments where PATH differs between shells/services.
                 console.warn('[stt] whisper-cli not found via which/PATH scan — spawning via shell as fallback');
                 console.info(`[stt] WHISPER_CLI_PATH=${process.env.WHISPER_CLI_PATH || '<not set>'} PATH=${process.env.PATH || '<empty>'}`);
-                whisper = spawn('whisper-cli', whisperArgs, { shell: true, env: process.env });
+                whisper = spawn('whisper-cli', whisperArgs, {shell: true, env: process.env});
             }
 
             if (!whisper || !whisper.stdout) {
@@ -80,8 +87,12 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
             let stdout = '';
             let stderr = '';
 
-            const onStdout = (data) => { stdout += data.toString(); };
-            const onStderr = (data) => { stderr += data.toString(); };
+            const onStdout = (data) => {
+                stdout += data.toString();
+            };
+            const onStderr = (data) => {
+                stderr += data.toString();
+            };
 
             whisper.stdout.on('data', onStdout);
             whisper.stderr.on('data', onStderr);
@@ -91,14 +102,21 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
                 timedOut = true;
                 try {
                     whisper.kill('SIGKILL');
-                } catch (e) { /* ignore */ }
+                } catch (e) { /* ignore */
+                }
                 return reject(new Error(`whisper-cli timed out after ${timeoutMs}ms`));
             }, timeoutMs);
 
             const cleanup = () => {
                 clearTimeout(timer);
-                try { whisper.stdout.off('data', onStdout); } catch (e) { /* ignore */ }
-                try { whisper.stderr.off('data', onStderr); } catch (e) { /* ignore */ }
+                try {
+                    whisper.stdout.off('data', onStdout);
+                } catch (e) { /* ignore */
+                }
+                try {
+                    whisper.stderr.off('data', onStderr);
+                } catch (e) { /* ignore */
+                }
             };
 
             whisper.on('error', (err) => {

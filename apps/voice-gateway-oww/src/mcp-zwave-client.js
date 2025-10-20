@@ -4,17 +4,21 @@
  * Re-exports functionality from the shared zwave-mcp-server package.
  */
 
-import { getMCPClient as getSharedMCPClient, getDevicesForAI as getSharedDevicesForAI, shutdownMCPClient as shutdownSharedMCPClient } from 'zwave-mcp-server/client';
+import {
+    getDevicesForAI as getSharedDevicesForAI,
+    getMCPClient as getSharedMCPClient,
+    shutdownMCPClient as shutdownSharedMCPClient
+} from 'zwave-mcp-server/client';
 
-export { getSharedMCPClient as getMCPClient, shutdownSharedMCPClient as shutdownMCPClient };
+export {getSharedMCPClient as getMCPClient, shutdownSharedMCPClient as shutdownMCPClient};
 
 /**
  * Initialize the MCP client
  * @returns {Promise<void>}
  */
 export async function initializeMCPClient() {
-  const client = getSharedMCPClient();
-  await client.start();
+    const client = getSharedMCPClient();
+    await client.start();
 }
 
 /**
@@ -22,5 +26,5 @@ export async function initializeMCPClient() {
  * @returns {Promise<string>}
  */
 export async function getDevicesForAI() {
-  return getSharedDevicesForAI();
+    return getSharedDevicesForAI();
 }
