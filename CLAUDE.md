@@ -878,7 +878,7 @@ Environment="OLLAMA_BASE_URL=http://localhost:11434"
 Environment="OLLAMA_MODEL=llama3.2:3b"
 Environment="DATABASE_URL=file:./dev.db"
 Environment="MQTT_BROKER_URL=mqtt://127.0.0.1:1883"
-ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
+ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal

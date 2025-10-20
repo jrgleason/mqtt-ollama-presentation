@@ -74,7 +74,7 @@ ln -sfn ~/.nvm/versions/node/$(node --version) ~/.nvm/versions/node/current
 
 # Verify symlink was created
 ls -la ~/.nvm/versions/node/
-# Should show: current -> /home/pi/.nvm/versions/node/v20.x.x
+# Should show: current -> /home/pi/.nvm/versions/node/v24.x.x
 ```
 
 **Why use a symlink?**

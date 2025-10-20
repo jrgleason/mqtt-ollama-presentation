@@ -2,6 +2,7 @@ export default {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.js', '**/__tests__/**/*.test.jsx'],
+  passWithNoTests: true, // Allow builds to pass until tests are written
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -18,4 +19,3 @@ export default {
     },
   },
 };
-
