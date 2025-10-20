@@ -168,7 +168,7 @@ Configure in Claude Desktop/Code MCP settings.
 
 ### Shared Infrastructure
 
-- **MQTT Broker:** HiveMQ at `mqtt://10.0.0.58:31883`
+- **MQTT Broker:** HiveMQ at `mqtt://localhost:1883`
 - **Ollama:** Running at `http://localhost:11434`
 - **zwave-js-ui:** Running at `http://localhost:8091`
 

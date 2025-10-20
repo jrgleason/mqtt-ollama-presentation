@@ -3,7 +3,7 @@ import mqtt from 'mqtt';
 
 console.log('Testing plain MQTT.js connection (anonymous)...');
 
-const client = mqtt.connect('mqtt://10.0.0.58:31883', {
+const client = mqtt.connect('mqtt://localhost:1883', {
   connectTimeout: 5000,
 });
 

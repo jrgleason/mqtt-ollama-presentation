@@ -1341,7 +1341,7 @@ After extensive research and testing, we decided to build a custom TypeScript MC
 - MQTT client using `mqtt.js` library
 - Stdio transport for Claude Code integration
 - Tools: `publish_message`, `subscribe_topic`
-- Connection: `mqtt://10.0.0.58:31883` (HiveMQ in Kubernetes)
+- Connection: `mqtt://localhost:1883` (HiveMQ in Kubernetes)
 - Authentication: Anonymous (demo mode)
 
 **Integration Architecture:**
@@ -1349,7 +1349,7 @@ After extensive research and testing, we decided to build a custom TypeScript MC
 Oracle (Next.js + LangChain)
   ↓ MCP Protocol (stdio)
 Custom TypeScript MCP Server
-  ↓ MQTT (10.0.0.58:31883)
+  ↓ MQTT (localhost:1883)
 HiveMQ Broker (Kubernetes)
   ↓ MQTT
 Z-Wave JS UI → Z-Wave Devices

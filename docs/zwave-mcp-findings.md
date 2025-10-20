@@ -380,7 +380,7 @@ async function buildDeviceRegistry(): Promise<DeviceRegistry> {
 ```typescript
 import mqtt from 'mqtt'
 
-const mqttClient = mqtt.connect('mqtt://10.0.0.58:31883', {
+const mqttClient = mqtt.connect('mqtt://localhost:1883', {
   username: 'jrg',
   password: process.env.MQTT_PASSWORD
 })

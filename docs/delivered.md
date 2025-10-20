@@ -13,7 +13,7 @@ This summarizes completed work for the MQTT + Ollama Home Automation demo.
 - Chat API with streaming SSE; LangChain agent and tools wired (mock → ready for DB)
 
 ## Messaging & Infrastructure
-- HiveMQ CE broker available at 10.0.0.58:31883; connectivity verified
+- HiveMQ CE broker available at localhost:1883; connectivity verified
 - Project docs created: setup, requirements, decisions, and network dependencies
 
 ## Voice (Foundation)

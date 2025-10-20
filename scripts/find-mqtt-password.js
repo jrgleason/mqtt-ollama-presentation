@@ -22,7 +22,7 @@ async function testPassword(password) {
     const label = password || '(empty)';
     console.log(`Testing: ${label}...`);
 
-    const client = mqtt.connect('mqtt://10.0.0.58:31883', {
+    const client = mqtt.connect('mqtt://localhost:1883', {
       username: 'admin',
       password: password,
       connectTimeout: 3000,

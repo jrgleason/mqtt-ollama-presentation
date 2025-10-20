@@ -172,7 +172,7 @@ This is normal - ONNX inference runs on CPU. On Raspberry Pi 5:
    ```
 
 2. **Integrate with Oracle chatbot:**
-   - Ensure MQTT broker is running (mqtt://10.0.0.58:31883)
+   - Ensure MQTT broker is running (mqtt://localhost:1883)
    - Oracle should subscribe to `voice/req` topic
    - Voice gateway will publish transcriptions there
 

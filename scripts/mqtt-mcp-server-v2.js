@@ -13,7 +13,7 @@ import {
 import mqtt from 'mqtt';
 
 // MQTT broker configuration
-const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://10.0.0.58:31883';
+const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 
 console.error('Starting MQTT MCP Server...');
 console.error(`MQTT Broker: ${MQTT_BROKER_URL}`);

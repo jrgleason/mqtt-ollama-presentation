@@ -1,6 +1,6 @@
 import mqtt from 'mqtt';
 
-const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://10.0.0.58:31883';
+const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 const MQTT_USERNAME = process.env.MQTT_USERNAME || '';
 const MQTT_PASSWORD = process.env.MQTT_PASSWORD || '';
 

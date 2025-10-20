@@ -68,7 +68,7 @@ AUDIO_MIC_DEVICE=hw:2,0
 AUDIO_SAMPLE_RATE=16000
 
 # MQTT settings
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 ```
 
 ### 4. Test Audio
@@ -192,7 +192,7 @@ See `.env.example` for all available options.
 - `TTS_VOLUME` - Volume 0.0-1.0 (default: 1.0)
 
 **MQTT:**
-- `MQTT_BROKER_URL` - MQTT broker (default: mqtt://10.0.0.58:31883)
+- `MQTT_BROKER_URL` - MQTT broker (default: mqtt://localhost:1883)
 
 **VAD:**
 - `VAD_TRAILING_SILENCE_MS` - Silence before stopping (default: 1500ms)

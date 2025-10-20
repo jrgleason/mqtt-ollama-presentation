@@ -98,8 +98,7 @@ services:
     restart: unless-stopped
 
   # Eclipse Mosquitto - MQTT Broker
-  # Note: Using external HiveMQ broker at 10.0.0.58:31883 for production
-  # This is a local fallback for development
+  # Local MQTT broker for development and production
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: mosquitto

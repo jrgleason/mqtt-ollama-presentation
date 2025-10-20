@@ -9,13 +9,13 @@ const configs = [
   { username: 'admin', password: 'adminpw', label: 'admin/adminpw (from K8s)' },
 ];
 
-console.log('Testing MQTT credentials at mqtt://10.0.0.58:31883\n');
+console.log('Testing MQTT credentials at mqtt://localhost:1883\n');
 
 async function testCredentials(config) {
   return new Promise((resolve) => {
     console.log(`Testing ${config.label}...`);
 
-    const client = mqtt.connect('mqtt://10.0.0.58:31883', {
+    const client = mqtt.connect('mqtt://localhost:1883', {
       username: config.username,
       password: config.password,
       connectTimeout: 5000,

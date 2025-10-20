@@ -10,7 +10,7 @@ Last Updated: 2025-10-12
 - Q2. Frontend Architecture: Next.js (App Router, TS). See architecture decision doc for details.
 - Q4. Wake Word: OpenWakeWord (ONNX, offline), wake word "Hey Jarvis". Porcupine path deprecated.
 - Q5. Ollama: Runs natively (likely Pi 5). Prefer models with reliable tool-calling: llama3.2:1b (Pi) / 3b, or mistral. Avoid qwen/gemma/phi variants for tool-calling in practice.
-- Q6. MQTT Broker: HiveMQ CE at mqtt://10.0.0.58:31883. zwave-js-ui publishes to HiveMQ. Client uses mqtt.js.
+- Q6. MQTT Broker: HiveMQ CE at mqtt://localhost:1883. zwave-js-ui publishes to HiveMQ. Client uses mqtt.js.
 - Q7. Voice Input Method: Dedicated service selected — voice-gateway-oww (Node.js + ALSA). Browser-based mic approach is deprecated for the demo.
 - Q8. Auth: Auth0 (Next.js SDK v4) is recommended, but optional and currently deferred for the live demo to keep it fully local/offline-friendly. If enabled, follow quickstart and env config.
 

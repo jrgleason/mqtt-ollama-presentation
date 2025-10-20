@@ -87,7 +87,7 @@ This project uses the **Model Context Protocol (MCP)** to create a single source
 **Configuration:** `apps/zwave-mcp-server/.env`
 ```bash
 ZWAVE_UI_URL=http://localhost:8091
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 ```
 
 ---
@@ -324,7 +324,7 @@ ZWAVE_UI_PASSWORD=change_this_password
 ZWAVE_UI_AUTH_ENABLED=false
 
 # MQTT Broker (for device control)
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=
 MQTT_PASSWORD=
 ```
@@ -469,7 +469,7 @@ Successfully turned on Demo Switch (would publish...)
 import { MQTTClientWrapper } from './mqtt-client.js';
 
 const mqttConfig = {
-  brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://10.0.0.58:31883',
+  brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
   username: process.env.MQTT_USERNAME || '',
   password: process.env.MQTT_PASSWORD || ''
 };

@@ -8,7 +8,7 @@
 
 ## Overview
 - Use zwave-js-ui on a Raspberry Pi with a Z-Wave USB stick
-- Enable its MQTT gateway, pointing to HiveMQ at 10.0.0.58:31883
+- Enable its MQTT gateway, pointing to HiveMQ at localhost:1883
 - Discover devices and store minimal metadata in Prisma (name, type, location, nodeId, control topic)
 - Control devices by publishing to zwave-js-ui topics from the app
 
@@ -18,7 +18,7 @@
 - Raspberry Pi with zwave-js-ui installed and reachable (e.g., http://<pi-ip>:8091)
 - Z-Wave controller (Aeotec Z-Stick 7, Zooz ZST10)
 - 1–2 paired Z-Wave devices (switch/dimmer)
-- MQTT broker: HiveMQ CE at 10.0.0.58:31883
+- MQTT broker: HiveMQ CE at localhost:1883
 
 ---
 

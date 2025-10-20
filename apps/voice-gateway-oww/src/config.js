@@ -39,7 +39,7 @@ const config = {
     modelPath: process.env.WHISPER_MODEL_PATH || 'models/ggml-base.bin',
   },
   mqtt: {
-    brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://10.0.0.58:31883',
+    brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
     clientId: process.env.MQTT_CLIENT_ID || `voice-gateway-oww-${Math.random().toString(16).slice(2, 8)}`,
     username: process.env.MQTT_USERNAME,
     password: process.env.MQTT_PASSWORD,

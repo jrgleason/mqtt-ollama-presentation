@@ -34,7 +34,7 @@ Last Updated: 2025-10-12
 
 2) Z‑Wave
 - Pi running zwave‑js‑ui; pair the plug‑in switch (keep within 3 ft to include securely).
-- Enable zwave‑js‑ui MQTT gateway → Broker: 10.0.0.58:31883, Prefix: `zwave`.
+- Enable zwave‑js‑ui MQTT gateway → Broker: localhost:1883, Prefix: `zwave`.
 
 3) Lamp
 - Lamp switch locked ON; bulb installed.
@@ -83,4 +83,4 @@ Last Updated: 2025-10-12
 ## Notes
 - Avoid smart bulbs (redundant).
 - If dimmer behavior is inconsistent with very low‑watt LEDs, increase brightness or use a non‑dimming plug.
-- For the demo environment, the MQTT broker is HiveMQ CE at 10.0.0.58:31883.
+- For the demo environment, the MQTT broker is HiveMQ CE at localhost:1883.

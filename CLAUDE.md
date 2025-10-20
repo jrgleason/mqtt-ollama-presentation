@@ -360,12 +360,10 @@ AUTH0_CLIENT_SECRET=
 # Database
 DATABASE_URL=file:./dev.db
 
-# MQTT (HiveMQ - Kubernetes at 10.0.0.58:31883)
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+# MQTT (Local Mosquitto broker)
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=
 MQTT_PASSWORD=
-# Optional: WebSocket URL for browser clients
-MQTT_WEBSOCKET_URL=ws://10.0.0.58:30000/mqtt
 
 # Ollama
 OLLAMA_BASE_URL=http://localhost:11434
@@ -963,7 +961,7 @@ Environment="WHISPER_MODEL=tiny"
 Environment="WHISPER_MODEL_PATH=models/ggml-tiny.bin"
 
 # MQTT Broker
-Environment="MQTT_BROKER_URL=mqtt://10.0.0.58:31883"
+Environment="MQTT_BROKER_URL=mqtt://localhost:1883"
 Environment="MQTT_CLIENT_ID=voice-gateway-oww"
 Environment="MQTT_USERNAME="
 Environment="MQTT_PASSWORD="

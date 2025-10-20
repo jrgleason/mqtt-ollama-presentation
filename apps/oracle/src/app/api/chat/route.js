@@ -9,6 +9,14 @@ export async function POST(req) {
   try {
     const { messages, model: selectedModel } = await req.json();
 
+    console.log('[chat/route] ========== REQUEST DEBUG START ==========');
+    console.log('[chat/route] Selected model from request:', selectedModel);
+    console.log('[chat/route] Environment variables:', {
+      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+      OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+    });
+    console.log('[chat/route] ========== REQUEST DEBUG END ==========');
+
     if (!messages || !Array.isArray(messages)) {
       return new Response(
         JSON.stringify({ error: 'Messages array is required' }),
@@ -20,6 +28,21 @@ export async function POST(req) {
     }
 
     const model = createOllamaClient(0.1, selectedModel);
+    console.log('[chat/route] Created model with:', { temperature: 0.1, selectedModel });
+
+    // Test Ollama connectivity
+    try {
+      const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+      console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
+      const testResponse = await fetch(`${baseUrl}/api/tags`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      const testData = await testResponse.json();
+      console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
+    } catch (connectError) {
+      console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+    }
 
     // Create tools
     const tools = [
@@ -36,13 +59,13 @@ export async function POST(req) {
       role: 'system',
       content: `You are a helpful home automation assistant.
 
-Only use tools when the user explicitly asks to:
-- List devices or check device status (use list_devices tool)
-- Control devices (use control_device tool)
-- Perform calculations (use calculator tool)
-
-For general conversation, greetings, or questions that don't require device interaction
-or calculations, respond directly without using any tools.`
+IMPORTANT RULES:
+1. When user asks to list devices, you MUST call the list_devices tool. DO NOT make up device names.
+2. When user asks to control a device, you MUST:
+   a. First call list_devices to get exact device names
+   b. Then call control_device with the EXACT name from the list
+3. NEVER invent or guess device names. Always use list_devices first.
+4. For greetings or general questions, respond normally without tools.`
     };
 
     const allMessages = [systemMessage, ...messages];
@@ -84,14 +107,42 @@ or calculations, respond directly without using any tools.`
                   });
                 } catch (toolError) {
                   console.error(`Error executing tool "${toolCall.name}":`, toolError);
-                  const errorChunk = `data: ${JSON.stringify({
-                    type: 'error',
-                    content: `Error using tool "${toolCall.name}": ${toolError instanceof Error ? toolError.message : String(toolError)}`,
-                  })}\n\n`;
-                  controller.enqueue(encoder.encode(errorChunk));
-                  controller.close();
-                  return;
+                  // Add error as tool result so we maintain 1:1 correspondence
+                  toolResults.push({
+                    role: 'tool',
+                    content: `Error: ${toolError instanceof Error ? toolError.message : String(toolError)}`,
+                    tool_call_id: toolCall.id
+                  });
                 }
+              } else {
+                // Unknown tool - add placeholder result to maintain correspondence
+                console.warn(`Unknown tool called: ${toolCall.name}`);
+                toolResults.push({
+                  role: 'tool',
+                  content: `Error: Unknown tool "${toolCall.name}"`,
+                  tool_call_id: toolCall.id
+                });
+              }
+            }
+
+            // Validate tool calls and results match
+            console.log('[chat/route] Tool calls count:', response.tool_calls.length);
+            console.log('[chat/route] Tool results count:', toolResults.length);
+            console.log('[chat/route] Tool calls:', JSON.stringify(response.tool_calls, null, 2));
+            console.log('[chat/route] Tool results:', JSON.stringify(toolResults, null, 2));
+
+            // Ensure we have a tool result for every tool call
+            if (response.tool_calls.length !== toolResults.length) {
+              console.error('[chat/route] Tool call/result mismatch! Adding placeholder results...');
+              // Add placeholder results for missing tool calls
+              while (toolResults.length < response.tool_calls.length) {
+                const missingIndex = toolResults.length;
+                const missingCall = response.tool_calls[missingIndex];
+                toolResults.push({
+                  role: 'tool',
+                  content: `Error: Tool execution failed for "${missingCall.name}"`,
+                  tool_call_id: missingCall.id
+                });
               }
             }
 
@@ -103,7 +154,22 @@ or calculations, respond directly without using any tools.`
             ];
 
             // Get next response from model (might have more tool calls)
-            response = await modelWithTools.invoke(currentMessages);
+            try {
+              response = await modelWithTools.invoke(currentMessages);
+            } catch (invokeError) {
+              // Handle model-specific tool calling errors gracefully
+              console.error('[chat/route] Error invoking model with tool results:', invokeError);
+
+              // Check if this is a tool call mismatch error
+              if (invokeError.message && invokeError.message.includes('mismatch')) {
+                // Try without tools as fallback
+                console.log('[chat/route] Retrying without tool binding...');
+                const plainModel = createOllamaClient(0.1, selectedModel);
+                response = await plainModel.invoke(currentMessages);
+              } else {
+                throw invokeError;
+              }
+            }
           }
 
           // Final response (no more tool calls)

@@ -18,7 +18,7 @@ After pre-pulls, the demo runs fully local.
 
 ## Local-only at runtime (no internet)
 
-- MQTT Broker: HiveMQ CE at `mqtt://10.0.0.58:31883`
+- MQTT Broker: HiveMQ CE at `mqtt://localhost:1883`
 - Ollama API: `http://localhost:11434` (or Pi IP)
 - Z-Wave: zwave-js-ui (local UI + MQTT gateway)
 - Voice Gateway: OpenWakeWord + Whisper via Ollama + Piper
@@ -67,7 +67,7 @@ After pre-pulls, the demo runs fully local.
 ## Pre-Demo Checklist (short)
 
 - ollama list → models present (llama3.2 and whisper)
-- MQTT reachable at 10.0.0.58:31883
+- MQTT reachable at localhost:1883
 - Ollama reachable at http://localhost:11434
 - zwave-js-ui up on Pi, MQTT gateway enabled
 - Optional: Auth0 env configured (if showing auth)

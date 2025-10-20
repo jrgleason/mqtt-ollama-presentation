@@ -94,7 +94,7 @@ ZWAVE_UI_AUTH_ENABLED=true
 # ZWAVE_UI_SOCKET_TIMEOUT_MS=10000
 
 # MQTT Broker Configuration (if using MQTT features)
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=jrg
 MQTT_PASSWORD=your_mqtt_password
 ```

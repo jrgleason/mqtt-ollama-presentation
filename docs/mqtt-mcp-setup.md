@@ -23,7 +23,7 @@ This guide shows how to configure the **custom TypeScript MCP server** using `@m
 ### NodePort Services
 | Service | Internal Port | NodePort | External Access |
 |---------|--------------|----------|-----------------|
-| MQTT (TCP) | 1883 | 31883 | `10.0.0.58:31883` |
+| MQTT (TCP) | 1883 | 31883 | `localhost:1883` |
 | Control Center | 8080 | 30080 | `http://10.0.0.58:30080` |
 | WebSocket | 8000 | 30000 | `ws://10.0.0.58:30000` |
 
@@ -69,7 +69,7 @@ Edit your `~/.claude/settings.local.json`:
         "/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js"
       ],
       "env": {
-        "MQTT_BROKER_URL": "mqtt://10.0.0.58:31883"
+        "MQTT_BROKER_URL": "mqtt://localhost:1883"
       }
     }
   }
@@ -105,7 +105,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "node",
       "args": ["/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js"],
       "env": {
-        "MQTT_BROKER_URL": "mqtt://10.0.0.58:31883"
+        "MQTT_BROKER_URL": "mqtt://localhost:1883"
       }
     }
   }
@@ -124,7 +124,7 @@ Update your `.env` file:
 
 ```bash
 # MQTT (HiveMQ on Kubernetes - NodePort)
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=
 MQTT_PASSWORD=
 
@@ -386,7 +386,7 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 │  - @modelcontext... │
 │  - mqtt.js          │
 └───────────┬─────────┘
-          │ MQTT (10.0.0.58:31883)
+          │ MQTT (localhost:1883)
           ↓
 ┌──────────────────────┐
 │ Kubernetes Cluster  │

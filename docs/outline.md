@@ -40,7 +40,7 @@ Date: January 12, 2026 • Duration: 60 minutes • Format: Live demo + architec
 - STT: Whisper via Ollama (local)
 - Wake Word: OpenWakeWord ("Hey Jarvis")
 - TTS: Piper (offline)
-- Broker: HiveMQ CE at 10.0.0.58:31883 (demo mode)
+- Broker: HiveMQ CE at localhost:1883 (demo mode)
 - Z-Wave: zwave-js-ui (MQTT gateway enabled)
 
 ## Backup Plans

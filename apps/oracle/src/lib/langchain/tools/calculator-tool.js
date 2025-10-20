@@ -1,7 +1,8 @@
-import { DynamicTool } from '@langchain/core/tools';
+import { DynamicStructuredTool } from '@langchain/core/tools';
+import { z } from 'zod';
 
 export function createCalculatorTool() {
-  return new DynamicTool({
+  return new DynamicStructuredTool({
     name: 'calculator',
     description: `
         Evaluates a basic arithmetic expression. Allowed tokens: digits, + - * / ( ) . % and ^ for exponent.
@@ -10,32 +11,12 @@ export function createCalculatorTool() {
         - (4+6)/2
         - 2^8
         Returns a plain text result or an error message if the input is invalid.`,
-    func: async (input) => {
+    schema: z.object({
+      expression: z.string().describe('The arithmetic expression to evaluate')
+    }),
+    func: async ({ expression }) => {
       try {
-        let expr;
-
-        if (typeof input === 'string' && input.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(input);
-            if (parsed && typeof parsed === 'object') {
-              if (typeof parsed.input === 'string') {
-                expr = parsed.input;
-              } else if (typeof parsed.expression === 'string') {
-                expr = parsed.expression;
-              } else if (typeof parsed === 'string') {
-                expr = parsed;
-              } else {
-                expr = String(parsed);
-              }
-            }
-          } catch {
-            expr = input;
-          }
-        } else {
-          expr = input;
-        }
-
-        expr = String(expr ?? '').trim();
+        const expr = String(expression ?? '').trim();
         if (!expr) return 'Error: empty expression';
 
         const cleaned = expr.replace(/\^/g, '**');

@@ -31,7 +31,7 @@ Next Up (DEMO CRITICAL):
 
 ## Phase 3: MQTT Integration
 
-- 🔄 Connect to HiveMQ at `mqtt://10.0.0.58:31883`
+- 🔄 Connect to HiveMQ at `mqtt://localhost:1883`
 - 🔄 Topic utilities and publish helpers
 - ⏳ Subscribe to device state topics and update DB (optional for demo)
 

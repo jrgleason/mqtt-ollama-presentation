@@ -260,7 +260,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           return matchesFilter && (includeInactive || isActive);
         })
-        .map((node) => buildDeviceSummary(node, registry))
+        .map((node) => {
+          // Simplified device summary for AI - only essential fields
+          const name = node.name || `Node ${node.id}`;
+          const status = (node.ready && node.available) ? 'online' : 'offline';
+          return {
+            name,
+            nodeId: node.id,
+            location: node.loc || undefined,
+            status
+          };
+        })
         .sort((a, b) => a.name.localeCompare(b.name));
 
       // Return JSON for programmatic use

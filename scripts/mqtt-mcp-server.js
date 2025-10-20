@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 // MQTT broker configuration
 const MQTT_CONFIG = {
-  host: process.env.MQTT_BROKER_URL || 'mqtt://10.0.0.58:31883',
+  host: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
   username: process.env.MQTT_USERNAME || 'admin',
   password: process.env.MQTT_PASSWORD || 'hivemq',
 };

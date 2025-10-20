@@ -446,7 +446,7 @@ Change MQTT configuration:
 }
 ```
 
-Or keep using your existing HiveMQ broker at `10.0.0.58:31883` if you prefer.
+Or keep using your existing HiveMQ broker at `localhost:1883` if you prefer.
 
 ### 6. Configure Firewall (Optional)
 

@@ -40,7 +40,7 @@ nano .env
 **Default Configuration (works as-is):**
 - Wake Word: "Hey Jarvis"
 - Microphone: hw:2,0 (LANDIBO USB mic)
-- MQTT Broker: mqtt://10.0.0.58:31883
+- MQTT Broker: mqtt://localhost:1883
 - Threshold: 0.5
 
 ### 4. Run

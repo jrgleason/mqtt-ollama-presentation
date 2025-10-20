@@ -8,7 +8,7 @@ The `voice-gateway-oww` is a small Node.js service that adds offline, Alexa‑st
 - Wake word: OpenWakeWord (model: "Hey Jarvis")
 - STT: Whisper via Ollama HTTP API (local)
 - TTS: Piper (local)
-- Transport: MQTT (HiveMQ at 10.0.0.58:31883)
+- Transport: MQTT (HiveMQ at localhost:1883)
 - Audio: ALSA 16kHz mono (USB mic/speaker)
 
 Why a separate service?
@@ -58,7 +58,7 @@ Why a separate service?
 ## Configuration (env)
 
 Required
-- MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+- MQTT_BROKER_URL=mqtt://localhost:1883
 - OLLAMA_BASE_URL=http://localhost:11434
 
 Common (defaults shown)
