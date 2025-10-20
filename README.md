@@ -1,13 +1,15 @@
 # MQTT + Ollama Home Automation
 
-Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js control surface. Everything runs on your LAN so you can prototype voice-driven home routines without shipping data to the cloud.
+Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js control surface. Run everything on your LAN with local AI models for privacy, or optionally use Ollama cloud models for enhanced performance - same code, your choice.
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 20+
 - Docker & Docker Compose
-- Ollama running on the host with at least one chat model (for example `ollama pull llama3.2:1b`)
+- **Ollama running on the host** with at least one chat model
+  - **Local models:** `ollama pull qwen2.5:0.5b` (for voice) or `qwen2.5:3b` (for oracle)
+  - **Cloud models:** No download needed! Just use `:cloud` suffix (e.g., `qwen3-coder:480b-cloud`)
 - Optional hardware: Z-Wave USB controller, microphones, speakers
 
 ### Local Development (Laptop or Desktop)
@@ -46,9 +48,63 @@ Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js c
 - Use `npm test` within service directories to run Jest suites. Feature specs live alongside code in `__tests__` folders.
 
 ## Try It Out
-- “Turn on the living room lights”
-- “Set bedroom lights to 50%”
-- “Make the living room cozy for movie night”
+- "Turn on the living room lights"
+- "Set bedroom lights to 50%"
+- "Make the living room cozy for movie night"
+
+## Local vs Cloud Models
+
+This project demonstrates Ollama's flexibility - you can run **local models** for privacy or **cloud models** for performance with zero code changes.
+
+### Local Models (Privacy-First)
+```bash
+# Download model once
+ollama pull qwen2.5:0.5b
+
+# Configure in .env or systemd service
+OLLAMA_MODEL=qwen2.5:0.5b
+```
+
+**Benefits:**
+- ✅ Full privacy - data never leaves your network
+- ✅ Works offline
+- ✅ No usage costs
+- ✅ Predictable performance
+
+**Trade-offs:**
+- ⚠️ Limited by local hardware (slower on Raspberry Pi)
+- ⚠️ Smaller models = lower accuracy for complex queries
+
+### Cloud Models (Performance-First)
+```bash
+# NO download needed! Just configure the model name
+OLLAMA_MODEL=qwen3-coder:480b-cloud
+```
+
+**Benefits:**
+- ✅ Much faster inference (offload to powerful servers)
+- ✅ Access to huge models (120B+ parameters)
+- ✅ No disk space required
+- ✅ Same code - just change env var
+
+**Trade-offs:**
+- ⚠️ Requires internet connection
+- ⚠️ Data leaves your local network
+- ⚠️ Potential usage costs
+
+### Switching Models
+Change `OLLAMA_MODEL` environment variable:
+```bash
+# In .env file
+nano apps/voice-gateway-oww/.env
+
+# Or in systemd service
+sudo nano /etc/systemd/system/voice-gateway-oww.service
+sudo systemctl daemon-reload
+sudo systemctl restart voice-gateway-oww.service
+```
+
+**Presentation Strategy:** Start with local model to show privacy/offline capability, then switch to cloud model to demonstrate performance improvement - same code, different deployment choice.
 
 ## Documentation
 - [Getting Started Checklist][get-started] – fastest path from blank Pi/laptop to working demo

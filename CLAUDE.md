@@ -197,17 +197,19 @@ This project prioritizes **local-first architecture** - all AI processing, devic
    - Document backup plan for network failures
 
 **Current network dependencies:**
-- ☁️ **Auth0** - Authentication (internet required during demo)
-- 🔽 **Ollama models** - One-time download (pre-cache before demo)
+- ☁️ **Auth0** - Authentication (internet required during demo, optional)
+- 🔽 **Ollama local models** - One-time download (pre-cache before demo)
+- ☁️ **Ollama cloud models** - Optional cloud inference (internet required during demo)
 - 📦 **npm packages** - One-time install (pre-install before demo)
 - 🏠 **MQTT broker** - Local network only
-- 🤖 **Ollama runtime** - Local network only
+- 🤖 **Ollama runtime** - Local network only (local models) OR Internet (cloud models)
 - 📡 **Z-Wave devices** - Local radio (not even WiFi)
 
 **Design principle:**
-- ✅ Local processing > Cloud processing
-- ✅ Offline-capable > Internet-required
+- ✅ Local processing > Cloud processing (by default)
+- ✅ Offline-capable > Internet-required (demonstrate both)
 - ✅ Demo reliability > Feature complexity
+- 🎯 **Presentation goal:** Show local-first privacy, then cloud performance option
 
 See `docs/network-dependencies.md` for complete list and rationale.
 
@@ -226,19 +228,25 @@ See `docs/network-dependencies.md` for complete list and rationale.
 
 ### Ollama Model Recommendations (Updated October 2025)
 
+**🎯 Presentation Strategy: Local-First with Cloud Option**
+
+This project demonstrates the flexibility of Ollama - start with **local models** for privacy and offline capability, then optionally upgrade to **cloud models** for better performance without changing code.
+
+#### Local Models (Privacy-First)
+
 **For Voice Gateway (Conversational AI):**
 - **Primary:** `qwen2.5:0.5b` - Fastest response time (~1s warm), suitable for simple queries
 - **Alternative:** `qwen2.5:1.5b` - Better accuracy (~4.6s warm), recommended if quality matters
 - **Not Recommended:** `qwen3:1.7b` or larger - Too slow for voice interactions (14s+)
 
-**Performance Benchmarks (Raspberry Pi 5):**
+**Performance Benchmarks (Raspberry Pi 5 - Local Inference):**
 | Model | Cold Start | Warm Response | Tool Support | Quality |
 |-------|-----------|---------------|--------------|---------|
 | qwen2.5:0.5b | ~3.2s | ~1s | Yes (limited) | Good |
 | qwen2.5:1.5b | ~16s | ~4.6s | Yes (strong) | Better |
 | qwen3:1.7b | ~14s | ~14s | Yes | Best |
 
-**Why qwen2.5:0.5b?**
+**Why qwen2.5:0.5b for local?**
 - 93% faster than qwen3:1.7b (warm inference)
 - Supports tool calling (for future MQTT device control)
 - Small enough for fast inference on Pi 5 without GPU
@@ -247,6 +255,115 @@ See `docs/network-dependencies.md` for complete list and rationale.
 **For Next.js/LangChain (Oracle module):**
 - **Primary:** `qwen2.5:3b` or `gemma2:2b` - Better for complex reasoning
 - **Alternative:** `phi-3.5-mini-instruct` - Good instruction following
+
+#### Cloud Models (Performance-First)
+
+**What are Ollama Cloud Models?**
+- Cloud models use the `:cloud` suffix (e.g., `qwen3-coder:480b-cloud`, `gpt-oss:120b-cloud`)
+- Computation happens on Ollama's cloud infrastructure (requires internet)
+- No local download/storage required - just reference the model name
+- Significantly more powerful models than can run locally on Pi 5
+
+**Benefits:**
+- 🚀 **Much faster inference** - Offload to powerful cloud servers
+- 🧠 **Larger models** - Access 120B+ parameter models (impossible to run locally)
+- 💾 **No disk space** - Don't need to download multi-GB models
+- 🔄 **Same code** - Just change `OLLAMA_MODEL` env var, no code changes
+
+**Trade-offs:**
+- ☁️ **Internet required** - Demo will fail if network is down
+- 🔒 **Privacy** - Queries leave your local network
+- 💰 **Potential costs** - Cloud inference may have usage limits/costs
+
+**Recommended Cloud Models:**
+
+**For Voice Gateway:**
+- **High Performance:** `qwen3-coder:480b-cloud` - Massive model, excellent accuracy
+- **Alternative:** `gpt-oss:120b-cloud` - Different architecture, also very capable
+
+**For Oracle Chatbot:**
+- **Primary:** `qwen3-coder:480b-cloud` - Best for complex reasoning and code understanding
+- **Alternative:** Any model with `:cloud` suffix from Ollama library
+
+**Performance Comparison:**
+
+| Model Type | Example | Inference Speed | Quality | Internet Required | Disk Space |
+|------------|---------|----------------|---------|-------------------|------------|
+| **Local Small** | qwen2.5:0.5b | ~1s | Good | ❌ No | ~0.5 GB |
+| **Local Medium** | qwen2.5:1.5b | ~4.6s | Better | ❌ No | ~1 GB |
+| **Cloud Large** | qwen3-coder:480b-cloud | Sub-second* | Excellent | ✅ Yes | 0 GB |
+
+*Cloud speed depends on network latency and server load
+
+#### Presentation Demo Flow: Local → Cloud
+
+**Part 1: Start with Local Model (Show Privacy Benefits)**
+1. Configure voice gateway with `OLLAMA_MODEL=qwen2.5:0.5b`
+2. Demo voice command: "Hey Jarvis, what day is it?"
+3. Show response time (~7 seconds total pipeline)
+4. Highlight: "Everything runs locally - no internet required, full privacy"
+
+**Part 2: Show Limitation (Complex Query)**
+5. Ask complex question: "Hey Jarvis, explain why quantum computers might break RSA encryption"
+6. Local model struggles or gives simplified answer
+7. Point out: "Small models have limits on complex reasoning"
+
+**Part 3: Switch to Cloud Model (Show Performance)**
+8. Stop service: `sudo systemctl stop voice-gateway-oww.service`
+9. Edit service file: Change `OLLAMA_MODEL=qwen3-coder:480b-cloud`
+10. Reload and restart: `sudo systemctl daemon-reload && sudo systemctl start voice-gateway-oww.service`
+11. Ask same complex question
+12. Show improved response quality and speed
+13. Highlight: "Same code, just changed one environment variable"
+
+**Part 4: Discussion Points**
+- **Local-first design:** Start with privacy, add cloud when needed
+- **Ollama flexibility:** Easy to switch between local and cloud
+- **Production considerations:**
+  - Use local for sensitive data (medical records, financial info)
+  - Use cloud for public-facing features needing high accuracy
+  - Hybrid approach: local by default, cloud for specific features
+
+#### Setup Instructions
+
+**Using Local Models (Default):**
+```bash
+# Download model once
+ollama pull qwen2.5:0.5b
+
+# Configure environment (.env or systemd service)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:0.5b
+```
+
+**Using Cloud Models:**
+```bash
+# NO download needed! Just configure the model name with :cloud suffix
+# Configure environment (.env or systemd service)
+OLLAMA_BASE_URL=http://localhost:11434  # Still use local Ollama client
+OLLAMA_MODEL=qwen3-coder:480b-cloud     # Cloud model name
+```
+
+**Switching Between Local and Cloud:**
+```bash
+# Option 1: Update .env file
+nano apps/voice-gateway-oww/.env
+# Change: OLLAMA_MODEL=qwen3-coder:480b-cloud
+
+# Option 2: Update systemd service
+sudo nano /etc/systemd/system/voice-gateway-oww.service
+# Change: Environment="OLLAMA_MODEL=qwen3-coder:480b-cloud"
+sudo systemctl daemon-reload
+sudo systemctl restart voice-gateway-oww.service
+```
+
+**Verifying Available Models:**
+```bash
+# List locally downloaded models
+ollama list
+
+# Cloud models don't appear in this list - just reference them by name
+```
 
 ### Whisper Model Recommendations (Updated October 2025)
 
