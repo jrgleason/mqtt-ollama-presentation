@@ -2,8 +2,35 @@ import {createOllamaClient} from '../../../lib/ollama/client.js';
 import {createDeviceListTool} from '../../../lib/langchain/tools/device-list-tool.js';
 import {createDeviceControlTool} from '../../../lib/langchain/tools/device-control-tool.js';
 import {createCalculatorTool} from '../../../lib/langchain/tools/calculator-tool.js';
+import {SystemMessage, HumanMessage, AIMessage, ToolMessage} from '@langchain/core/messages';
 
 export const runtime = 'nodejs';
+
+/**
+ * Convert raw message objects to LangChain BaseMessage instances
+ */
+function convertToLangChainMessages(messages) {
+    return messages.map(msg => {
+        if (msg.role === 'system') {
+            return new SystemMessage(msg.content);
+        } else if (msg.role === 'user') {
+            return new HumanMessage(msg.content);
+        } else if (msg.role === 'assistant') {
+            // AIMessage with optional tool_calls
+            return new AIMessage({
+                content: msg.content || '',
+                tool_calls: msg.tool_calls || []
+            });
+        } else if (msg.role === 'tool') {
+            return new ToolMessage({
+                content: msg.content,
+                tool_call_id: msg.tool_call_id
+            });
+        }
+        // Fallback for unknown message types
+        return new HumanMessage(msg.content || '');
+    });
+}
 
 export async function POST(req) {
     try {
@@ -70,11 +97,14 @@ IMPORTANT RULES:
 
         const allMessages = [systemMessage, ...messages];
 
+        // Convert to LangChain message objects
+        const langChainMessages = convertToLangChainMessages(allMessages);
+
         const encoder = new TextEncoder();
         const readableStream = new ReadableStream({
             async start(controller) {
                 try {
-                    let currentMessages = allMessages;
+                    let currentMessages = langChainMessages;
                     let response = await modelWithTools.invoke(currentMessages);
                     const maxIterations = 5; // Prevent infinite loops
                     let iteration = 0;
@@ -149,8 +179,14 @@ IMPORTANT RULES:
                         // Add assistant message with tool calls and tool results to conversation
                         currentMessages = [
                             ...currentMessages,
-                            {role: 'assistant', content: response.content, tool_calls: response.tool_calls},
-                            ...toolResults
+                            new AIMessage({
+                                content: response.content || '',
+                                tool_calls: response.tool_calls
+                            }),
+                            ...toolResults.map(tr => new ToolMessage({
+                                content: tr.content,
+                                tool_call_id: tr.tool_call_id
+                            }))
                         ];
 
                         // Get next response from model (might have more tool calls)
