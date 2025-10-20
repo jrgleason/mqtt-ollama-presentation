@@ -58,6 +58,120 @@ Get Z-Wave network statistics including message counts, errors, and overall netw
 
 **Parameters:** None
 
+## MQTT Topic Structure
+
+**IMPORTANT**: This MCP server uses human-readable MQTT topics that match Z-Wave JS UI's `nodeNames=true` configuration.
+
+### Topic Format
+
+**Control Topic (Set Values):**
+```
+zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
+```
+
+**State Topic (Read Values):**
+```
+zwave/[Location/]Device_Name/command_class/endpoint_0/currentValue
+```
+
+### Examples
+
+**Binary Switch (Command Class 37):**
+```bash
+# Topic
+zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
+
+# Payload to turn ON
+{"value": true}
+
+# Payload to turn OFF
+{"value": false}
+```
+
+**Dimmer/Multilevel Switch (Command Class 38):**
+```bash
+# Topic
+zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set
+
+# Payload (0-99 for brightness percentage)
+{"value": 50}  # 50% brightness
+{"value": 0}   # Off
+{"value": 99}  # Full brightness
+```
+
+**Without Location:**
+```bash
+# If device has no location set, it's omitted from the path
+zwave/Kitchen_Light/switch_binary/endpoint_0/targetValue/set
+```
+
+### Command Class Mapping
+
+| Command Class ID | Topic Name | Device Type |
+|-----------------|------------|-------------|
+| 37 | `switch_binary` | On/Off Switch |
+| 38 | `switch_multilevel` | Dimmer |
+| 49 | `sensor_multilevel` | Sensor (temp, humidity, etc) |
+| 64 | `thermostat_mode` | Thermostat |
+
+### Payload Format
+
+All MQTT messages use JSON payloads with a `value` property:
+
+```json
+{
+  "value": <boolean|number>
+}
+```
+
+- **Binary switches**: `true` (on) or `false` (off)
+- **Dimmers**: `0` to `99` (percentage)
+- **Sensors**: Read-only numeric values
+
+### Testing MQTT Topics
+
+Use mosquitto_pub to test device control:
+
+```bash
+# Turn on a switch
+mosquitto_pub -h localhost -t "zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set" \
+  -m '{"value": true}'
+
+# Turn off a switch
+mosquitto_pub -h localhost -t "zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set" \
+  -m '{"value": false}'
+
+# Set dimmer to 50%
+mosquitto_pub -h localhost -t "zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set" \
+  -m '{"value": 50}'
+```
+
+Subscribe to state updates:
+
+```bash
+# Watch all Z-Wave state changes
+mosquitto_sub -h localhost -t "zwave/+/+/+/+/currentValue" -v
+
+# Watch specific device
+mosquitto_sub -h localhost -t "zwave/Demo/Switch_One/+/+/currentValue" -v
+```
+
+### Z-Wave JS UI Configuration
+
+This topic structure requires Z-Wave JS UI to be configured with:
+
+```json
+{
+  "gateway": {
+    "type": 1,
+    "payloadType": 1,
+    "nodeNames": true
+  }
+}
+```
+
+**DO NOT change to numeric nodeId format** - the human-readable format with device names and locations is tested and working.
+
 ## Setup
 
 ### 1. Configure Z-Wave JS UI Authentication

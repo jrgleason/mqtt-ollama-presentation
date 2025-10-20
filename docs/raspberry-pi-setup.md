@@ -70,7 +70,7 @@ This allows you to upgrade Node versions without updating service files:
 
 ```bash
 # Create a "current" symlink pointing to your active Node version
-ln -sfn ~/.nvm/versions/node/$(node --version | sed 's/v//') ~/.nvm/versions/node/current
+ln -sfn ~/.nvm/versions/node/$(node --version) ~/.nvm/versions/node/current
 
 # Verify symlink was created
 ls -la ~/.nvm/versions/node/

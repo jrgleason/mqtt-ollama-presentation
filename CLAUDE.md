@@ -290,6 +290,59 @@ See `docs/network-dependencies.md` for complete list and rationale.
 - **Integration:** Subscribe to MQTT topics published by zwave-js-ui
 - **Documentation:** https://github.com/zwave-js/zwave-js-ui
 
+**🚨 CRITICAL: Z-Wave MQTT Topic Format 🚨**
+
+**DO NOT change the MQTT topic format in `apps/zwave-mcp-server/src/device-registry.js`**
+
+This project uses **human-readable MQTT topics** that match Z-Wave JS UI's `nodeNames=true` configuration:
+
+**Correct Format (TESTED AND WORKING):**
+```
+zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
+```
+
+**Example:**
+```bash
+# Topic
+zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
+
+# Payload
+{"value": true}   # Turn ON
+{"value": false}  # Turn OFF
+```
+
+**Why This Format:**
+- ✅ Matches Z-Wave JS UI configuration with `nodeNames=true`
+- ✅ Human-readable device names and locations
+- ✅ Tested and confirmed working with actual hardware
+- ✅ Easier debugging and monitoring
+
+**WRONG Format (DO NOT USE):**
+```
+zwave/{nodeId}/{commandClass}/0/targetValue/set  # ❌ WRONG - numeric format
+```
+
+**Z-Wave JS UI Configuration Required:**
+```json
+{
+  "gateway": {
+    "type": 1,
+    "payloadType": 1,
+    "nodeNames": true  // ← REQUIRED for human-readable topics
+  }
+}
+```
+
+**Command Class Mapping:**
+- 37 → `switch_binary` (On/Off switches)
+- 38 → `switch_multilevel` (Dimmers)
+- 49 → `sensor_multilevel` (Sensors)
+- 64 → `thermostat_mode` (Thermostats)
+
+**See Also:**
+- `apps/zwave-mcp-server/README.md` - Complete MQTT topic documentation
+- `apps/zwave-mcp-server/src/device-registry.js` - Topic building implementation
+
 ### MQTT Integration (Dual Approach for Presentation)
 
 **Presentation Strategy:** Demonstrate BOTH simple custom tools AND enterprise MCP architecture
