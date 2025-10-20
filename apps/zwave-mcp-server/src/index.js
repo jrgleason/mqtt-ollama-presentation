@@ -28,9 +28,16 @@ function getConfig() {
     throw new Error('ZWAVE_UI_AUTH_ENABLED is true but username/password are missing');
   }
 
-  const socketTimeoutMs = process.env.ZWAVE_UI_SOCKET_TIMEOUT_MS
-    ? Number(process.env.ZWAVE_UI_SOCKET_TIMEOUT_MS)
-    : undefined;
+  // Parse and validate socket timeout with proper error handling
+  let socketTimeoutMs;
+  if (process.env.ZWAVE_UI_SOCKET_TIMEOUT_MS !== undefined) {
+    socketTimeoutMs = Number.parseInt(process.env.ZWAVE_UI_SOCKET_TIMEOUT_MS, 10);
+    if (Number.isNaN(socketTimeoutMs)) {
+      throw new Error('ZWAVE_UI_SOCKET_TIMEOUT_MS must be a valid integer');
+    }
+  } else {
+    socketTimeoutMs = undefined;
+  }
 
   return {
     url,

@@ -208,13 +208,40 @@ IMPORTANT RULES:
                         }
                     }
 
-                    // Final response (no more tool calls)
+                    // Final response (no more tool calls) - stream token by token for better UX
                     if (response.content) {
+                        // If response already has content from invoke, send it
                         const data = `data: ${JSON.stringify({
                             type: 'content',
                             content: response.content
                         })}\n\n`;
                         controller.enqueue(encoder.encode(data));
+                    } else {
+                        // Stream the final response token by token
+                        try {
+                            const stream = await model.stream(currentMessages);
+
+                            for await (const chunk of stream) {
+                                if (chunk.content) {
+                                    const data = `data: ${JSON.stringify({
+                                        type: 'content',
+                                        content: chunk.content
+                                    })}\n\n`;
+                                    controller.enqueue(encoder.encode(data));
+                                }
+                            }
+                        } catch (streamError) {
+                            console.error('[chat/route] Streaming error, falling back to non-streamed response:', streamError);
+                            // Fallback: if streaming fails, invoke and send complete response
+                            const fallbackResponse = await model.invoke(currentMessages);
+                            if (fallbackResponse.content) {
+                                const data = `data: ${JSON.stringify({
+                                    type: 'content',
+                                    content: fallbackResponse.content
+                                })}\n\n`;
+                                controller.enqueue(encoder.encode(data));
+                            }
+                        }
                     }
 
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify({type: 'done'})}\n\n`));
