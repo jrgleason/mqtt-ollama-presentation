@@ -9,18 +9,21 @@ import {ChatOllama} from '@langchain/ollama';
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:0.5b';
 
-console.log('[ollama/client] ========== OLLAMA DEBUG START ==========');
-console.log('[ollama/client] All OLLAMA env vars:', {
-    OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
-    OLLAMA_MODEL: process.env.OLLAMA_MODEL,
-    NODE_ENV: process.env.NODE_ENV,
-});
-console.log('[ollama/client] Final Configuration:', {
-    baseUrl: OLLAMA_BASE_URL,
-    model: DEFAULT_MODEL,
-    envLoaded: !!process.env.OLLAMA_BASE_URL,
-});
-console.log('[ollama/client] ========== OLLAMA DEBUG END ==========');
+// Only log debug info in development
+if (process.env.NODE_ENV !== 'production') {
+    console.log('[ollama/client] ========== OLLAMA DEBUG START ==========');
+    console.log('[ollama/client] All OLLAMA env vars:', {
+        OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+        OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+        NODE_ENV: process.env.NODE_ENV,
+    });
+    console.log('[ollama/client] Final Configuration:', {
+        baseUrl: OLLAMA_BASE_URL,
+        model: DEFAULT_MODEL,
+        envLoaded: !!process.env.OLLAMA_BASE_URL,
+    });
+    console.log('[ollama/client] ========== OLLAMA DEBUG END ==========');
+}
 
 /**
  * Create an Ollama chat model instance
