@@ -674,20 +674,27 @@ async function main() {
                 : config.openWakeWord.modelPath.includes('alexa')
                 ? 'Alexa'
                 : 'Wake word';
+
+            // Immediately trigger state transition to prevent duplicate detections
+            voiceService.send({ type: 'TRIGGER', ts });
+
+            // Reset detector immediately after triggering to reduce chance of additional detections
+            safeDetectorReset(detector, 'post-trigger');
+
+            // Log after triggering so we don't emit multiple logs while still in listening state
             logger.info('🎤 Wake word detected!', {
               wakeWord,
               score: score.toFixed(3),
-              serviceState: snapshot2 && snapshot2.value ? snapshot2.value : String(snapshot2)
+              serviceState: getServiceSnapshot(voiceService) && getServiceSnapshot(voiceService).value ? getServiceSnapshot(voiceService).value : String(getServiceSnapshot(voiceService))
             });
 
-            // Play acknowledgment beep
-            try {
-              await playAudio(BEEPS.wakeWord);
-            } catch (beepError) {
+            // Play acknowledgment beep asynchronously (do not await) so the detection loop isn't blocked
+            playAudio(BEEPS.wakeWord).catch((beepError) => {
               logger.debug('⚠️ Failed to play beep', { error: beepError instanceof Error ? beepError.message : String(beepError) });
-            }
+            });
 
-            voiceService.send({ type: 'TRIGGER', ts });
+            // Note: we intentionally don't await playAudio here. The state machine will
+            // transition to "recording" immediately which stops further wake detections.
           }
         } catch (err) {
           logger.error('Error in wake word detection', { error: err.message });
@@ -705,11 +712,11 @@ async function main() {
         recordedAudio = recordedAudio.concat(Array.from(normalized));
 
         const energy = rmsEnergy(normalized);
-        if (energy < 0.001) {
+        if (energy < SILENCE_THRESHOLD) {
           silenceSampleCount += normalized.length;
           const silenceDurationMs = Math.floor((silenceSampleCount / SAMPLE_RATE) * 1000);
           if (silenceDurationMs % 500 === 0) {
-            logger.debug('🔇 Detecting silence', { energy: energy.toFixed(6), threshold: 0.001, silenceDurationMs });
+            logger.debug('🔇 Detecting silence', { energy: energy.toFixed(6), threshold: SILENCE_THRESHOLD, silenceDurationMs });
           }
           if (silenceSampleCount >= SILENCE_SAMPLES_REQUIRED) {
             logger.debug('🔇 Silence detected, stopping recording', {
@@ -722,7 +729,7 @@ async function main() {
           if (silenceSampleCount > 0) {
             logger.debug('🗣️ Speech detected, resetting silence counter', {
               energy: energy.toFixed(6),
-              threshold: 0.001,
+              threshold: SILENCE_THRESHOLD,
               silenceDurationMs: Math.floor((silenceSampleCount / SAMPLE_RATE) * 1000)
             });
           }
