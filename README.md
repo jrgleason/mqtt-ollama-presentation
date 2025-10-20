@@ -1,5 +1,7 @@
 # MQTT + Ollama Home Automation
 
+[![CI](https://github.com/jrgleason/mqtt-ollama-presentation/actions/workflows/ci.yml/badge.svg)](https://github.com/jrgleason/mqtt-ollama-presentation/actions/workflows/ci.yml)
+
 Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js control surface. Everything runs on your LAN so you can prototype voice-driven home routines without shipping data to the cloud.
 
 ## Quick Start
