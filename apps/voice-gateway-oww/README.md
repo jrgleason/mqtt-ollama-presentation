@@ -42,17 +42,23 @@ npm install
 ### 2. Download Models & Setup
 
 ```bash
-npm run setup
+./setup.sh
 ```
 
 This will:
 
+- Install Python dependencies (Piper TTS)
+- Download Piper voice models (interactive menu)
 - Download OpenWakeWord core models (melspectrogram, embedding)
-- Download wake word models (hey_jarvis, alexa, hey_mycroft)
+- Download wake word models (hey_jarvis)
 - Download Whisper tiny model (~75MB, optimized for speed)
-- Check for ALSA audio devices (Linux only)
+- Create .env file from .env.example
+- Check Ollama installation and download the model specified in .env
 
-**Note:** The ALSA check will fail on macOS - this is expected and can be ignored.
+**Alternatively, you can run:**
+```bash
+npm run setup   # Calls ./setup.sh
+```
 
 ### 3. Configure Environment
 

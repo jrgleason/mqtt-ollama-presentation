@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node src/main.js",
     "start": "node src/main.js",
-    "setup": "node scripts/setup.js",
+    "setup": "bash setup.sh",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

@@ -164,10 +164,12 @@ IMPORTANT RULES:
                         }
 
                         // Validate tool calls and results match
-                        console.log('[chat/route] Tool calls count:', response.tool_calls.length);
-                        console.log('[chat/route] Tool results count:', toolResults.length);
-                        console.log('[chat/route] Tool calls:', JSON.stringify(response.tool_calls, null, 2));
-                        console.log('[chat/route] Tool results:', JSON.stringify(toolResults, null, 2));
+                        if (isDebug) {
+                            console.log('[chat/route] Tool calls count:', response.tool_calls.length);
+                            console.log('[chat/route] Tool results count:', toolResults.length);
+                            console.log('[chat/route] Tool calls:', JSON.stringify(response.tool_calls, null, 2));
+                            console.log('[chat/route] Tool results:', JSON.stringify(toolResults, null, 2));
+                        }
 
                         // Ensure we have a tool result for every tool call
                         if (response.tool_calls.length !== toolResults.length) {
@@ -207,7 +209,9 @@ IMPORTANT RULES:
                             // Check if this is a tool call mismatch error
                             if (invokeError.message && invokeError.message.includes('mismatch')) {
                                 // Try without tools as fallback
-                                console.log('[chat/route] Retrying without tool binding...');
+                                if (isDebug) {
+                                    console.log('[chat/route] Retrying without tool binding...');
+                                }
                                 const plainModel = createOllamaClient(0.1, selectedModel);
                                 response = await plainModel.invoke(currentMessages);
                             } else {
