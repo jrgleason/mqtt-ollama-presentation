@@ -162,13 +162,21 @@ export class MCPZWaveClient {
 
   /**
    * Send a request to the MCP server.
-   * @param {Object} message - JSON-RPC request object (must include `id`, `method`, `params`).
+   * @param {Object} message - JSON-RPC request object (must include `method`, `params`).
    * @param {number} timeoutMs - Timeout in milliseconds for the request (default: 10000).
    * @returns {Promise<any>} Resolves with the JSON-RPC result or rejects on error/timeout.
    */
   sendRequest(message, timeoutMs = 10000) {
     return new Promise((resolve, reject) => {
       if (!this.serverProcess) return reject(new Error('MCP server not running'));
+
+      // Auto-assign id and jsonrpc if not present (defensive programming)
+      if (message.id == null) {
+        message.id = this.messageId++;
+      }
+      if (!message.jsonrpc) {
+        message.jsonrpc = '2.0';
+      }
 
       const t = setTimeout(() => {
         if (this.pendingRequests.has(message.id)) {

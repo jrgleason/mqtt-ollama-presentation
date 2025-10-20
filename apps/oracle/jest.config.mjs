@@ -3,6 +3,7 @@ export default {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.js', '**/__tests__/**/*.test.jsx'],
   passWithNoTests: true, // Allow builds to pass until tests are written
+  transform: {},
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
