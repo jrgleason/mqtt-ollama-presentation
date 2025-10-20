@@ -146,7 +146,7 @@ except Exception as e:
         python.on('error', (error) => {
             try {
                 unlinkSync(scriptPath);
-            } catch (e) {
+            } catch {
                 // Ignore cleanup errors
             }
 

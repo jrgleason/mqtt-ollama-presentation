@@ -8,10 +8,10 @@
     "dev": "node src/main.js",
     "start": "node src/main.js",
     "setup": "node scripts/setup.js",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.js"
+    "lint": "eslint ."
   },
   "keywords": [
     "voice",
@@ -39,10 +39,12 @@
     "zwave-mcp-server": "file:../zwave-mcp-server"
   },
   "devDependencies": {
+    "@eslint/js": "latest",
     "eslint": "latest",
+    "globals": "latest",
     "jest": "next"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=24.0.0"
   }
 }

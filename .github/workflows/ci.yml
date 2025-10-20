@@ -48,12 +48,10 @@ jobs:
       - name: Run linter - oracle
         working-directory: ./apps/oracle
         run: npm run lint
-        continue-on-error: true
 
       - name: Run tests - oracle
         working-directory: ./apps/oracle
         run: npm test
-        continue-on-error: true
 
       - name: Build - oracle
         working-directory: ./apps/oracle
@@ -84,12 +82,10 @@ jobs:
       - name: Run linter - voice-gateway-oww
         working-directory: ./apps/voice-gateway-oww
         run: npm run lint
-        continue-on-error: true
 
       - name: Run tests - voice-gateway-oww
         working-directory: ./apps/voice-gateway-oww
         run: npm test
-        continue-on-error: true
 
       - name: Validate package structure - voice-gateway-oww
         working-directory: ./apps/voice-gateway-oww

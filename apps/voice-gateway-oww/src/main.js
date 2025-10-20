@@ -145,7 +145,7 @@ const playAudio = async (pcmAudio) => {
                 player.on('close', (code) => {
                     try {
                         fs.unlinkSync(wavPath);
-                    } catch (e) {
+                    } catch {
                         // Ignore cleanup errors
                     }
 
@@ -159,7 +159,7 @@ const playAudio = async (pcmAudio) => {
                 player.on('error', (err) => {
                     try {
                         fs.unlinkSync(wavPath);
-                    } catch (e) {
+                    } catch {
                         // Ignore cleanup errors
                     }
                     reject(err);

@@ -99,7 +99,7 @@ async function checkAudioDevices() {
   console.log('\n🎤 Checking audio devices...');
   try {
     await runCommand('arecord', ['-l']);
-  } catch (err) {
+  } catch {
     console.warn('⚠️  Warning: Could not list audio devices. Make sure ALSA is installed.');
   }
 }
