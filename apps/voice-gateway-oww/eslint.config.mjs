@@ -15,4 +15,13 @@ export default [
       // Keep defaults; project can opt-in to stricter rules later
     },
   },
+  // Jest configuration for test files
+  {
+    files: ['**/__tests__/**/*.js', '**/*.test.js', '**/*.spec.js'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
 ];

@@ -36,13 +36,17 @@ export async function POST(req) {
     try {
         const {messages, model: selectedModel} = await req.json();
 
-        console.log('[chat/route] ========== REQUEST DEBUG START ==========');
-        console.log('[chat/route] Selected model from request:', selectedModel);
-        console.log('[chat/route] Environment variables:', {
-            OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
-            OLLAMA_MODEL: process.env.OLLAMA_MODEL,
-        });
-        console.log('[chat/route] ========== REQUEST DEBUG END ==========');
+        const isDebug = process.env.NODE_ENV !== 'production' || process.env.LOG_LEVEL === 'debug';
+
+        if (isDebug) {
+            console.log('[chat/route] ========== REQUEST DEBUG START ==========');
+            console.log('[chat/route] Selected model from request:', selectedModel);
+            console.log('[chat/route] Environment variables:', {
+                OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+                OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+            });
+            console.log('[chat/route] ========== REQUEST DEBUG END ==========');
+        }
 
         if (!messages || !Array.isArray(messages)) {
             return new Response(
@@ -55,20 +59,24 @@ export async function POST(req) {
         }
 
         const model = createOllamaClient(0.1, selectedModel);
-        console.log('[chat/route] Created model with:', {temperature: 0.1, selectedModel});
+        if (isDebug) {
+            console.log('[chat/route] Created model with:', {temperature: 0.1, selectedModel});
+        }
 
         // Test Ollama connectivity
-        try {
-            const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-            console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
-            const testResponse = await fetch(`${baseUrl}/api/tags`, {
-                method: 'GET',
-                signal: AbortSignal.timeout(5000),
-            });
-            const testData = await testResponse.json();
-            console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
-        } catch (connectError) {
-            console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+        if (isDebug) {
+            try {
+                const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+                console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
+                const testResponse = await fetch(`${baseUrl}/api/tags`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(5000),
+                });
+                const testData = await testResponse.json();
+                console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
+            } catch (connectError) {
+                console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+            }
         }
 
         // Create tools

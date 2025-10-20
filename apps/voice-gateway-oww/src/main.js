@@ -699,10 +699,11 @@ async function main() {
                         safeDetectorReset(detector, 'post-trigger');
 
                         // Log after triggering so we don't emit multiple logs while still in listening state
+                        const logSnapshot = getServiceSnapshot(voiceService);
                         logger.info('🎤 Wake word detected!', {
                             wakeWord,
                             score: score.toFixed(3),
-                            serviceState: getServiceSnapshot(voiceService) && getServiceSnapshot(voiceService).value ? getServiceSnapshot(voiceService).value : String(getServiceSnapshot(voiceService))
+                            serviceState: logSnapshot && logSnapshot.value ? logSnapshot.value : String(logSnapshot)
                         });
 
                         // Play acknowledgment beep asynchronously (do not await) so the detection loop isn't blocked
