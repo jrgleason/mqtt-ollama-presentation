@@ -3,6 +3,8 @@ import {z} from 'zod';
 import {listDevices} from '../../mcp/zwave-client.js';
 import {mqttClient} from '../../mqtt/client.js';
 
+const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
+
 const DeviceControlSchema = z.object({
     deviceName: z.string().describe("The name of the device to control (e.g. 'Demo Switch' or 'Living Room Light')"),
     action: z.enum(['on', 'off', 'dim']).describe("The action to perform: 'on', 'off', or 'dim'"),
@@ -21,7 +23,9 @@ export function createDeviceControlTool() {
         schema: DeviceControlSchema,
         func: async ({deviceName, action, level}) => {
             try {
-                console.log('[device-control-tool] Received params:', {deviceName, action, level});
+                if (DEBUG) {
+                    console.log('[device-control-tool] Received params:', {deviceName, action, level});
+                }
 
                 if (!deviceName || !action) {
                     return 'Error: deviceName and action are required';
@@ -48,7 +52,9 @@ export function createDeviceControlTool() {
                     return `Error: Device "${device.name}" is offline or not ready.`;
                 }
 
-                console.log('[device-control-tool] Found device:', device.name, `(Node: ${device.nodeId})`);
+                if (DEBUG) {
+                    console.log('[device-control-tool] Found device:', device.name, `(Node: ${device.nodeId})`);
+                }
 
                 // Use the control topic from device info
                 const controlTopic = device.topics.control;
@@ -65,21 +71,29 @@ export function createDeviceControlTool() {
                     return `Error: Invalid action "${action}"`;
                 }
 
-                console.log('[device-control-tool] Publishing to MQTT:', {
-                    topic: controlTopic,
-                    payload: {value: mqttValue}
-                });
+                if (DEBUG) {
+                    console.log('[device-control-tool] Publishing to MQTT:', {
+                        topic: controlTopic,
+                        payload: {value: mqttValue}
+                    });
+                }
 
                 // Publish to MQTT
                 await mqttClient.publish(controlTopic, {value: mqttValue});
 
-                console.log('[device-control-tool] MQTT publish complete');
+                if (DEBUG) {
+                    console.log('[device-control-tool] MQTT publish complete');
+                }
 
                 const response =
                     action === 'dim'
                         ? `Successfully dimmed ${device.name} to ${level}%`
                         : `Successfully turned ${action} ${device.name}`;
-                console.log('[device-control-tool]', response);
+
+                if (DEBUG) {
+                    console.log('[device-control-tool]', response);
+                }
+
                 return response;
             } catch (error) {
                 console.error('[device-control-tool] Error:', error);

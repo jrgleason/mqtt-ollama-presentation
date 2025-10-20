@@ -170,6 +170,56 @@ else
     print_success ".env file already exists"
 fi
 
+# Step 5: Download OpenWakeWord models
+echo ""
+print_info "Step 5: Downloading OpenWakeWord models..."
+
+# OpenWakeWord base URL
+OWW_BASE_URL="https://github.com/dscripka/openWakeWord/releases/download/v0.5.1"
+
+# Core models (required)
+OWW_CORE_MODELS=(
+    "melspectrogram.onnx"
+    "embedding_model.onnx"
+)
+
+# Wake word models
+OWW_WAKE_WORD_MODELS=(
+    "hey_jarvis_v0.1.onnx"
+)
+
+# Download core models
+print_info "Downloading OpenWakeWord core models..."
+for model in "${OWW_CORE_MODELS[@]}"; do
+    if [[ -f "models/$model" ]]; then
+        print_success "$model already exists"
+    else
+        print_info "Downloading $model..."
+        if curl -L -o "models/$model" "$OWW_BASE_URL/$model" 2>/dev/null; then
+            print_success "$model downloaded"
+        else
+            print_error "Failed to download $model"
+            print_info "You can manually download from: $OWW_BASE_URL/$model"
+        fi
+    fi
+done
+
+# Download wake word models
+print_info "Downloading wake word models..."
+for model in "${OWW_WAKE_WORD_MODELS[@]}"; do
+    if [[ -f "models/$model" ]]; then
+        print_success "$model already exists"
+    else
+        print_info "Downloading $model..."
+        if curl -L -o "models/$model" "$OWW_BASE_URL/$model" 2>/dev/null; then
+            print_success "$model downloaded"
+        else
+            print_error "Failed to download $model"
+            print_info "You can manually download from: $OWW_BASE_URL/$model"
+        fi
+    fi
+done
+
 # Step 6: Check Ollama
 echo ""
 print_info "Step 6: Checking Ollama installation..."
@@ -180,16 +230,28 @@ if command -v ollama &> /dev/null; then
     if curl -s http://localhost:11434/api/version &> /dev/null; then
         print_success "Ollama is running"
 
-        # Check if Qwen3:1.7b model is available
-        if ollama list | grep -q "Qwen3:1.7b"; then
-            print_success "Qwen3:1.7b model is available"
+        # Read OLLAMA_MODEL from .env file (default to qwen2.5:0.5b)
+        OLLAMA_MODEL="qwen2.5:0.5b"
+        if [[ -f .env ]]; then
+            # Extract OLLAMA_MODEL value from .env
+            ENV_MODEL=$(grep "^OLLAMA_MODEL=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'" | xargs)
+            if [[ -n "$ENV_MODEL" ]]; then
+                OLLAMA_MODEL="$ENV_MODEL"
+            fi
+        fi
+
+        print_info "Checking for model: $OLLAMA_MODEL"
+
+        # Check if the model is available
+        if ollama list | grep -q "$OLLAMA_MODEL"; then
+            print_success "$OLLAMA_MODEL model is available"
         else
-            print_warning "Qwen3:1.7b model not found"
-            print_info "Downloading Qwen3:1.7b model (this may take a while)..."
-            if ollama pull Qwen3:1.7b; then
-                print_success "Qwen3:1.7b model downloaded"
+            print_warning "$OLLAMA_MODEL model not found"
+            print_info "Downloading $OLLAMA_MODEL model (this may take a while)..."
+            if ollama pull "$OLLAMA_MODEL"; then
+                print_success "$OLLAMA_MODEL model downloaded"
             else
-                print_error "Failed to download Qwen3:1.7b model"
+                print_error "Failed to download $OLLAMA_MODEL model"
             fi
         fi
     else

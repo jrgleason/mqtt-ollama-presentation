@@ -2,6 +2,8 @@ import {DynamicStructuredTool} from '@langchain/core/tools';
 import {z} from 'zod';
 import {listDevices} from '../../mcp/zwave-client.js';
 
+const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
+
 export function createDeviceListTool() {
     return new DynamicStructuredTool({
         name: 'list_devices',
@@ -11,7 +13,9 @@ export function createDeviceListTool() {
             try {
                 const devices = await listDevices();
 
-                console.log('[device-list-tool] Devices received from MCP:', JSON.stringify(devices, null, 2));
+                if (DEBUG) {
+                    console.log('[device-list-tool] Devices received from MCP:', JSON.stringify(devices, null, 2));
+                }
 
                 if (devices.length === 0) {
                     return 'No devices found. Please pair some Z-Wave devices using ZWave-JS-UI first.';
@@ -19,7 +23,10 @@ export function createDeviceListTool() {
 
                 // Return simple list for AI to parse easily
                 const deviceNames = devices.map(d => d.name).join(', ');
-                console.log('[device-list-tool] Devices:', JSON.stringify(devices, null, 2));
+
+                if (DEBUG) {
+                    console.log('[device-list-tool] Devices:', JSON.stringify(devices, null, 2));
+                }
 
                 return `Available devices: ${deviceNames}. Device details: ${JSON.stringify(devices)}`;
             } catch (error) {
