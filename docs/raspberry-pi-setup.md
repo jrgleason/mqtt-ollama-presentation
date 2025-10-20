@@ -234,6 +234,31 @@ EOF
 - `mqtt.host`: Your MQTT broker IP (HiveMQ Kubernetes NodePort)
 - `mqtt.port`: MQTT broker port (31883 for HiveMQ NodePort)
 - `zwave.port`: Serial port for Z-Pi 7 HAT (`/dev/ttyAMA0`)
+- **`gateway.nodeNames: true`**: **CRITICAL** - Changes MQTT topics from numeric format to human-readable format
+
+**IMPORTANT: MQTT Topic Format**
+
+Z-Wave JS UI has two different MQTT topic formats:
+
+**Default Format (nodeNames: false or omitted):**
+```
+zwave/<nodeId>/<commandClass>/<endpoint>/<property>/set
+Example: zwave/3/37/0/targetValue/set
+```
+
+**Human-Readable Format (nodeNames: true) - WHAT WE USE:**
+```
+zwave/<location>/<deviceName>/<commandClass>/<endpoint>/<property>/set
+Example: zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
+```
+
+**This project uses `nodeNames: true`** because:
+- ✅ Device names and locations are human-readable and meaningful
+- ✅ Easier to debug and monitor MQTT traffic
+- ✅ More user-friendly for presentations and demos
+- ✅ Matches Home Assistant and other home automation platforms
+
+**You MUST set `nodeNames: true` in your gateway configuration** or the MCP server will not be able to match device names to MQTT topics correctly.
 
 ### 5. Start ZWaveJsUI
 
