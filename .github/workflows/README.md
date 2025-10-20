@@ -14,7 +14,7 @@ Automatically builds and tests all projects in the monorepo on every commit.
 
 **What it does:**
 
-1. **Multi-version testing**: Tests against Node.js 24.x and 26.x
+1. **Multi-version testing**: Tests against Node.js 22.x and 24.x
 2. **Builds all projects:**
    - Oracle (Next.js app)
    - ZWave MCP Server
@@ -98,14 +98,14 @@ npm run lint -- --fix  # Auto-fix (if available)
 ### Tests failing in CI but passing locally
 
 **Possible causes:**
-1. Different Node.js version (CI uses 20.x and 22.x)
+1. Different Node.js version (CI uses 22.x and 24.x)
 2. Missing environment variables
 3. Platform-specific issues (Linux in CI vs macOS/Windows locally)
 
 **Solution:** Test with the same Node.js version:
 ```bash
-nvm install 20
-nvm use 20
+nvm install 22
+nvm use 22
 npm test
 ```
 
