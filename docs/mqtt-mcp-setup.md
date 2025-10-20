@@ -1,6 +1,7 @@
 # [Archived – Deprecated] MQTT MCP Server Setup Guide (Historical)
 
 We no longer use a custom MCP server for the demo path. The Oracle app publishes directly to MQTT. See:
+
 - docs/requirements.md (Condensed for Demo)
 - docs/zwave-integration-plan.md (Demo-Focused)
 
@@ -10,29 +11,34 @@ We no longer use a custom MCP server for the demo path. The Oracle app publishes
 
 ## Overview
 
-This guide shows how to configure the **custom TypeScript MCP server** using `@modelcontextprotocol/sdk` and `mqtt.js` to connect to your HiveMQ broker running in Kubernetes.
+This guide shows how to configure the **custom TypeScript MCP server** using `@modelcontextprotocol/sdk` and `mqtt.js`
+to connect to your HiveMQ broker running in Kubernetes.
 
 ## Your HiveMQ Infrastructure
 
 ### Kubernetes Deployment
+
 - **Namespace:** `communications`
 - **Deployment:** `comms-hivemq`
 - **Image:** `hivemq/hivemq4:latest`
 - **Node:** `yoda` (10.0.0.58)
 
 ### NodePort Services
-| Service | Internal Port | NodePort | External Access |
-|---------|--------------|----------|-----------------|
-| MQTT (TCP) | 1883 | 31883 | `10.0.0.58:31883` |
-| Control Center | 8080 | 30080 | `http://10.0.0.58:30080` |
-| WebSocket | 8000 | 30000 | `ws://10.0.0.58:30000` |
+
+| Service        | Internal Port | NodePort | External Access          |
+|----------------|---------------|----------|--------------------------|
+| MQTT (TCP)     | 1883          | 31883    | `localhost:1883`         |
+| Control Center | 8080          | 30080    | `http://10.0.0.58:30080` |
+| WebSocket      | 8000          | 30000    | `ws://10.0.0.58:30000`   |
 
 ### Authentication
+
 - **Current Mode:** Anonymous (demo mode - no credentials required)
 - **TECH DEBT:** Install RBAC extension and configure secure authentication
 - **Control Center Login:** admin/SuperSecurePassword0!
 
 ### Configuration Repository
+
 - GitHub: https://github.com/jrgleason/home-infra/tree/main/mqtt
 - Kubernetes: https://github.com/jrgleason/home-infra/tree/main/kubernetes/apps/communications
 
@@ -69,7 +75,7 @@ Edit your `~/.claude/settings.local.json`:
         "/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js"
       ],
       "env": {
-        "MQTT_BROKER_URL": "mqtt://10.0.0.58:31883"
+        "MQTT_BROKER_URL": "mqtt://localhost:1883"
       }
     }
   }
@@ -83,11 +89,13 @@ Exit and restart Claude Code to load the MCP server.
 **Step 4: Verify Connection**
 
 Run `/mcp` command in Claude Code to check server status:
+
 ```
 ✓ mqtt - Custom TypeScript MQTT MCP Server
 ```
 
 If connection fails, check:
+
 - HiveMQ broker is running: `nc -zv 10.0.0.58 31883`
 - MCP server file exists and is executable
 - Node.js is installed: `node --version`
@@ -105,7 +113,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "command": "node",
       "args": ["/Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js"],
       "env": {
-        "MQTT_BROKER_URL": "mqtt://10.0.0.58:31883"
+        "MQTT_BROKER_URL": "mqtt://localhost:1883"
       }
     }
   }
@@ -124,7 +132,7 @@ Update your `.env` file:
 
 ```bash
 # MQTT (HiveMQ on Kubernetes - NodePort)
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=
 MQTT_PASSWORD=
 
@@ -165,15 +173,18 @@ await mcpManager.callTool('mqtt', 'publish_message', {
 The custom TypeScript MCP server provides these tools:
 
 ### 1. `publish_message`
+
 Publish a message to an MQTT topic.
 
 **Parameters:**
+
 - `topic` (string): MQTT topic to publish to
 - `message` (string): Message payload
 - `qos` (0|1|2): Quality of Service level (default: 1)
 - `retain` (boolean): Retain message on broker (default: false)
 
 **Example:**
+
 ```json
 {
   "topic": "home/living_room/light/set",
@@ -184,13 +195,16 @@ Publish a message to an MQTT topic.
 ```
 
 ### 2. `subscribe_topic`
+
 Subscribe to an MQTT topic pattern.
 
 **Parameters:**
+
 - `topic` (string): MQTT topic or pattern (supports wildcards: `+` single level, `#` multi-level)
 - `qos` (0|1|2): Quality of Service level (default: 1)
 
 **Example:**
+
 ```json
 {
   "topic": "home/+/temperature",
@@ -214,7 +228,8 @@ mcp-inspector
 
 ### Using MQTT Command Line Tools
 
-**Note:** `mosquitto_pub` and `mosquitto_sub` are standard MQTT client tools that work with any MQTT broker, including HiveMQ.
+**Note:** `mosquitto_pub` and `mosquitto_sub` are standard MQTT client tools that work with any MQTT broker, including
+HiveMQ.
 
 ```bash
 # Subscribe to all topics (anonymous connection)
@@ -229,6 +244,7 @@ mosquitto_pub -h 10.0.0.58 -p 31883 -t 'test/hello' -m 'Hello from MQTT!'
 Open browser to: http://10.0.0.58:30080
 
 Login with:
+
 - **Username:** `admin`
 - **Password:** `SuperSecurePassword0!`
 
@@ -241,28 +257,33 @@ When integrating with Z-Wave devices via zwave-js-ui:
 ### Topic Patterns
 
 **Device Control (Publish):**
+
 ```
 zwave/<nodeId>/<commandClass>/<endpoint>/<property>/set
 ```
 
 Example:
+
 ```
 Topic: zwave/5/38/0/targetValue/set
 Payload: {"value": 100}
 ```
 
 **Device State (Subscribe):**
+
 ```
 zwave/<nodeId>/<commandClass>/<endpoint>/<property>
 ```
 
 Example:
+
 ```
 Topic: zwave/5/38/0/currentValue
 Payload: {"time": 1704398400000, "value": 100}
 ```
 
 ### Common Command Classes
+
 - **37:** Binary Switch (on/off)
 - **38:** Multilevel Switch (dimming, 0-99)
 - **48:** Binary Sensor (motion, door/window)
@@ -275,16 +296,19 @@ Payload: {"time": 1704398400000, "value": 100}
 ### Connection Issues
 
 **Check if HiveMQ pod is running:**
+
 ```bash
 kubectl get pods -n communications
 ```
 
 **Check service endpoints:**
+
 ```bash
 kubectl get svc -n communications
 ```
 
 **View HiveMQ logs:**
+
 ```bash
 kubectl logs -n communications deployment/comms-hivemq -f
 ```
@@ -302,12 +326,14 @@ curl -I http://10.0.0.58:30080
 ### MCP Server Issues
 
 **Check Node.js installation:**
+
 ```bash
 node --version  # Should be 20+
 npm list @modelcontextprotocol/sdk mqtt
 ```
 
 **Test MCP server directly:**
+
 ```bash
 node /Users/jrg/code/CodeMash/mqtt-ollama-presentation/mqtt-mcp-server-v2.js
 # Should output: "Starting MQTT MCP Server..."
@@ -324,24 +350,24 @@ Run `/mcp` command in Claude Code to see server status
 ### Production Recommendations
 
 1. **Use TLS/SSL:**
-   - Add TLS listener to HiveMQ config
-   - Use port 8883 for MQTTS
-   - Generate/install SSL certificates
+    - Add TLS listener to HiveMQ config
+    - Use port 8883 for MQTTS
+    - Generate/install SSL certificates
 
 2. **Rotate Credentials:**
-   - Change default passwords
-   - Use environment variables (never hardcode)
-   - Consider using Kubernetes secrets
+    - Change default passwords
+    - Use environment variables (never hardcode)
+    - Consider using Kubernetes secrets
 
 3. **Network Security:**
-   - Restrict NodePort access via firewall
-   - Consider using LoadBalancer or Ingress instead
-   - Use VPN for remote access
+    - Restrict NodePort access via firewall
+    - Consider using LoadBalancer or Ingress instead
+    - Use VPN for remote access
 
 4. **RBAC:**
-   - Create specific users per application
-   - Limit topic access per user
-   - Use principle of least privilege
+    - Create specific users per application
+    - Limit topic access per user
+    - Use principle of least privilege
 
 ### Example: Create Limited User
 
@@ -386,7 +412,7 @@ Edit `credentials.xml` in the hivemq-extensions ConfigMap:
 │  - @modelcontext... │
 │  - mqtt.js          │
 └───────────┬─────────┘
-          │ MQTT (10.0.0.58:31883)
+          │ MQTT (localhost:1883)
           ↓
 ┌──────────────────────┐
 │ Kubernetes Cluster  │

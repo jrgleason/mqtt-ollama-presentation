@@ -7,7 +7,8 @@ Offline voice command gateway for MQTT + Ollama home automation using OpenWakeWo
 - **Wake Word Detection:** Using OpenWakeWord (open-source, no API key required)
 - **Voice Activity Detection:** WebRTC VAD with trailing silence detection
 - **Speech-to-Text:** Local Whisper.cpp (tiny model, 1.5s transcription)
-- **AI Response:** Ollama with qwen2.5:0.5b (~1s response time, optimized for Pi 5) or llama3.2:1b for better tool support (not suitable for lower-resource devices)
+- **AI Response:** Ollama with qwen2.5:0.5b (~1s response time, optimized for Pi 5) or llama3.2:1b for better tool
+  support (not suitable for lower-resource devices)
 - **Text-to-Speech:** Piper TTS with local voice models (1.7s synthesis)
 - **MQTT Integration:** Communicates with Oracle chatbot
 - **Offline Operation:** All processing happens locally
@@ -17,6 +18,7 @@ Offline voice command gateway for MQTT + Ollama home automation using OpenWakeWo
 ## Why OpenWakeWord?
 
 Unlike Picovoice Porcupine which requires an API key, OpenWakeWord is:
+
 - ✅ Completely free and open-source
 - ✅ No API key or registration required
 - ✅ Runs entirely offline
@@ -44,6 +46,7 @@ npm run setup
 ```
 
 This will:
+
 - Download OpenWakeWord core models (melspectrogram, embedding)
 - Download wake word models (hey_jarvis, alexa, hey_mycroft)
 - Download Whisper tiny model (~75MB, optimized for speed)
@@ -58,6 +61,7 @@ cp .env.example .env
 ```
 
 Edit `.env` if needed (works with defaults):
+
 ```env
 # OpenWakeWord settings
 OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx
@@ -68,7 +72,7 @@ AUDIO_MIC_DEVICE=hw:2,0
 AUDIO_SAMPLE_RATE=16000
 
 # MQTT settings
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 ```
 
 ### 4. Test Audio
@@ -85,11 +89,13 @@ aplay test.wav
 ### 5. Run Voice Gateway
 
 **Development:**
+
 ```bash
 npm run dev
 ```
 
 **Production:**
+
 ```bash
 npm start
 ```
@@ -115,6 +121,7 @@ USB Speaker (plughw:2,0) - Audio playback (~3s)
 **Total Pipeline:** ~7 seconds (wake word to response playback start)
 
 **Performance Evolution:**
+
 - **Before optimization:** 27 seconds (base Whisper + qwen3:1.7b)
 - **After optimization:** 7 seconds (74% improvement)
 - See [Performance Optimization Guide](../../docs/performance-optimization.md) for details
@@ -134,6 +141,7 @@ Custom wake words can be trained using the OpenWakeWord toolkit.
 ## MQTT Topics
 
 **Published:**
+
 - `voice/req` - Voice transcriptions
   ```json
   {
@@ -152,6 +160,7 @@ Custom wake words can be trained using the OpenWakeWord toolkit.
   ```
 
 **Subscribed:**
+
 - `voice/res` - AI responses
   ```json
   {
@@ -168,33 +177,40 @@ See `.env.example` for all available options.
 **Key Settings:**
 
 **OpenWakeWord:**
+
 - `OWW_MODEL_PATH` - Path to OpenWakeWord ONNX model (default: models/hey_jarvis_v0.1.onnx)
 - `OWW_THRESHOLD` - Detection threshold 0-1 (default: 0.5, lower = more sensitive)
 
 **Audio:**
+
 - `AUDIO_MIC_DEVICE` - ALSA device for microphone (default: plughw:3,0)
 - `AUDIO_SPEAKER_DEVICE` - ALSA device for speaker (default: plughw:2,0)
 - `AUDIO_SAMPLE_RATE` - Sample rate in Hz (default: 16000)
 
 **Whisper Speech-to-Text:**
+
 - `WHISPER_MODEL` - Model name (default: tiny)
 - `WHISPER_MODEL_PATH` - Path to model file (default: models/ggml-tiny.bin)
 
 **Ollama AI:**
+
 - `OLLAMA_BASE_URL` - Ollama server URL (default: http://localhost:11434)
 - `OLLAMA_MODEL` - Model to use (default: qwen2.5:0.5b - optimized for speed)
-  - Use `qwen2.5:1.5b` for better accuracy (~4x slower)
+    - Use `qwen2.5:1.5b` for better accuracy (~4x slower)
 
 **Text-to-Speech:**
+
 - `TTS_ENABLED` - Enable/disable TTS (default: true)
 - `TTS_MODEL_PATH` - Piper voice model (default: models/piper/en_US-amy-medium.onnx)
 - `TTS_SPEED` - Speed multiplier (default: 3.0 for faster speech)
 - `TTS_VOLUME` - Volume 0.0-1.0 (default: 1.0)
 
 **MQTT:**
-- `MQTT_BROKER_URL` - MQTT broker (default: mqtt://10.0.0.58:31883)
+
+- `MQTT_BROKER_URL` - MQTT broker (default: mqtt://localhost:1883)
 
 **VAD:**
+
 - `VAD_TRAILING_SILENCE_MS` - Silence before stopping (default: 1500ms)
 - `VAD_MAX_UTTERANCE_MS` - Max recording time (default: 10000ms)
 
@@ -226,6 +242,7 @@ See `.env.example` for all available options.
 **Current optimized configuration achieves ~7s total response time.**
 
 If you need further optimization:
+
 1. **Reduce VAD silence:** `VAD_TRAILING_SILENCE_MS=1000` (may cut off speech)
 2. **Increase TTS speed:** `TTS_SPEED=4.0` or higher (may sound unnatural)
 3. Monitor CPU usage: `htop`
@@ -233,28 +250,28 @@ If you need further optimization:
 
 **Model Performance Benchmarks (Pi 5, 16GB):**
 
-| Component | Model | Time | Quality |
-|-----------|-------|------|---------|
-| **Whisper** | tiny | ~1.5s | Good |
-| | base | ~6s | Better |
-| **Ollama** | qwen2.5:0.5b | ~1s | Good |
-| | qwen2.5:1.5b | ~4.6s | Better |
-| | qwen3:1.7b | ~14s | Best |
+| Component   | Model        | Time  | Quality |
+|-------------|--------------|-------|---------|
+| **Whisper** | tiny         | ~1.5s | Good    |
+|             | base         | ~6s   | Better  |
+| **Ollama**  | qwen2.5:0.5b | ~1s   | Good    |
+|             | qwen2.5:1.5b | ~4.6s | Better  |
+|             | qwen3:1.7b   | ~14s  | Best    |
 
 **See [Performance Optimization Guide](../../docs/performance-optimization.md) for detailed optimization process.**
 
 ## Comparison: OpenWakeWord vs Picovoice Porcupine
 
-| Feature | OpenWakeWord | Picovoice Porcupine |
-|---------|--------------|---------------------|
-| **Cost** | Free | Free tier (limited) |
-| **API Key** | Not required | Required |
-| **Offline** | Yes | Yes |
-| **Custom Wake Words** | Yes (train your own) | Yes (paid tier) |
+| Feature                | OpenWakeWord         | Picovoice Porcupine |
+|------------------------|----------------------|---------------------|
+| **Cost**               | Free                 | Free tier (limited) |
+| **API Key**            | Not required         | Required            |
+| **Offline**            | Yes                  | Yes                 |
+| **Custom Wake Words**  | Yes (train your own) | Yes (paid tier)     |
 | **Pre-trained Models** | Multiple free models | Limited free models |
-| **Resource Usage** | Low | Low-Medium |
-| **Accuracy** | Good | Excellent |
-| **License** | Apache 2.0 | Proprietary |
+| **Resource Usage**     | Low                  | Low-Medium          |
+| **Accuracy**           | Good                 | Excellent           |
+| **License**            | Apache 2.0           | Proprietary         |
 
 ## Development
 

@@ -5,6 +5,7 @@
 ### How It Works Now
 
 **Piper TTS Generation (piper-tts.js:46-158)**
+
 ```
 1. Create Python script in /tmp/
 2. Python script writes complete WAV file to /tmp/
@@ -15,6 +16,7 @@
 ```
 
 **Audio Playback (main.js:77-141)**
+
 ```
 Linux (aplay):
   ✅ ALREADY STREAMING: Accepts PCM buffer, pipes to aplay stdin
@@ -28,11 +30,13 @@ macOS (afplay):
 ## Why We Use Files Currently
 
 ### Piper TTS Side
+
 1. **Simplicity**: `voice.synthesize_wav()` is the simplest Piper API
 2. **Complete Audio**: Generates the full audio in one operation
 3. **WAV Format**: Easier to decode with `node-wav` library
 
 ### macOS Playback Side
+
 1. **afplay limitation**: Requires a file path, cannot accept stdin
 2. **WAV requirement**: afplay doesn't support raw PCM stdin
 
@@ -43,11 +47,13 @@ macOS (afplay):
 ### Option 1: Stream Piper TTS Output (Recommended for Linux)
 
 **Benefits:**
+
 - ✅ Reduce latency (start speaking before generation completes)
 - ✅ Lower memory usage (don't buffer entire audio)
 - ✅ Better user experience (faster perceived response)
 
 **Implementation:**
+
 ```python
 # Instead of voice.synthesize_wav(text, wav_file)
 # Use voice.synthesize(text) which yields audio chunks
@@ -66,6 +72,7 @@ for audio_chunk in voice.synthesize(text, syn_config=syn_config):
 ```
 
 **Node.js side:**
+
 ```javascript
 const python = spawn('python3', [scriptPath]);
 const audioChunks = [];
@@ -80,6 +87,7 @@ python.stdout.on('data', (chunk) => {
 ```
 
 **Challenges:**
+
 - ⚠️ macOS still requires buffering (afplay needs file)
 - ⚠️ Error handling more complex (mid-stream failures)
 - ⚠️ Must handle backpressure (if aplay can't keep up)
@@ -101,11 +109,13 @@ echo "audio data" | sox -t raw -r 16000 -e signed -b 16 -c 1 - -d
 ```
 
 **Benefits:**
+
 - ✅ Enables true streaming on macOS
 - ✅ Same architecture as Linux (pipe to stdin)
 - ✅ No temp file needed
 
 **Drawbacks:**
+
 - ❌ Requires sox installation (additional dependency)
 - ❌ Different audio pipeline than afplay
 - ❌ May have different latency characteristics
@@ -118,6 +128,7 @@ echo "audio data" | sox -t raw -r 16000 -e signed -b 16 -c 1 - -d
 **macOS:** Keep current file-based (compatibility, simplicity)
 
 **Rationale:**
+
 - Linux is the production target (Raspberry Pi)
 - macOS is development only
 - Optimize for production, keep dev simple
@@ -127,6 +138,7 @@ echo "audio data" | sox -t raw -r 16000 -e signed -b 16 -c 1 - -d
 ## Performance Comparison
 
 ### Current (File-Based) Timing
+
 ```
 Piper Generation:     500-1500ms (depends on text length, model)
 File Write:           ~10ms
@@ -140,6 +152,7 @@ Total Perceived:      2565-6565ms
 ```
 
 ### Streaming (Estimated) Timing
+
 ```
 Piper First Chunk:    50-100ms (generates first phonemes)
 Stream to aplay:      ~5ms per chunk
@@ -150,24 +163,30 @@ Audio Playback:       Same 2000-5000ms
 Total Perceived:      2055-5105ms  (10-20% improvement)
 ```
 
-**Key Insight:** Streaming reduces *perceived* latency (time until first audio) dramatically, but doesn't change total duration.
+**Key Insight:** Streaming reduces *perceived* latency (time until first audio) dramatically, but doesn't change total
+duration.
 
 ---
 
 ## Recommended Implementation Strategy
 
 ### Phase 1: Quick Win (No Code Changes)
+
 **Status:** ✅ Already implemented!
 
-The cleanup is working correctly - files are created in `/tmp/` and deleted after use. The perceived "not cleaning up" was likely due to rapid testing - files are deleted immediately after playback.
+The cleanup is working correctly - files are created in `/tmp/` and deleted after use. The perceived "not cleaning up"
+was likely due to rapid testing - files are deleted immediately after playback.
 
 ### Phase 2: Streaming for Linux (If Needed)
+
 **When to implement:**
+
 - User feedback indicates latency is too high (>1 second to first audio)
 - Running on Raspberry Pi with limited RAM
 - Demoing voice responses in real-time
 
 **Implementation:**
+
 1. Create new `synthesizeSpeechStreaming()` function
 2. Use `voice.synthesize()` instead of `voice.synthesize_wav()`
 3. Pipe chunks directly to aplay stdin
@@ -177,11 +196,14 @@ The cleanup is working correctly - files are created in `/tmp/` and deleted afte
 **Risk:** Medium (more complex error handling)
 
 ### Phase 3: macOS Streaming (Optional)
+
 **When to implement:**
+
 - Developer wants faster iteration on macOS
 - sox is acceptable dependency
 
 **Implementation:**
+
 1. Install sox requirement
 2. Detect sox availability
 3. Use sox for playback instead of afplay
@@ -194,12 +216,12 @@ The cleanup is working correctly - files are created in `/tmp/` and deleted afte
 
 ## Decision Matrix
 
-| Scenario | Recommendation | Reason |
-|----------|---------------|--------|
-| **Current state working well** | Keep file-based | Simple, reliable, cleanup works |
-| **High latency on RPi** | Implement Linux streaming | Reduce perceived latency |
-| **Memory constraints** | Implement streaming | Lower peak memory usage |
-| **macOS development slow** | Add sox support | Optional convenience |
+| Scenario                       | Recommendation            | Reason                          |
+|--------------------------------|---------------------------|---------------------------------|
+| **Current state working well** | Keep file-based           | Simple, reliable, cleanup works |
+| **High latency on RPi**        | Implement Linux streaming | Reduce perceived latency        |
+| **Memory constraints**         | Implement streaming       | Lower peak memory usage         |
+| **macOS development slow**     | Add sox support           | Optional convenience            |
 
 ---
 
@@ -281,16 +303,19 @@ async function synthesizeSpeechStreaming(text, options) {
 ## Conclusion
 
 ### Current State: ✅ Good Enough
+
 - Files are properly cleaned up
 - Latency is acceptable for development
 - Architecture is simple and reliable
 
 ### When to Optimize
+
 - Deploy to Raspberry Pi and measure latency
 - User feedback indicates slowness
 - Memory becomes constrained
 
 ### Best Next Step
+
 **Test on target hardware first**, then decide if streaming is needed based on actual performance metrics.
 
 ---
@@ -307,6 +332,7 @@ async function synthesizeSpeechStreaming(text, options) {
 ## Testing Streaming Implementation
 
 ### Test 1: Measure Current Latency
+
 ```bash
 # Add timing logs to main.js
 logger.debug('🗣️ TTS Start', { time: Date.now() });
@@ -317,6 +343,7 @@ logger.debug('✅ Playback Complete', { time: Date.now() });
 ```
 
 ### Test 2: Verify Cleanup
+
 ```bash
 # Before running app
 ls -la /tmp/piper_*.py /tmp/piper_*.wav | wc -l
@@ -331,6 +358,7 @@ ls -la /tmp/piper_*.py /tmp/piper_*.wav | wc -l
 ```
 
 ### Test 3: Streaming Prototype (Linux)
+
 ```bash
 # Test Piper streaming directly
 echo "Hello, this is a test" | python3 -c "
@@ -355,9 +383,11 @@ for chunk in voice.synthesize(sys.stdin.read(), syn_config=config):
 
 **Q: When would streaming help?**
 **A: When deploying to Raspberry Pi** if you experience:
+
 - Latency > 1 second before audio starts
 - Memory pressure (OOM errors)
 - User feedback that responses feel slow
 
 **Q: What's the easiest improvement now?**
-**A: Nothing needed!** System is working correctly. Focus on other features until you have real performance metrics from target hardware.
+**A: Nothing needed!** System is working correctly. Focus on other features until you have real performance metrics from
+target hardware.

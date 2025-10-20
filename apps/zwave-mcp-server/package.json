@@ -22,9 +22,10 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
-    "dotenv": "^17.2.3",
+    "dotenv": "latest",
     "mqtt": "latest",
     "node-fetch": "latest",
-    "socket.io-client": "latest"
+    "socket.io-client": "latest",
+    "zod": "latest"
   }
 }

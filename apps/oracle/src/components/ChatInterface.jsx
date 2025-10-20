@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Button } from './ui/button.jsx';
-import { Input } from './ui/input.jsx';
-import { ChatMessage } from './ChatMessage.jsx';
-import { Loader2, Send } from 'lucide-react';
+import {useEffect, useRef, useState} from 'react';
+import {Button} from './ui/button.jsx';
+import {Input} from './ui/input.jsx';
+import {ChatMessage} from './ChatMessage.jsx';
+import {Loader2, Send} from 'lucide-react';
 
 // Browser-compatible UUID generator
 function generateId() {
@@ -28,11 +28,11 @@ export function ChatInterface() {
             .then(data => {
                 const modelNames = Array.isArray(data.models)
                     ? data.models.map((m) => {
-                          if (typeof m === 'object' && m !== null) {
-                              return typeof m.name === 'string' ? m.name : String(m.name ?? '');
-                          }
-                          return String(m ?? '');
-                      })
+                        if (typeof m === 'object' && m !== null) {
+                            return typeof m.name === 'string' ? m.name : String(m.name ?? '');
+                        }
+                        return String(m ?? '');
+                    })
                     : [];
 
                 setAvailableModels(modelNames);

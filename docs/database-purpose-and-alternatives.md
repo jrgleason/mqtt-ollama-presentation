@@ -26,6 +26,7 @@ model Device {
 ### Current Usage:
 
 **In LangChain Tools:**
+
 ```typescript
 // device-list-tool.ts
 const devices = await prisma.device.findMany({
@@ -40,6 +41,7 @@ const devices = await prisma.device.findMany({
 ## The Real Question: Where Do Devices Come From?
 
 ### Option 1: Manual Database Entry (Current Approach)
+
 ```bash
 # You run seed script
 npm run db:seed
@@ -52,6 +54,7 @@ npm run db:seed
 ```
 
 **Issues:**
+
 - ❌ Devices are hardcoded
 - ❌ Out of sync with real Z-Wave devices
 - ❌ Manual maintenance nightmare
@@ -138,6 +141,7 @@ export const listDevicesTool = new DynamicTool({
 ```
 
 **Benefits:**
+
 - ✅ No database needed
 - ✅ Always in sync with real devices
 - ✅ Discovers new devices automatically
@@ -151,25 +155,26 @@ export const listDevicesTool = new DynamicTool({
 ### Use Cases That Require Persistence:
 
 1. **User Preferences**
-   - Custom device names ("Bedroom Light" → "Reading Light")
-   - Favorite scenes
-   - Personality settings
+    - Custom device names ("Bedroom Light" → "Reading Light")
+    - Favorite scenes
+    - Personality settings
 
 2. **Conversation History**
-   - "What did I ask you 5 minutes ago?"
-   - Analytics on command usage
+    - "What did I ask you 5 minutes ago?"
+    - Analytics on command usage
 
 3. **Automation Rules**
-   - "Turn on lights every day at 6pm"
-   - Complex schedules
+    - "Turn on lights every day at 6pm"
+    - Complex schedules
 
 4. **Multi-User Support**
-   - Different users with different permissions
-   - User-specific device groups
+    - Different users with different permissions
+    - User-specific device groups
 
 ### For Your Presentation:
 
 **Do you need any of these?**
+
 - ❓ Custom device names? → Probably not
 - ❓ Conversation history? → Probably not
 - ❓ Automation rules? → Probably not
@@ -184,6 +189,7 @@ export const listDevicesTool = new DynamicTool({
 ### Phase 1: Remove Database (Simplify)
 
 **1. Remove Prisma completely:**
+
 ```bash
 cd apps/oracle
 npm uninstall @prisma/client prisma
@@ -194,6 +200,7 @@ rm -rf src/generated/prisma/
 **2. Update LangChain tools to use MQTT discovery:**
 
 **File:** `apps/oracle/src/lib/mqtt/device-cache.ts`
+
 ```typescript
 import { EventEmitter } from 'events';
 
@@ -238,6 +245,7 @@ export const deviceCache = new DeviceCache();
 ```
 
 **File:** `apps/oracle/src/lib/mqtt/discovery-handler.ts`
+
 ```typescript
 import { MqttClient } from 'mqtt';
 import { deviceCache } from './device-cache';
@@ -315,6 +323,7 @@ function extractLocation(name: string): string | undefined {
 **3. Update LangChain tools:**
 
 **File:** `apps/oracle/src/lib/langchain/tools/device-list-tool.ts`
+
 ```typescript
 import { DynamicTool } from '@langchain/core/tools';
 import { deviceCache } from '../../mqtt/device-cache';
@@ -341,6 +350,7 @@ export function createDeviceListTool() {
 ```
 
 **File:** `apps/oracle/src/lib/langchain/tools/device-control-tool.ts`
+
 ```typescript
 import { DynamicTool } from '@langchain/core/tools';
 import { deviceCache } from '../../mqtt/device-cache';
@@ -419,11 +429,13 @@ export function createDeviceControlTool() {
 ### If You're Worried About Live Demo Reliability:
 
 **Hybrid Approach:**
+
 1. Use **in-memory cache** as primary source (MQTT discovery)
 2. Keep **SQLite database** as backup with seed data
 3. If MQTT discovery fails during demo, fall back to database
 
 **Implementation:**
+
 ```typescript
 export function createDeviceListTool() {
   return new DynamicTool({
@@ -445,6 +457,7 @@ export function createDeviceListTool() {
 ```
 
 **Benefits:**
+
 - ✅ Real devices when available (MQTT)
 - ✅ Mock devices as backup (database)
 - ✅ Demo can't fail due to discovery issues
@@ -456,25 +469,30 @@ export function createDeviceListTool() {
 ### For Your January 12, 2026 Presentation:
 
 **Option A: Remove Database** ✅ (Recommended if you have real Z-Wave devices)
+
 - Simpler architecture
 - Shows real-world approach
 - Better story for presentation
 
 **Option B: Keep Database as Backup** ⚠️ (Safer for demo)
+
 - Use MQTT discovery when available
 - Fall back to mock devices if needed
 - More complex but more reliable
 
 **Option C: Pure Mock Devices** ❌ (Not recommended)
+
 - Keep database, skip MQTT discovery
 - Simpler but not realistic
 - Less impressive demo
 
 ### My Recommendation: **Option A**
 
-Use MQTT discovery with real or simulated Z-Wave devices. It's the cleanest architecture and makes for a better presentation story.
+Use MQTT discovery with real or simulated Z-Wave devices. It's the cleanest architecture and makes for a better
+presentation story.
 
 If you're worried about demo reliability, add a backup plan:
+
 - Have mock devices ready in code (not database)
 - If MQTT fails, switch to mock mode
 - Takes 5 minutes to add safety switch
@@ -484,17 +502,20 @@ If you're worried about demo reliability, add a backup plan:
 ## Summary
 
 **Current State:**
+
 - ✅ You have Prisma database with mock devices
 - ❌ Database is disconnected from real devices
 - ❌ Manual maintenance required
 
 **Recommended State:**
+
 - ✅ Use MQTT discovery from zwave-js-ui
 - ✅ In-memory device cache
 - ✅ No database needed
 - ✅ Devices automatically discovered
 
 **When to Keep Database:**
+
 - ⏸️ If you need user preferences
 - ⏸️ If you need conversation history
 - ⏸️ If you need automation rules

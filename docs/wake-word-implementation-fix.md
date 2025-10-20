@@ -9,11 +9,13 @@
 ## Problem Statement
 
 The wake word model expects:
+
 - **Shape:** `[1, 16, 96]`
 - **Meaning:** 1 batch, 16 time steps, 96 features per time step
 - **Temporal window:** 16 embeddings × 80ms = 1.28 seconds of audio
 
 We were providing:
+
 - **Shape:** `[1, 1, 96]`
 - **Meaning:** 1 batch, 1 time step, 96 features
 - **Temporal window:** Just 1 embedding (effectively 760ms with overlap, but wrong format)
@@ -235,10 +237,12 @@ Time 1360ms+:   Continuous detection every 80ms
 ## Memory Requirements
 
 ### Mel Buffer
+
 - **Size:** 100 frames × 32 features × 4 bytes = ~13 KB
 - **Duration:** ~1 second of audio history
 
 ### Embedding Buffer
+
 - **Size:** 30 embeddings × 96 features × 4 bytes = ~12 KB
 - **Duration:** ~2.4 seconds of audio history
 
@@ -313,6 +317,7 @@ it('should detect "hey jarvis" in test audio', async () => {
 ## Common Pitfalls
 
 ### ❌ Don't Do This
+
 ```typescript
 // Trying to get 16 embeddings from one mel buffer
 const mel76 = getMelSpectrogram(audio);
@@ -324,6 +329,7 @@ for (let i = 0; i < 16; i++) {
 ```
 
 ### ✅ Do This Instead
+
 ```typescript
 // Accumulate embeddings over time
 for await (const chunk of audioStream) {  // Each chunk is 80ms
@@ -347,6 +353,7 @@ for await (const chunk of audioStream) {  // Each chunk is 80ms
 ## Performance Considerations
 
 ### Optimize for Real-time
+
 ```typescript
 // Use batch processing when possible
 private async extractEmbedding(): Promise<Float32Array> {
@@ -361,6 +368,7 @@ private async extractEmbedding(): Promise<Float32Array> {
 ```
 
 ### Monitor Performance
+
 ```typescript
 const startTime = performance.now();
 const result = await detector.processAudioChunk(chunk);
@@ -376,9 +384,11 @@ if (duration > 80) {  // Should be < 80ms for real-time
 ## Summary
 
 **The Fix in One Sentence:**
-Instead of trying to extract 16 embeddings from a single mel buffer, accumulate 1 embedding per 80ms chunk and use the last 16 for detection.
+Instead of trying to extract 16 embeddings from a single mel buffer, accumulate 1 embedding per 80ms chunk and use the
+last 16 for detection.
 
 **Key Changes:**
+
 1. ✅ Add mel buffer (rolling, ≥76 frames)
 2. ✅ Add embedding buffer (rolling, ≥16 embeddings)
 3. ✅ Process audio in 80ms chunks
@@ -386,6 +396,7 @@ Instead of trying to extract 16 embeddings from a single mel buffer, accumulate 
 5. ✅ Detect using last 16 embeddings
 
 **Result:**
+
 - Streaming wake word detection ✓
 - Continuous detection every 80ms ✓
 - 1.28 second warmup period ✓

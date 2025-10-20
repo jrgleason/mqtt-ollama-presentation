@@ -38,9 +38,10 @@ nano .env
 ```
 
 **Default Configuration (works as-is):**
+
 - Wake Word: "Hey Jarvis"
 - Microphone: hw:2,0 (LANDIBO USB mic)
-- MQTT Broker: mqtt://10.0.0.58:31883
+- MQTT Broker: mqtt://localhost:1883
 - Threshold: 0.5
 
 ### 4. Run
@@ -50,6 +51,7 @@ npm run dev
 ```
 
 Expected output:
+
 ```
 ℹ️  [info] Voice Gateway (OpenWakeWord) starting...
 ℹ️  [info] Loading melspectrogram model...
@@ -99,6 +101,7 @@ The application needs access to the venv's piper installation. The app will auto
 ```
 
 To use the venv:
+
 ```bash
 # Option 1: Run with venv activated (recommended for development)
 source venvs/piper-tts/bin/activate
@@ -111,11 +114,13 @@ npm run dev
 ```
 
 **Available voices:**
+
 - `en_US-amy-medium` - Clear American English (recommended)
 - `en_US-lessac-medium` - Male voice
 - `en_GB-alan-medium` - British English
 
 **To disable TTS (text only):**
+
 ```bash
 # Edit .env
 nano .env
@@ -137,24 +142,27 @@ ollama pull Qwen3:1.7b
 ### 7. Test the Complete Flow
 
 **Simple Question:**
+
 1. Say: **"Hey Jarvis"** (wait for wake word confirmation)
 2. Say: **"What is the capital of France?"**
 3. System will:
-   - 📝 Transcribe your speech using Whisper
-   - 📤 Publish transcription to MQTT (`voice/transcription`)
-   - 🤖 Send transcription to Ollama AI
-   - ✅ Receive AI response
-   - 🔊 Speak the response using Piper TTS
-   - 📤 Publish AI response to MQTT (`voice/ai-response`)
+    - 📝 Transcribe your speech using Whisper
+    - 📤 Publish transcription to MQTT (`voice/transcription`)
+    - 🤖 Send transcription to Ollama AI
+    - ✅ Receive AI response
+    - 🔊 Speak the response using Piper TTS
+    - 📤 Publish AI response to MQTT (`voice/ai-response`)
 
 **Multi-Turn Conversation:**
+
 1. Say: **"Hey Jarvis"** → **"What is 2 plus 2?"**
-   - AI: "2 plus 2 equals 4."
+    - AI: "2 plus 2 equals 4."
 2. Say: **"Hey Jarvis"** → **"What about 3 times that?"**
-   - AI: "3 times 4 equals 12." (AI remembers previous answer!)
+    - AI: "3 times 4 equals 12." (AI remembers previous answer!)
 3. Wait 5+ minutes... conversation context resets automatically
 
 **Conversation Features:**
+
 - ✅ Maintains context between questions (no need to repeat yourself)
 - ✅ Automatically resets after 5 minutes of inactivity
 - ✅ Each wake word starts a new turn in the conversation
@@ -218,9 +226,11 @@ OLLAMA_BASE_URL=http://192.168.1.100:11434
 
 ### Adjust Voice Activity Detection (VAD)
 
-The system uses **Voice Activity Detection** to intelligently stop recording when you finish speaking. Instead of a fixed timeout, it listens for silence and automatically ends the recording.
+The system uses **Voice Activity Detection** to intelligently stop recording when you finish speaking. Instead of a
+fixed timeout, it listens for silence and automatically ends the recording.
 
 **How it works:**
+
 - After wake word detection, recording starts immediately
 - System monitors audio energy levels in real-time
 - When 1.5 seconds of silence is detected, recording stops
@@ -272,6 +282,7 @@ const SILENCE_THRESHOLD = 0.001;  // Default (RMS energy threshold)
 ```
 
 **Tip:** Run with `LOG_LEVEL=debug` to see energy levels during recording:
+
 ```bash
 LOG_LEVEL=debug npm run dev
 # Watch for "🔇 Detecting silence" and "🗣️ Speech detected" logs
@@ -301,6 +312,7 @@ LOG_LEVEL=debug npm run dev
 ### High CPU usage?
 
 Normal on Raspberry Pi:
+
 - Expected: 10-20% CPU
 - This is ONNX inference running on CPU
 - If consistently over 30%, consider using lighter wake word model
@@ -404,30 +416,35 @@ Normal on Raspberry Pi:
 **Symptom:** The system stops recording before you finish speaking.
 
 **Solution:** Increase the silence duration threshold:
+
 ```bash
 # Edit .env
 VAD_TRAILING_SILENCE_MS=2000  # Wait 2 seconds of silence instead of 1.5
 ```
 
-**Explanation:** The Voice Activity Detection (VAD) system stops recording after detecting silence. If you speak slowly with long pauses, increase this value to allow more time between words.
+**Explanation:** The Voice Activity Detection (VAD) system stops recording after detecting silence. If you speak slowly
+with long pauses, increase this value to allow more time between words.
 
 ### Recording not stopping when you finish?
 
 **Symptom:** The system keeps recording after you stop speaking, waiting for the full 10-second timeout.
 
 **Solution:** Decrease the silence duration threshold:
+
 ```bash
 # Edit .env
 VAD_TRAILING_SILENCE_MS=1000  # Only wait 1 second of silence
 ```
 
-**Explanation:** If the system isn't detecting silence properly, it may be because your microphone picks up ambient noise. Try recording in a quieter environment or decrease the silence threshold.
+**Explanation:** If the system isn't detecting silence properly, it may be because your microphone picks up ambient
+noise. Try recording in a quieter environment or decrease the silence threshold.
 
 ### Recording stops during long questions?
 
 **Symptom:** You need more than 10 seconds to ask your question.
 
 **Solution:** Increase the maximum recording length:
+
 ```bash
 # Edit .env
 VAD_MAX_UTTERANCE_MS=15000  # Allow 15 seconds instead of 10
@@ -446,12 +463,12 @@ VAD_MAX_UTTERANCE_MS=15000  # Allow 15 seconds instead of 10
 
 ## What's Different from Porcupine Version?
 
-| Feature | OpenWakeWord ✅ | Porcupine |
-|---------|----------------|-----------|
-| API Key | **Not needed** | Required |
-| Cost | **Free forever** | Free tier limited |
-| Wake Words | **3 included** | 1 (Computer) |
-| Setup | **Already done** | Needs API key |
+| Feature    | OpenWakeWord ✅   | Porcupine         |
+|------------|------------------|-------------------|
+| API Key    | **Not needed**   | Required          |
+| Cost       | **Free forever** | Free tier limited |
+| Wake Words | **3 included**   | 1 (Computer)      |
+| Setup      | **Already done** | Needs API key     |
 
 ## Architecture
 

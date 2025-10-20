@@ -4,16 +4,27 @@
  * Creates configured Ollama language model instances for use with LangChain
  */
 
-import { ChatOllama } from '@langchain/ollama';
+import {ChatOllama} from '@langchain/ollama';
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:0.5b';
+const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
 
-console.log('[ollama/client] Configuration:', {
-  baseUrl: OLLAMA_BASE_URL,
-  model: DEFAULT_MODEL,
-  envLoaded: !!process.env.OLLAMA_BASE_URL,
-});
+// Only log debug info in development or debug mode
+if (DEBUG) {
+    console.log('[ollama/client] ========== OLLAMA DEBUG START ==========');
+    console.log('[ollama/client] All OLLAMA env vars:', {
+        OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+        OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+        NODE_ENV: process.env.NODE_ENV,
+    });
+    console.log('[ollama/client] Final Configuration:', {
+        baseUrl: OLLAMA_BASE_URL,
+        model: DEFAULT_MODEL,
+        envLoaded: !!process.env.OLLAMA_BASE_URL,
+    });
+    console.log('[ollama/client] ========== OLLAMA DEBUG END ==========');
+}
 
 /**
  * Create an Ollama chat model instance
@@ -23,11 +34,11 @@ console.log('[ollama/client] Configuration:', {
  * @returns {ChatOllama} Configured Ollama model instance
  */
 export function createOllamaClient(temperature = 0.7, model = DEFAULT_MODEL) {
-  return new ChatOllama({
-    baseUrl: OLLAMA_BASE_URL,
-    model: model,
-    temperature: temperature,
-  });
+    return new ChatOllama({
+        baseUrl: OLLAMA_BASE_URL,
+        model: model,
+        temperature: temperature,
+    });
 }
 
 /**
@@ -36,14 +47,14 @@ export function createOllamaClient(temperature = 0.7, model = DEFAULT_MODEL) {
  * @returns {Promise<Array>} List of available models
  */
 export async function listOllamaModels() {
-  try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`);
-    const data = await response.json();
-    return data.models || [];
-  } catch (error) {
-    console.error('[ollama/client] Failed to list models:', error);
-    return [];
-  }
+    try {
+        const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`);
+        const data = await response.json();
+        return data.models || [];
+    } catch (error) {
+        console.error('[ollama/client] Failed to list models:', error);
+        return [];
+    }
 }
 
 /**
@@ -52,14 +63,14 @@ export async function listOllamaModels() {
  * @returns {Promise<boolean>} True if Ollama is accessible
  */
 export async function checkOllamaHealth() {
-  try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
-      method: 'GET',
-      signal: AbortSignal.timeout(5000),
-    });
-    return response.ok;
-  } catch (error) {
-    console.error('[ollama/client] Health check failed:', error.message);
-    return false;
-  }
+    try {
+        const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(5000),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('[ollama/client] Health check failed:', error.message);
+        return false;
+    }
 }

@@ -15,6 +15,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
 ## Popular English (en_US) Voices
 
 ### 1. **lessac** (Female, Professional)
+
 - **Quality Levels:** low, medium, high
 - **Description:** Clear, professional female voice. Great for general use.
 - **Recommended:** `en_US-lessac-medium`
@@ -24,6 +25,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 2. **ryan** (Male, Natural)
+
 - **Quality Levels:** low, medium, high
 - **Description:** Natural-sounding male voice. Very popular choice.
 - **Recommended:** `en_US-ryan-high`
@@ -33,11 +35,13 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 3. **amy** (Female)
+
 - **Quality Levels:** low, medium
 - **Description:** Simple, clear female voice
 - **Note:** `en_US-amy-medium`
 
 ### 4. **joe** (Male, Deep)
+
 - **Quality Levels:** medium
 - **Description:** Deeper male voice
 - **Download:**
@@ -46,6 +50,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 5. **kristin** (Female, Expressive)
+
 - **Quality Levels:** medium
 - **Description:** More expressive female voice
 - **Download:**
@@ -54,6 +59,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 6. **danny** (Male, Casual)
+
 - **Quality Levels:** low
 - **Description:** Casual-sounding male voice
 - **Download:**
@@ -62,6 +68,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 7. **kathleen** (Female, Clear)
+
 - **Quality Levels:** low
 - **Description:** Clear female voice
 - **Download:**
@@ -70,6 +77,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 8. **libritts** (Multi-speaker, High Quality)
+
 - **Quality Levels:** high
 - **Description:** Multi-speaker model trained on LibriTTS dataset
 - **Note:** Requires speaker selection in config
@@ -79,6 +87,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 9. **ljspeech** (Female, Research Standard)
+
 - **Quality Levels:** high, medium, low
 - **Description:** Standard voice from LJ Speech dataset
 - **Download:**
@@ -87,6 +96,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
   ```
 
 ### 10. **norman** (Male, British-influenced)
+
 - **Quality Levels:** medium
 - **Description:** Male voice with slight British influence
 - **Download:**
@@ -101,6 +111,7 @@ All voices are available at: https://huggingface.co/rhasspy/piper-voices/tree/ma
 If you want a British accent:
 
 ### **alba** (Female, British)
+
 - **Quality Levels:** medium
 - **Description:** Clear British female voice
 - **Download:**
@@ -109,6 +120,7 @@ If you want a British accent:
   ```
 
 ### **alan** (Male, British)
+
 - **Quality Levels:** low, medium
 - **Description:** British male voice
 - **Download:**
@@ -120,11 +132,11 @@ If you want a British accent:
 
 ## Quality Level Differences
 
-| Quality | Sample Rate | Model Size | Speed | Sound Quality |
-|---------|-------------|------------|-------|---------------|
-| **low** | 16,000 Hz | ~3-5 MB | Fastest | Good |
-| **medium** | 22,050 Hz | ~6-10 MB | Moderate | Better |
-| **high** | 22,050 Hz | ~20-30 MB | Slower | Best |
+| Quality    | Sample Rate | Model Size | Speed    | Sound Quality |
+|------------|-------------|------------|----------|---------------|
+| **low**    | 16,000 Hz   | ~3-5 MB    | Fastest  | Good          |
+| **medium** | 22,050 Hz   | ~6-10 MB   | Moderate | Better        |
+| **high**   | 22,050 Hz   | ~20-30 MB  | Slower   | Best          |
 
 **Recommendation:** Use **medium** quality for the best balance of speed and quality on Raspberry Pi.
 
@@ -142,6 +154,7 @@ python3 -m piper.download_voices en_US-ryan-high
 ```
 
 This will download two files to your current directory:
+
 - `en_US-ryan-high.onnx` (model)
 - `en_US-ryan-high.onnx.json` (config)
 
@@ -183,16 +196,19 @@ npm start
 For a Jarvis-like voice assistant, consider these options:
 
 ### Best Male Voices:
+
 1. **ryan-high** - Natural, authoritative male voice
 2. **joe-medium** - Deeper, more commanding
 3. **danny-low** - Casual, friendly (fastest option)
 
 ### Best Female Voices:
+
 1. **lessac-medium** - Professional, clear
 2. **kristin-medium** - More expressive
 3. **amy-medium** - Simple, clear
 
 ### British Accent (for classic Jarvis feel):
+
 1. **en_GB-alan-medium** - British male voice
 
 ---
@@ -242,6 +258,7 @@ Then you can easily switch between them by editing the `.env` file.
 ## Current Configuration
 
 Your current setup:
+
 - **Voice:** `en_US-amy-medium` (female, medium quality)
 - **Speed:** `2.5` (2.5x faster)
 - **Volume:** `1.0` (100%)
@@ -251,10 +268,12 @@ Your current setup:
 ## Troubleshooting
 
 ### Voice sounds distorted
+
 - Try a different quality level (high > medium > low)
 - Reduce TTS_SPEED (currently 2.5, try 2.0 or 1.5)
 
 ### Download fails with SSL error
+
 - Use direct download from HuggingFace:
   ```bash
   wget https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx
@@ -262,6 +281,7 @@ Your current setup:
   ```
 
 ### Voice doesn't load
+
 - Verify both files exist (.onnx and .onnx.json)
 - Check file paths in .env are correct
 - Check logs for error messages

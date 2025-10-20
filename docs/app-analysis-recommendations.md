@@ -9,6 +9,7 @@
 ## Executive Summary
 
 This analysis covers three applications in the `apps/` directory:
+
 1. **oracle** - Next.js chatbot (primary demo app) - ✅ Stable, needs minor updates
 2. **zwave-mcp-server** - TypeScript MCP server - ⚠️ Dependencies not installed
 3. **voice-gateway** - Voice command service - ⚠️ Dependencies not installed, newly added
@@ -42,6 +43,7 @@ This analysis covers three applications in the `apps/` directory:
 #### Critical Issues
 
 **CRITICAL: Wildcard Version Anti-Pattern**
+
 ```json
 // Current (apps/oracle/package.json)
 "dependencies": {
@@ -55,6 +57,7 @@ This analysis covers three applications in the `apps/` directory:
 ```
 
 **Risk Level:** HIGH - This is extremely dangerous for a presentation demo:
+
 - Builds may break between `npm install` runs
 - Different team members may have different versions
 - Impossible to reproduce bugs
@@ -62,6 +65,7 @@ This analysis covers three applications in the `apps/` directory:
 - Demo could fail on presentation day
 
 **Impact:**
+
 - Zod is already outdated (3.25.76 vs 4.1.12) - breaking changes in v4
 - Future npm installs may pull incompatible versions
 - Lock file is the ONLY thing preventing catastrophic failures
@@ -83,12 +87,14 @@ zod               3.25.76   4.1.12  YES (major - breaking)
 ```
 
 **Zod v4 Breaking Changes:**
+
 - Major API changes in schema composition
 - Changed error handling patterns
 - May affect LangChain tool validation
 - Requires code updates in validation logic
 
 **Action Required:**
+
 1. Pin all dependencies to specific versions
 2. Update safe dependencies (Prisma, types, lucide-react, ts-jest)
 3. Defer Zod upgrade until after CodeMash (January 12, 2026)
@@ -121,6 +127,7 @@ zod               3.25.76   4.1.12  YES (major - breaking)
 ```
 
 **Recommendations:**
+
 - Update `target` to `ES2020` (Node 18+ requirement)
 - Add `noUncheckedIndexedAccess: true` for safer array access
 - Add `noPropertyAccessFromIndexSignature: true` for type safety
@@ -128,6 +135,7 @@ zod               3.25.76   4.1.12  YES (major - breaking)
 #### ESLint Configuration (eslint.config.mjs)
 
 **Current Issues:**
+
 ```javascript
 rules: {
   '@typescript-eslint/no-explicit-any': 'off',     // ⚠️ Disables type safety
@@ -139,6 +147,7 @@ rules: {
 **Impact:** These rules are disabled globally, reducing code quality and catching errors
 
 **Recommendation:**
+
 - Re-enable unused vars warnings (not errors) for better code hygiene
 - Use `@typescript-eslint/no-unused-vars: ["warn", { "argsIgnorePattern": "^_" }]`
 - Keep `no-explicit-any` off only for generated files
@@ -179,11 +188,13 @@ apps/oracle/
 #### Test Coverage
 
 **Current Tests:**
+
 - `src/lib/langchain/tools/__tests__/device-control-tool.test.ts` ✅
 - `src/lib/langchain/tools/__tests__/device-list-tool.test.ts` ✅
 - `src/lib/mqtt/__tests__/client.test.ts` ✅
 
 **Missing Tests:**
+
 - API routes (`/api/chat`, `/api/models`)
 - React components (`ChatInterface`, `ChatMessage`)
 - Database operations
@@ -191,12 +202,14 @@ apps/oracle/
 - Error handling scenarios
 
 **Recommendation:**
+
 - Add API route tests before demo (critical paths)
 - Defer UI component tests (lower priority for backend-focused demo)
 
 ### 1.4 Environment Configuration
 
 **Current (.env.example):**
+
 ```env
 # Good structure, but missing validation
 OLLAMA_BASE_URL=http://localhost:11434
@@ -206,12 +219,14 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 **Issues:**
+
 - No runtime validation of required env vars
 - No type safety for env variables
 - Missing `NODE_ENV` default
 - Auth0 variables commented out but referenced in docker-compose
 
 **Recommendation:**
+
 ```typescript
 // Create src/lib/env.ts
 import { z } from 'zod';
@@ -259,9 +274,9 @@ export const env = envSchema.parse(process.env);
 #### Priority 2: High (Week 2)
 
 4. **Environment validation**
-   - Create `src/lib/env.ts` with Zod schemas
-   - Validate on app startup
-   - Fail fast with clear error messages
+    - Create `src/lib/env.ts` with Zod schemas
+    - Validate on app startup
+    - Fail fast with clear error messages
 
 5. **Error handling patterns**
    ```typescript
@@ -290,9 +305,9 @@ export const env = envSchema.parse(process.env);
 #### Priority 3: Medium (Week 3)
 
 7. **Add API route tests**
-   - Test `/api/chat` with mock Ollama responses
-   - Test `/api/models` endpoint
-   - Add error scenario tests
+    - Test `/api/chat` with mock Ollama responses
+    - Test `/api/models` endpoint
+    - Add error scenario tests
 
 8. **Improve TypeScript config**
    ```json
@@ -349,6 +364,7 @@ UNMET DEPENDENCY zod@^3.23.8
 **Impact:** Project cannot be built, tested, or run
 
 **Action Required:**
+
 ```bash
 cd apps/zwave-mcp-server
 npm install
@@ -357,6 +373,7 @@ npm install
 #### Severely Outdated Dependency
 
 **MCP SDK:**
+
 ```
 Current: 0.5.0 (if installed)
 Latest:  1.20.0 (24 versions behind!)
@@ -365,6 +382,7 @@ Latest:  1.20.0 (24 versions behind!)
 **Breaking Changes:** Unknown, but likely significant given 1.x version jump
 
 **Recommendation:**
+
 - Install dependencies first
 - Test with current SDK version (0.5.0)
 - Plan MCP SDK upgrade for Week 2
@@ -413,6 +431,7 @@ apps/zwave-mcp-server/
 ### 2.3 Project Structure
 
 **Current:**
+
 ```
 zwave-mcp-server/
 ├── src/
@@ -426,6 +445,7 @@ zwave-mcp-server/
 ```
 
 **Missing:**
+
 ```
 ├── src/index.ts              # ❌ Main entry point (referenced but not shown)
 ├── src/logger.ts             # ❌ Structured logging
@@ -581,6 +601,7 @@ UNMET DEPENDENCY wav@^1.0.2
 ```
 
 **Action Required:**
+
 ```bash
 cd apps/voice-gateway
 npm install
@@ -598,6 +619,7 @@ eslint         ^8.0.0    9.x      Major ESLint upgrade
 ```
 
 **Recommendation:**
+
 - Install first with declared versions
 - Test functionality
 - Update dotenv (safe, minor breaking changes)
@@ -628,6 +650,7 @@ eslint         ^8.0.0    9.x      Major ESLint upgrade
 #### Logging Implementation
 
 **Current (src/logger.ts):**
+
 ```typescript
 class Logger {
   private level: LogLevel;
@@ -642,12 +665,14 @@ class Logger {
 **Status:** ✅ Excellent implementation
 
 **Recommendation:**
+
 - Reuse this logger in oracle and zwave-mcp-server
 - Extract to shared package in workspace
 
 ### 3.3 Project Structure
 
 **Current:**
+
 ```
 voice-gateway/
 ├── src/
@@ -665,6 +690,7 @@ voice-gateway/
 ```
 
 **Missing Implementation Files:**
+
 ```
 src/
 ├── ❌ wakeword.ts       # Porcupine integration
@@ -692,9 +718,9 @@ src/
    ```
 
 2. **Verify Picovoice key**
-   - Register at https://console.picovoice.ai
-   - Add key to `.env`
-   - Test wake word detection
+    - Register at https://console.picovoice.ai
+    - Add key to `.env`
+    - Test wake word detection
 
 3. **Download Whisper model**
    ```bash
@@ -743,14 +769,14 @@ src/
    ```
 
 8. **Add error recovery**
-   - MQTT reconnection logic
-   - Audio device failure handling
-   - Whisper timeout handling
+    - MQTT reconnection logic
+    - Audio device failure handling
+    - Whisper timeout handling
 
 9. **Hardware testing on Raspberry Pi 5**
-   - Test with LANDIBO GSH23 USB mic
-   - Verify ALSA configuration
-   - Test wake word detection accuracy
+    - Test with LANDIBO GSH23 USB mic
+    - Verify ALSA configuration
+    - Test wake word detection accuracy
 
 #### Priority 4: Low (Post-Demo)
 
@@ -763,18 +789,21 @@ src/
 **Recommendation for CodeMash Demo:**
 
 **Option A: Skip Voice Gateway (Recommended)**
+
 - Focus on oracle + zwave-mcp-server + MQTT
 - Demo manual text commands (reliable, fast)
 - Mention voice as "future enhancement"
 - Save development time for core features
 
 **Option B: Simple Voice Demo (If time permits)**
+
 - Implement basic wake word + STT + MQTT
 - Record demo video as backup (voice can fail)
 - Practice with live fallback to text commands
 - Clearly mark as "experimental" in presentation
 
 **Option C: Video-Only Demo**
+
 - Record voice demo in advance
 - Show as "this is what we're building"
 - No live demo risk
@@ -809,6 +838,7 @@ eslint              9.37.0  N/A        8.0.0     YES
 #### Implementation Plan
 
 **1. Create root package.json**
+
 ```json
 {
   "name": "mqtt-ollama-presentation",
@@ -839,6 +869,7 @@ eslint              9.37.0  N/A        8.0.0     YES
 ```
 
 **2. Update apps to use workspace dependencies**
+
 ```json
 // apps/oracle/package.json
 {
@@ -850,6 +881,7 @@ eslint              9.37.0  N/A        8.0.0     YES
 ```
 
 **3. Benefits**
+
 - Reduced disk usage (~200-300MB savings)
 - Consistent tooling versions
 - Faster `npm install` (shared cache)
@@ -951,11 +983,13 @@ apps/shared/
 ```
 
 **Benefits:**
+
 - DRY principle (Don't Repeat Yourself)
 - Consistent error handling across apps
 - Single source of truth for utilities
 
 **Cost:**
+
 - Adds complexity to project structure
 - Requires workspace setup
 - May be overkill for 3 apps
@@ -992,8 +1026,8 @@ docs/
    ```
 
 2. **No .env validation** on app startup
-   - Apps may fail silently with missing vars
-   - No type safety for environment
+    - Apps may fail silently with missing vars
+    - No type safety for environment
 
 3. **Auth0 secrets** commented in oracle but required in docker-compose
    ```yaml
@@ -1030,8 +1064,8 @@ docs/
    ```
 
 3. **Sync docker-compose with .env.example**
-   - Either enable Auth0 in oracle
-   - Or make Auth0 optional in docker-compose
+    - Either enable Auth0 in oracle
+    - Or make Auth0 optional in docker-compose
 
 ### 5.2 Secrets in Git History
 
@@ -1107,6 +1141,7 @@ voice-gateway:
 ### 6.2 Recommended Test Structure
 
 #### Oracle Tests (apps/oracle/src)
+
 ```
 __tests__/
 ├── unit/
@@ -1131,6 +1166,7 @@ __tests__/
 ```
 
 #### zwave-mcp-server Tests (apps/zwave-mcp-server/src)
+
 ```
 __tests__/
 ├── unit/
@@ -1142,6 +1178,7 @@ __tests__/
 ```
 
 #### voice-gateway Tests (apps/voice-gateway/src)
+
 ```
 __tests__/
 ├── unit/
@@ -1155,21 +1192,25 @@ __tests__/
 ### 6.3 Testing Priorities
 
 #### Week 1 (Critical)
+
 - Add API route tests to oracle (`/api/chat`, `/api/models`)
 - Add MQTT client tests to zwave-mcp-server
 - Run existing oracle tests in CI
 
 #### Week 2 (High)
+
 - Add Ollama client tests (with mocks)
 - Add MCP server integration tests
 - Set up GitHub Actions for automated testing
 
 #### Week 3 (Medium)
+
 - Add voice-gateway unit tests
 - Add database tests for oracle
 - Increase coverage to 70%
 
 #### Week 4 (Low)
+
 - Add E2E tests for critical flows
 - Add performance tests
 - Add component tests for React
@@ -1183,6 +1224,7 @@ __tests__/
 **Current Status:** Unknown (no bundle analysis configured)
 
 **Recommendation:**
+
 ```json
 // apps/oracle/package.json
 {
@@ -1218,6 +1260,7 @@ const config = {
 **Current next.config.ts:** Unknown (not reviewed)
 
 **Recommended:**
+
 ```typescript
 const config: NextConfig = {
   reactStrictMode: true,
@@ -1237,6 +1280,7 @@ const config: NextConfig = {
 **Prisma Schema Review:** Not performed (need to see schema.prisma)
 
 **Recommendations:**
+
 - Add indexes on frequently queried fields
 - Use `@@index()` for compound queries
 - Enable Prisma query logging in dev
@@ -1245,6 +1289,7 @@ const config: NextConfig = {
 ### 7.4 MQTT Performance
 
 **Recommendations:**
+
 - Use QoS 0 for high-frequency updates (device status)
 - Use QoS 1 for commands (device control)
 - Never use QoS 2 (too slow for home automation)
@@ -1270,25 +1315,30 @@ docs/
 ### 8.2 Missing README Updates
 
 **apps/oracle/README.md:**
+
 - Missing setup instructions
 - Missing architecture overview
 - Missing API documentation
 - Missing troubleshooting section
 
 **apps/zwave-mcp-server/README.md:**
+
 - File doesn't exist (only brief mention in apps/README.md)
 
 **apps/voice-gateway/README.md:**
+
 - ✅ Excellent documentation (use as template!)
 
 ### 8.3 Code Documentation
 
 **Current Status:**
+
 - Minimal JSDoc comments
 - No type documentation
 - No function descriptions
 
 **Recommendation:**
+
 ```typescript
 /**
  * Controls a Z-Wave device via MQTT
@@ -1304,14 +1354,16 @@ docs/
  * ```typescript
  * await controlDevice("3-37-0", "dim", 75);
  * ```
- */
+
+*/
 async function controlDevice(
-  deviceId: string,
-  action: 'on' | 'off' | 'dim',
-  value?: number
+deviceId: string,
+action: 'on' | 'off' | 'dim',
+value?: number
 ): Promise<void> {
-  // Implementation
+// Implementation
 }
+
 ```
 
 ---
@@ -1399,6 +1451,7 @@ npm run type-check
 ## 10. Demo Readiness Checklist
 
 ### Week 1 (Critical - Must Have)
+
 - [ ] Install dependencies in zwave-mcp-server
 - [ ] Install dependencies in voice-gateway
 - [ ] Replace wildcard versions in oracle/package.json
@@ -1411,6 +1464,7 @@ npm run type-check
 - [ ] Set up fallback plan (video recording)
 
 ### Week 2 (High Priority)
+
 - [ ] Set up npm workspaces
 - [ ] Update MCP SDK in zwave-mcp-server
 - [ ] Add API route tests to oracle
@@ -1421,6 +1475,7 @@ npm run type-check
 - [ ] Set up CI/CD pipeline
 
 ### Week 3 (Medium Priority)
+
 - [ ] Implement voice-gateway (if Phase 5 active)
 - [ ] Add integration tests
 - [ ] Update documentation
@@ -1431,6 +1486,7 @@ npm run type-check
 - [ ] Record backup video
 
 ### Week 4 (Low Priority - Nice to Have)
+
 - [ ] Add E2E tests
 - [ ] Performance optimization
 - [ ] Security hardening
@@ -1440,6 +1496,7 @@ npm run type-check
 - [ ] Update slide deck with final code
 
 ### Post-Demo (January 13+)
+
 - [ ] Upgrade Zod to v4
 - [ ] Refactor shared utilities
 - [ ] Add component tests
@@ -1454,53 +1511,53 @@ npm run type-check
 ### High Risk (Demo Blockers)
 
 1. **Wildcard Versions in Oracle** (Risk: 9/10)
-   - **Impact:** Build could break on demo day
-   - **Likelihood:** Medium (if npm install run again)
-   - **Mitigation:** Replace with exact versions TODAY
+    - **Impact:** Build could break on demo day
+    - **Likelihood:** Medium (if npm install run again)
+    - **Mitigation:** Replace with exact versions TODAY
 
 2. **Missing Dependencies** (Risk: 8/10)
-   - **Impact:** Two apps cannot run
-   - **Likelihood:** High (apps untested)
-   - **Mitigation:** Run `npm install` in both apps immediately
+    - **Impact:** Two apps cannot run
+    - **Likelihood:** High (apps untested)
+    - **Mitigation:** Run `npm install` in both apps immediately
 
 3. **No Dockerfile for Oracle** (Risk: 7/10)
-   - **Impact:** Docker compose won't work
-   - **Likelihood:** High (docker-compose references missing file)
-   - **Mitigation:** Create Dockerfile this week
+    - **Impact:** Docker compose won't work
+    - **Likelihood:** High (docker-compose references missing file)
+    - **Mitigation:** Create Dockerfile this week
 
 4. **Auth0 Configuration Mismatch** (Risk: 6/10)
-   - **Impact:** Oracle won't start in Docker
-   - **Likelihood:** Medium (docker-compose requires Auth0)
-   - **Mitigation:** Make Auth0 optional or enable it
+    - **Impact:** Oracle won't start in Docker
+    - **Likelihood:** Medium (docker-compose requires Auth0)
+    - **Mitigation:** Make Auth0 optional or enable it
 
 ### Medium Risk
 
 5. **Outdated MCP SDK** (Risk: 5/10)
-   - **Impact:** MCP server may have bugs or missing features
-   - **Likelihood:** Medium
-   - **Mitigation:** Test with current version first, upgrade in Week 2
+    - **Impact:** MCP server may have bugs or missing features
+    - **Likelihood:** Medium
+    - **Mitigation:** Test with current version first, upgrade in Week 2
 
 6. **No Error Handling** (Risk: 5/10)
-   - **Impact:** Demo could crash unexpectedly
-   - **Likelihood:** Medium
-   - **Mitigation:** Add try/catch and graceful degradation
+    - **Impact:** Demo could crash unexpectedly
+    - **Likelihood:** Medium
+    - **Mitigation:** Add try/catch and graceful degradation
 
 7. **No Tests for Critical Paths** (Risk: 4/10)
-   - **Impact:** Bugs may slip into demo
-   - **Likelihood:** Low (manual testing catches most)
-   - **Mitigation:** Add API route tests in Week 1
+    - **Impact:** Bugs may slip into demo
+    - **Likelihood:** Low (manual testing catches most)
+    - **Mitigation:** Add API route tests in Week 1
 
 ### Low Risk
 
 8. **Voice Gateway Not Implemented** (Risk: 3/10)
-   - **Impact:** Phase 5 unavailable
-   - **Likelihood:** High (optional feature)
-   - **Mitigation:** Already marked as optional
+    - **Impact:** Phase 5 unavailable
+    - **Likelihood:** High (optional feature)
+    - **Mitigation:** Already marked as optional
 
 9. **Zod v4 Breaking Changes** (Risk: 2/10)
-   - **Impact:** Validation may break
-   - **Likelihood:** Low (not upgrading for demo)
-   - **Mitigation:** Defer upgrade to post-demo
+    - **Impact:** Validation may break
+    - **Likelihood:** Low (not upgrading for demo)
+    - **Mitigation:** Defer upgrade to post-demo
 
 10. **Performance Issues** (Risk: 2/10)
     - **Impact:** Slow demo response times
@@ -1520,12 +1577,12 @@ npm run type-check
    ```
 
 2. **Fix oracle package.json**
-   - Replace wildcard versions with exact versions
-   - Use npm-check-updates or manual updates
+    - Replace wildcard versions with exact versions
+    - Use npm-check-updates or manual updates
 
 3. **Create oracle Dockerfile**
-   - Copy from voice-gateway template
-   - Adjust for Next.js build process
+    - Copy from voice-gateway template
+    - Adjust for Next.js build process
 
 ### Week 1 Actions
 
@@ -1579,43 +1636,43 @@ npm run type-check
 ### Questions to Answer:
 
 1. **Is Voice Gateway (Phase 5) in scope for demo?**
-   - If yes: Prioritize implementation in Week 3
-   - If no: Mark as stretch goal and defer
+    - If yes: Prioritize implementation in Week 3
+    - If no: Mark as stretch goal and defer
 
 2. **Which Ollama model for demo?**
-   - Recommended: Qwen3:1.7b (best balance)
-   - Alternative: Gemma2:2b (faster, less accurate)
+    - Recommended: Qwen3:1.7b (best balance)
+    - Alternative: Gemma2:2b (faster, less accurate)
 
 3. **Auth0 integration status?**
-   - Enable for demo? (requires setup)
-   - Keep as optional? (simpler, less to break)
+    - Enable for demo? (requires setup)
+    - Keep as optional? (simpler, less to break)
 
 4. **Hardware availability?**
-   - Raspberry Pi 5 (16GB) ready?
-   - Z-Wave USB stick configured?
-   - USB microphone tested?
+    - Raspberry Pi 5 (16GB) ready?
+    - Z-Wave USB stick configured?
+    - USB microphone tested?
 
 5. **Network setup at venue?**
-   - WiFi available?
-   - Can run local MQTT broker?
-   - Need hotspot backup?
+    - WiFi available?
+    - Can run local MQTT broker?
+    - Need hotspot backup?
 
 ### Follow-up Documents to Create:
 
 1. **Demo Script** (`docs/demo-script.md`)
-   - Step-by-step presentation flow
-   - Fallback procedures
-   - Timing for each section
+    - Step-by-step presentation flow
+    - Fallback procedures
+    - Timing for each section
 
 2. **Hardware Setup Guide** (`docs/hardware-setup.md`)
-   - Physical connections
-   - Network configuration
-   - Troubleshooting steps
+    - Physical connections
+    - Network configuration
+    - Troubleshooting steps
 
 3. **Presentation Slide Updates** (`presentation/slides/`)
-   - Update with final architecture
-   - Add code snippets
-   - Include demo screenshots
+    - Update with final architecture
+    - Add code snippets
+    - Include demo screenshots
 
 ---
 
@@ -1633,6 +1690,7 @@ npm run type-check
 ## Appendix B: Package Version Reference
 
 ### Oracle Current Versions
+
 ```json
 {
   "@langchain/core": "0.3.78",
@@ -1647,6 +1705,7 @@ npm run type-check
 ```
 
 ### Recommended Updates
+
 ```json
 {
   "@prisma/client": "6.17.1",

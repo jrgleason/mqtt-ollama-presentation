@@ -5,8 +5,8 @@
  */
 
 import mqtt from 'mqtt';
-import { logger } from './logger.js';
-import { config } from './config.js';
+import {logger} from './logger.js';
+import {config} from './config.js';
 
 let client = null;
 let isConnected = false;
@@ -17,45 +17,45 @@ let isConnected = false;
  * @returns {Promise<mqtt.MqttClient>} Connected MQTT client
  */
 async function connectMQTT() {
-  if (client && isConnected) {
-    return client;
-  }
+    if (client && isConnected) {
+        return client;
+    }
 
-  const options = {
-    clientId: config.mqtt.clientId,
-  };
-
-  if (config.mqtt.username) {
-    options.username = config.mqtt.username;
-    options.password = config.mqtt.password;
-  }
-
-  return new Promise((resolve, reject) => {
-    client = mqtt.connect(config.mqtt.brokerUrl, options);
-
-    client.on('connect', () => {
-      isConnected = true;
-      logger.debug('✅ Connected to MQTT broker', {
-        broker: config.mqtt.brokerUrl,
+    const options = {
         clientId: config.mqtt.clientId,
-      });
-      resolve(client);
-    });
+    };
 
-    client.on('error', (error) => {
-      logger.error('❌ MQTT connection error', { error: error.message });
-      reject(error);
-    });
+    if (config.mqtt.username) {
+        options.username = config.mqtt.username;
+        options.password = config.mqtt.password;
+    }
 
-    client.on('close', () => {
-      isConnected = false;
-      logger.debug('⚠️ MQTT connection closed');
-    });
+    return new Promise((resolve, reject) => {
+        client = mqtt.connect(config.mqtt.brokerUrl, options);
 
-    client.on('reconnect', () => {
-      logger.debug('🔄 Reconnecting to MQTT broker...');
+        client.on('connect', () => {
+            isConnected = true;
+            logger.debug('✅ Connected to MQTT broker', {
+                broker: config.mqtt.brokerUrl,
+                clientId: config.mqtt.clientId,
+            });
+            resolve(client);
+        });
+
+        client.on('error', (error) => {
+            logger.error('❌ MQTT connection error', {error: error.message});
+            reject(error);
+        });
+
+        client.on('close', () => {
+            isConnected = false;
+            logger.debug('⚠️ MQTT connection closed');
+        });
+
+        client.on('reconnect', () => {
+            logger.debug('🔄 Reconnecting to MQTT broker...');
+        });
     });
-  });
 }
 
 /**
@@ -65,28 +65,28 @@ async function connectMQTT() {
  * @param {Object} metadata - Additional metadata (timestamp, duration, etc.)
  */
 async function publishTranscription(text, metadata = {}) {
-  try {
-    const mqttClient = await connectMQTT();
+    try {
+        const mqttClient = await connectMQTT();
 
-    const payload = {
-      text,
-      timestamp: new Date().toISOString(),
-      source: 'voice-gateway-oww',
-      ...metadata,
-    };
+        const payload = {
+            text,
+            timestamp: new Date().toISOString(),
+            source: 'voice-gateway-oww',
+            ...metadata,
+        };
 
-    const topic = 'voice/transcription';
+        const topic = 'voice/transcription';
 
-    mqttClient.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
-      if (err) {
-        logger.error('❌ Failed to publish transcription', { error: err.message, topic });
-      } else {
-        logger.debug('📤 Published transcription', { topic, text: text.substring(0, 50) });
-      }
-    });
-  } catch (error) {
-    logger.error('❌ MQTT publish error', { error: error.message });
-  }
+        mqttClient.publish(topic, JSON.stringify(payload), {qos: 1}, (err) => {
+            if (err) {
+                logger.error('❌ Failed to publish transcription', {error: err.message, topic});
+            } else {
+                logger.debug('📤 Published transcription', {topic, text: text.substring(0, 50)});
+            }
+        });
+    } catch (error) {
+        logger.error('❌ MQTT publish error', {error: error.message});
+    }
 }
 
 /**
@@ -97,48 +97,48 @@ async function publishTranscription(text, metadata = {}) {
  * @param {Object} metadata - Additional metadata (model, duration, etc.)
  */
 async function publishAIResponse(question, answer, metadata = {}) {
-  try {
-    const mqttClient = await connectMQTT();
+    try {
+        const mqttClient = await connectMQTT();
 
-    const payload = {
-      question,
-      answer,
-      timestamp: new Date().toISOString(),
-      source: 'voice-gateway-oww',
-      ...metadata,
-    };
+        const payload = {
+            question,
+            answer,
+            timestamp: new Date().toISOString(),
+            source: 'voice-gateway-oww',
+            ...metadata,
+        };
 
-    const topic = 'voice/ai-response';
+        const topic = 'voice/ai-response';
 
-    mqttClient.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
-      if (err) {
-        logger.error('❌ Failed to publish AI response', { error: err.message, topic });
-      } else {
-        logger.debug('📤 Published AI response', {
-          topic,
-          question: question.substring(0, 30),
-          answer: answer.substring(0, 50),
+        mqttClient.publish(topic, JSON.stringify(payload), {qos: 1}, (err) => {
+            if (err) {
+                logger.error('❌ Failed to publish AI response', {error: err.message, topic});
+            } else {
+                logger.debug('📤 Published AI response', {
+                    topic,
+                    question: question.substring(0, 30),
+                    answer: answer.substring(0, 50),
+                });
+            }
         });
-      }
-    });
-  } catch (error) {
-    logger.error('❌ MQTT publish error', { error: error.message });
-  }
+    } catch (error) {
+        logger.error('❌ MQTT publish error', {error: error.message});
+    }
 }
 
 /**
  * Disconnect from MQTT broker
  */
 async function disconnectMQTT() {
-  if (client) {
-    return new Promise((resolve) => {
-      client.end(false, () => {
-        isConnected = false;
-        logger.debug('👋 Disconnected from MQTT broker');
-        resolve();
-      });
-    });
-  }
+    if (client) {
+        return new Promise((resolve) => {
+            client.end(false, () => {
+                isConnected = false;
+                logger.debug('👋 Disconnected from MQTT broker');
+                resolve();
+            });
+        });
+    }
 }
 
-export { connectMQTT, publishTranscription, publishAIResponse, disconnectMQTT };
+export {connectMQTT, publishTranscription, publishAIResponse, disconnectMQTT};

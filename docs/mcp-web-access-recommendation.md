@@ -3,12 +3,14 @@
 ## Your Use Case
 
 **Goal:** Enable Jarvis (Ollama AI) to access the internet for queries like:
+
 - "What's the weather?"
 - "What's in the news today?"
 - "Look up the definition of X"
 - "Check the current price of Y"
 
 **Constraints:**
+
 - Running on Raspberry Pi 5 (no GUI/monitor)
 - Local-first architecture preference
 - Must work via MQTT/voice commands
@@ -37,6 +39,7 @@
 ❌ **CAPTCHA risk**: CAPTCHAs will still appear, but you can't solve them without display
 
 **Exception:** Use Playwright only if you need:
+
 - JavaScript-rendered content (SPAs)
 - Complex interactions (click buttons, fill forms)
 - Screenshots for vision models
@@ -50,12 +53,14 @@ For your use case (weather, news, definitions), simple HTTP fetch is sufficient.
 ### Option A: Integrate MCP Fetch into Your App (Recommended)
 
 **Why this approach:**
+
 - Jarvis already talks to Ollama directly
 - Can call MCP server from Node.js
 - Better error handling and logging
 - Fits your existing architecture
 
 **Architecture:**
+
 ```
 Voice Gateway (Node.js)
   ↓
@@ -69,6 +74,7 @@ Internet
 ```
 
 **Implementation:**
+
 ```javascript
 // Add to voice-gateway-oww
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -127,12 +133,14 @@ async function getDefinition(word) {
 ```
 
 **Pros:**
+
 - ✅ No MCP server needed
 - ✅ Faster (direct API calls)
 - ✅ More reliable (known APIs)
 - ✅ Better structured data
 
 **Cons:**
+
 - ❌ Less flexible (can't fetch arbitrary websites)
 - ❌ More code to maintain (multiple integrations)
 
@@ -204,6 +212,7 @@ pip3 install mcp-server-fetch
 ```
 
 **Add to your tools:**
+
 ```javascript
 // Create MCP client wrapper
 import { createMCPClient } from './mcp-client.js';
@@ -231,11 +240,11 @@ export const generalWebFetchTool = new DynamicTool({
 
 ## Comparison Matrix
 
-| Option | Setup Time | RPi Compatible | Demo Ready | Maintenance | Flexibility |
-|--------|-----------|----------------|-----------|-------------|-------------|
-| **Direct APIs** | 2-3 hrs | ✅ Yes | ✅ Yes | Low | Medium |
-| **mcp-server-fetch** | 3-4 hrs | ✅ Yes | ⚠️ Maybe | Medium | High |
-| **Playwright MCP** | 6-8 hrs | ⚠️ Difficult | ❌ No | High | Very High |
+| Option               | Setup Time | RPi Compatible | Demo Ready | Maintenance | Flexibility |
+|----------------------|------------|----------------|------------|-------------|-------------|
+| **Direct APIs**      | 2-3 hrs    | ✅ Yes          | ✅ Yes      | Low         | Medium      |
+| **mcp-server-fetch** | 3-4 hrs    | ✅ Yes          | ⚠️ Maybe   | Medium      | High        |
+| **Playwright MCP**   | 6-8 hrs    | ⚠️ Difficult   | ❌ No       | High        | Very High   |
 
 ---
 
@@ -246,6 +255,7 @@ export const generalWebFetchTool = new DynamicTool({
 **Go with Direct APIs (Phase 1)**
 
 **Reasoning:**
+
 1. ⏰ **Time sensitive**: Presentation is coming up, need quick wins
 2. 🎯 **Demo value**: Real internet data (weather, time, news) is impressive
 3. 🛡️ **Reliability**: Known APIs, no surprises during demo
@@ -253,6 +263,7 @@ export const generalWebFetchTool = new DynamicTool({
 5. 📝 **Local-first friendly**: Still works offline (just tools fail gracefully)
 
 **Demo script:**
+
 ```
 User: "Hey Jarvis, what's the weather?"
 Jarvis: "It's currently 45 degrees and cloudy."
@@ -267,6 +278,7 @@ Jarvis: "Top headlines: [reads 3 headlines from RSS]"
 ### After Presentation
 
 **Add mcp-server-fetch (Phase 2)** for general web queries:
+
 ```
 User: "Hey Jarvis, look up the recipe for chocolate chip cookies"
 Jarvis: [fetches from allrecipes.com and summarizes]
@@ -460,18 +472,21 @@ const RSS_FEEDS = {
 ## Security Considerations
 
 ### For Direct APIs
+
 - ✅ No credentials to leak
 - ✅ Rate limits handled by providers
 - ⚠️ Validate user input (prevent injection)
 - ⚠️ Set timeouts (don't hang on slow APIs)
 
 ### For MCP Fetch
+
 - ⚠️ Can access local network (firewall risk)
 - ⚠️ Could fetch malicious content
 - ✅ No code execution (just HTTP fetch)
 - 🛡️ Recommendation: Use allowlist for demo
 
 **Example allowlist:**
+
 ```javascript
 const ALLOWED_DOMAINS = [
   'wttr.in',
@@ -500,17 +515,17 @@ When you implement web tools:
    ```
 
 2. **Update `QUICKSTART.md`**:
-   - Add section "Internet Access Features"
-   - List available voice commands
-   - Note that tools fail gracefully offline
+    - Add section "Internet Access Features"
+    - List available voice commands
+    - Note that tools fail gracefully offline
 
 3. **Update `docs/network-dependencies.md`**:
-   - Add wttr.in, RSS feeds to dependency list
-   - Note: Optional for demo, degrades gracefully
+    - Add wttr.in, RSS feeds to dependency list
+    - Note: Optional for demo, degrades gracefully
 
 4. **Update `docs/tasks.md`**:
-   - Add Phase 5: Internet Access Tools
-   - Mark completed tasks
+    - Add Phase 5: Internet Access Tools
+    - Mark completed tasks
 
 ---
 
@@ -519,23 +534,27 @@ When you implement web tools:
 ### For Your Presentation: Use Direct APIs ✅
 
 **Pros:**
+
 - Fast to implement (2-3 hours)
 - Reliable for demo
 - Works great on Raspberry Pi
 - No complex dependencies
 
 **Cons:**
+
 - Less flexible than MCP
 - Limited to specific use cases
 
 ### After Presentation: Consider MCP Fetch
 
 **When:**
+
 - You want general web access
 - Need to fetch arbitrary websites
 - Have time to debug edge cases
 
 **Avoid Playwright MCP for now:**
+
 - Too heavy for RPi
 - Requires display
 - Overkill for your use case

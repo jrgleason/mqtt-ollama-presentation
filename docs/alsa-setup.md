@@ -2,7 +2,8 @@
 
 **Last Updated:** 2025-10-11
 
-This guide explains how to configure ALSA (Advanced Linux Sound Architecture) audio devices for the voice-gateway service on Raspberry Pi 5.
+This guide explains how to configure ALSA (Advanced Linux Sound Architecture) audio devices for the voice-gateway
+service on Raspberry Pi 5.
 
 ---
 
@@ -11,6 +12,7 @@ This guide explains how to configure ALSA (Advanced Linux Sound Architecture) au
 ### USB Microphone: LANDIBO GSH23
 
 **Specifications:**
+
 - **Frequency Response:** 100-16kHz
 - **Connector:** USB (8-foot shielded cable)
 - **Sensitivity:** -67 DBV/PBAR, -47 DBV/Pascal ±4dB
@@ -34,6 +36,7 @@ arecord -l
 ```
 
 **Expected Output:**
+
 ```
 **** List of CAPTURE Hardware Devices ****
 card 2: Device [USB PnP Sound Device], device 0: USB Audio [USB Audio]
@@ -42,6 +45,7 @@ card 2: Device [USB PnP Sound Device], device 0: USB Audio [USB Audio]
 ```
 
 **Device String:** `hw:2,0`
+
 - `2` = Card number
 - `0` = Device number
 
@@ -52,6 +56,7 @@ aplay -l
 ```
 
 **Expected Output (example):**
+
 ```
 **** List of PLAYBACK Hardware Devices ****
 card 0: Headphones [bcm2835 Headphones], device 0: bcm2835 Headphones [bcm2835 Headphones]
@@ -72,11 +77,13 @@ card 1: Device [USB Audio Device], device 0: USB Audio [USB Audio]
 ### Test Microphone Recording
 
 **Record 3 seconds of audio:**
+
 ```bash
 arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 3 test.wav
 ```
 
 **Parameters:**
+
 - `-D hw:2,0` - Device name (USB PnP Sound Device)
 - `-f S16_LE` - Format: Signed 16-bit Little Endian PCM
 - `-r 16000` - Sample rate: 16kHz (required for Whisper/OpenWakeWord)
@@ -84,6 +91,7 @@ arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 3 test.wav
 - `-d 3` - Duration: 3 seconds
 
 **Expected Output:**
+
 ```
 Recording WAVE 'test.wav' : Signed 16 bit Little Endian, Rate 16000 Hz, Mono
 ```
@@ -91,11 +99,13 @@ Recording WAVE 'test.wav' : Signed 16 bit Little Endian, Rate 16000 Hz, Mono
 ### Test Speaker Playback
 
 **Play back the recording:**
+
 ```bash
 aplay test.wav
 ```
 
 Or specify device explicitly:
+
 ```bash
 aplay -D hw:1,0 test.wav
 ```
@@ -107,17 +117,20 @@ aplay -D hw:1,0 test.wav
 ### Issue: "Device or resource busy"
 
 **Symptom:**
+
 ```
 arecord: main:832: audio open error: Device or resource busy
 ```
 
 **Causes:**
+
 1. Another process is using the microphone
 2. PulseAudio/PipeWire is intercepting the device
 
 **Solutions:**
 
 **Option 1: Kill competing processes**
+
 ```bash
 # Find processes using the audio device
 fuser -v /dev/snd/*
@@ -127,6 +140,7 @@ killall pulseaudio
 ```
 
 **Option 2: Use PulseAudio device name**
+
 ```bash
 # List PulseAudio devices
 pactl list sources short
@@ -136,6 +150,7 @@ arecord -D pulse -f S16_LE -r 16000 -c 1 -d 3 test.wav
 ```
 
 **For voice-gateway:** Update `.env`:
+
 ```env
 ALSA_MIC_DEVICE=pulse
 ```
@@ -145,6 +160,7 @@ ALSA_MIC_DEVICE=pulse
 ### Issue: "No such file or directory"
 
 **Symptom:**
+
 ```
 arecord: main:832: audio open error: No such file or directory
 ```
@@ -175,6 +191,7 @@ arecord: main:832: audio open error: No such file or directory
 ### Issue: Permissions denied
 
 **Symptom:**
+
 ```
 arecord: main:832: audio open error: Permission denied
 ```
@@ -184,6 +201,7 @@ arecord: main:832: audio open error: Permission denied
 **Solution:**
 
 **Add user to `audio` group:**
+
 ```bash
 sudo usermod -aG audio $USER
 ```
@@ -191,6 +209,7 @@ sudo usermod -aG audio $USER
 **Log out and back in** (or reboot) for changes to take effect.
 
 **Verify group membership:**
+
 ```bash
 groups
 ```
@@ -209,10 +228,10 @@ Should include `audio`.
    ```bash
    alsamixer
    ```
-   - Press `F4` to show capture devices
-   - Use arrow keys to select USB microphone
-   - Press `Space` to unmute (should show "CAPTURE" in red)
-   - Adjust volume with up/down arrows
+    - Press `F4` to show capture devices
+    - Use arrow keys to select USB microphone
+    - Press `Space` to unmute (should show "CAPTURE" in red)
+    - Adjust volume with up/down arrows
 
 2. **Test microphone with visual feedback:**
    ```bash
@@ -221,15 +240,16 @@ Should include `audio`.
    Speak into mic, should hear yourself in real-time (with slight delay).
 
 3. **Check cable connection:**
-   - Unplug and replug USB microphone
-   - Try different USB port
-   - Check for physical damage to cable
+    - Unplug and replug USB microphone
+    - Try different USB port
+    - Check for physical damage to cable
 
 ---
 
 ### Issue: Sample rate mismatch
 
 **Symptom:**
+
 ```
 arecord: set_params:1405: Sample format non available
 ```
@@ -289,6 +309,7 @@ pcm.voice_speaker {
 ```
 
 **Usage:**
+
 ```bash
 # Record using alias
 arecord -D voice_mic_16k -f S16_LE -c 1 -d 3 test.wav
@@ -304,6 +325,7 @@ ALSA_MIC_DEVICE=voice_mic_16k
 ### Minimum Configuration
 
 **voice-gateway/.env:**
+
 ```env
 # Audio Devices
 ALSA_MIC_DEVICE=hw:2,0       # USB PnP Sound Device (LANDIBO GSH23)
@@ -330,27 +352,32 @@ PLAYBACK_BUFFER_SIZE=1024     # Frames per buffer
 ### Recording Quality Checklist
 
 **Record a test sample:**
+
 ```bash
 arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 5 quality-test.wav
 ```
 
 **Check file properties:**
+
 ```bash
 file quality-test.wav
 ```
 
 **Expected:**
+
 ```
 quality-test.wav: RIFF (little-endian) data, WAVE audio, Microsoft PCM, 16 bit, mono 16000 Hz
 ```
 
 **Play back and verify:**
+
 - ✅ Clear speech (no distortion)
 - ✅ Minimal background noise
 - ✅ Consistent volume (not too quiet)
 - ✅ No clipping (not too loud)
 
 **If poor quality:**
+
 1. Adjust microphone position (2-3 feet from mouth)
 2. Reduce background noise (close windows, turn off fans)
 3. Adjust ALSA capture volume: `alsamixer` → F4 → adjust levels
@@ -411,6 +438,7 @@ echo "📝 Update voice-gateway/.env with: ALSA_MIC_DEVICE=hw:2,0"
 ```
 
 **Usage:**
+
 ```bash
 chmod +x scripts/test-audio.sh
 ./scripts/test-audio.sh
@@ -423,6 +451,7 @@ chmod +x scripts/test-audio.sh
 ### Exposing Audio Devices to Container
 
 **docker-compose.yml:**
+
 ```yaml
 version: '3.8'
 services:
@@ -439,6 +468,7 @@ services:
 ```
 
 **Alternative: Specific device only**
+
 ```yaml
 devices:
   - /dev/snd/controlC2:/dev/snd/controlC2
@@ -466,6 +496,7 @@ RUN apt-get update && apt-get install -y \
 ### Privileged Pod with Audio Access
 
 **deployment.yaml:**
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -497,6 +528,7 @@ spec:
 ```
 
 **Label node with USB mic:**
+
 ```bash
 kubectl label nodes raspberry-pi-5 audio=true
 ```
@@ -508,27 +540,32 @@ kubectl label nodes raspberry-pi-5 audio=true
 ### Latency Tuning
 
 **Lower buffer size = Lower latency, but higher CPU:**
+
 ```env
 CAPTURE_BUFFER_SIZE=256    # ~16ms latency at 16kHz
 ```
 
 **Higher buffer size = Higher latency, but more stable:**
+
 ```env
 CAPTURE_BUFFER_SIZE=1024   # ~64ms latency at 16kHz
 ```
 
 **Recommendation for voice-gateway:**
+
 - **Capture:** 512 frames (~32ms) - Good balance
 - **Playback:** 1024 frames (~64ms) - More buffering for smooth playback
 
 ### CPU Usage
 
 **Monitor ALSA CPU usage:**
+
 ```bash
 top -p $(pgrep -f voice-gateway)
 ```
 
 **If CPU usage is high:**
+
 1. Increase buffer size
 2. Reduce sample rate (if Whisper supports it)
 3. Use hardware mixing (if available)

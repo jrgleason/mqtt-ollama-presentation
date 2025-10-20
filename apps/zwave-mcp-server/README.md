@@ -14,13 +14,16 @@ A Model Context Protocol (MCP) server that provides tools for interacting with Z
 ## Available Tools
 
 ### 1. `list_zwave_devices`
+
 Lists all Z-Wave devices reported by Z-Wave JS UI.
 
 **Parameters:**
+
 - `includeInactive` (boolean, optional): Include nodes that are not ready or unavailable
 - `filter` (string, optional): Case-insensitive substring to match against name or location
 
 **Example:**
+
 ```json
 {
   "includeInactive": false,
@@ -29,12 +32,15 @@ Lists all Z-Wave devices reported by Z-Wave JS UI.
 ```
 
 ### 2. `get_node_details`
+
 Get detailed information about a specific Z-Wave node including all values, command classes, and capabilities.
 
 **Parameters:**
+
 - `nodeId` (number, required): The Z-Wave node ID
 
 **Example:**
+
 ```json
 {
   "nodeId": 3
@@ -42,21 +48,149 @@ Get detailed information about a specific Z-Wave node including all values, comm
 ```
 
 ### 3. `refresh_node_values`
+
 Refresh all values for a specific Z-Wave node. Useful for getting updated sensor readings.
 
 **Parameters:**
+
 - `nodeId` (number, required): The Z-Wave node ID to refresh
 
 ### 4. `refresh_node_info`
-Re-interview a Z-Wave node to get updated device information and capabilities. Use when a device was recently added or changed.
+
+Re-interview a Z-Wave node to get updated device information and capabilities. Use when a device was recently added or
+changed.
 
 **Parameters:**
+
 - `nodeId` (number, required): The Z-Wave node ID to re-interview
 
 ### 5. `get_network_statistics`
+
 Get Z-Wave network statistics including message counts, errors, and overall network health.
 
 **Parameters:** None
+
+## MQTT Topic Structure
+
+**IMPORTANT**: This MCP server uses human-readable MQTT topics that match Z-Wave JS UI's `nodeNames=true` configuration.
+
+### Topic Format
+
+**Control Topic (Set Values):**
+
+```
+zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
+```
+
+**State Topic (Read Values):**
+
+```
+zwave/[Location/]Device_Name/command_class/endpoint_0/currentValue
+```
+
+### Examples
+
+**Binary Switch (Command Class 37):**
+
+```bash
+# Topic
+zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
+
+# Payload to turn ON
+{"value": true}
+
+# Payload to turn OFF
+{"value": false}
+```
+
+**Dimmer/Multilevel Switch (Command Class 38):**
+
+```bash
+# Topic
+zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set
+
+# Payload (0-99 for brightness percentage)
+{"value": 50}  # 50% brightness
+{"value": 0}   # Off
+{"value": 99}  # Full brightness
+```
+
+**Without Location:**
+
+```bash
+# If device has no location set, it's omitted from the path
+zwave/Kitchen_Light/switch_binary/endpoint_0/targetValue/set
+```
+
+### Command Class Mapping
+
+| Command Class ID | Topic Name          | Device Type                  |
+|------------------|---------------------|------------------------------|
+| 37               | `switch_binary`     | On/Off Switch                |
+| 38               | `switch_multilevel` | Dimmer                       |
+| 49               | `sensor_multilevel` | Sensor (temp, humidity, etc) |
+| 64               | `thermostat_mode`   | Thermostat                   |
+
+### Payload Format
+
+All MQTT messages use JSON payloads with a `value` property:
+
+```json
+{
+  "value": <boolean
+  |
+  number>
+}
+```
+
+- **Binary switches**: `true` (on) or `false` (off)
+- **Dimmers**: `0` to `99` (percentage)
+- **Sensors**: Read-only numeric values
+
+### Testing MQTT Topics
+
+Use mosquitto_pub to test device control:
+
+```bash
+# Turn on a switch
+mosquitto_pub -h localhost -t "zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set" \
+  -m '{"value": true}'
+
+# Turn off a switch
+mosquitto_pub -h localhost -t "zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set" \
+  -m '{"value": false}'
+
+# Set dimmer to 50%
+mosquitto_pub -h localhost -t "zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set" \
+  -m '{"value": 50}'
+```
+
+Subscribe to state updates:
+
+```bash
+# Watch all Z-Wave state changes
+mosquitto_sub -h localhost -t "zwave/+/+/+/+/currentValue" -v
+
+# Watch specific device
+mosquitto_sub -h localhost -t "zwave/Demo/Switch_One/+/+/currentValue" -v
+```
+
+### Z-Wave JS UI Configuration
+
+This topic structure requires Z-Wave JS UI to be configured with:
+
+```json
+{
+  "gateway": {
+    "type": 1,
+    "payloadType": 1,
+    "nodeNames": true
+  }
+}
+```
+
+**DO NOT change to numeric nodeId format** - the human-readable format with device names and locations is tested and
+working.
 
 ## Setup
 
@@ -69,7 +203,8 @@ DEFAULT_USERNAME=admin
 DEFAULT_PASSWORD=your_secure_password
 ```
 
-**IMPORTANT**: Even though Z-Wave JS UI runs locally on the Pi, you **MUST** enable authentication to prevent unauthorized access to your Z-Wave network.
+**IMPORTANT**: Even though Z-Wave JS UI runs locally on the Pi, you **MUST** enable authentication to prevent
+unauthorized access to your Z-Wave network.
 
 ### 2. Configure MCP Server
 
@@ -94,7 +229,7 @@ ZWAVE_UI_AUTH_ENABLED=true
 # ZWAVE_UI_SOCKET_TIMEOUT_MS=10000
 
 # MQTT Broker Configuration (if using MQTT features)
-MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_USERNAME=jrg
 MQTT_PASSWORD=your_mqtt_password
 ```
@@ -133,11 +268,7 @@ npm run dev
 
 This will rebuild the project automatically when you make changes.
 
-## Security Considerations
-
-### Why Authentication is Important
-
-Even though this runs locally on your Raspberry Pi:
+## Security
 
 1. **Network Access**: Anyone on your local network could access Z-Wave JS UI without authentication
 2. **Home Automation Control**: Unauthorized access means someone could control your lights, locks, thermostats, etc.
@@ -152,28 +283,6 @@ Even though this runs locally on your Raspberry Pi:
 4. **Rotate passwords regularly** especially if you suspect unauthorized access
 5. **Use HTTPS/TLS** for production deployments (configure in Z-Wave JS UI)
 
-## Architecture
-
-```
-┌─────────────┐
-│   Claude    │
-│    Code     │
-└──────┬──────┘
-       │ stdio
-       ▼
-┌─────────────────────┐
-│  Z-Wave MCP Server  │
-│  (This Package)     │
-└──────┬──────────────┘
-       │ HTTP + Socket.IO
-       │ (with Bearer Auth)
-       ▼
-┌─────────────────────┐      ┌────────────┐
-│   Z-Wave JS UI         │◄─────┤  Z-Wave    │
-│   (Port 8091)       │      │  Devices   │
-└─────────────────────┘      └────────────┘
-```
-
 ## Z-Wave JS UI API Endpoints Used
 
 - `POST /api/authenticate` - Authenticate and get bearer token
@@ -182,8 +291,6 @@ Even though this runs locally on your Raspberry Pi:
 - `GET /api/driver/statistics` - Get network statistics
 - `POST /api/refreshNodeValues` - Refresh node values
 - `POST /api/refreshNodeInfo` - Re-interview node
-- `POST /api/writeValue` - Write value to device
-- Socket.IO `INITED` event - Get live node status
 
 ## Troubleshooting
 

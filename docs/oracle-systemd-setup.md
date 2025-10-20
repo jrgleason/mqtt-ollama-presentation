@@ -7,12 +7,14 @@
 This guide explains how to configure the Oracle Next.js app to start automatically on boot using systemd.
 
 **Prerequisites:**
+
 - Oracle app checked out to `~/code/mqtt-ollama-presentation/apps/oracle`
 - Node.js installed (see [Node.js Installation][pi-setup-node])
 - Dependencies installed (`npm install`)
 - Production build completed (`npm run build`)
 
 **IMPORTANT:** This guide reflects lessons learned from production deployment. The two most common issues are:
+
 1. Incorrect directory path (must be `/apps/oracle` not `/oracle`)
 2. Missing production build (must run `npm run build` first)
 
@@ -32,6 +34,7 @@ npm run build
 ```
 
 Verify the build succeeded by checking for the `.next` directory:
+
 ```bash
 ls -la .next/
 ```
@@ -55,8 +58,9 @@ Type=simple
 User=pi
 WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
 Environment="NODE_ENV=production"
+Environment="LOG_LEVEL=info"
 Environment="PORT=3000"
-Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="OLLAMA_BASE_URL=http://localhost:11434"
 Environment="OLLAMA_MODEL=llama3.2:3b"
 Environment="DATABASE_URL=file:./dev.db"
@@ -78,20 +82,28 @@ WantedBy=multi-user.target
 **IMPORTANT Configuration Notes:**
 
 1. **WorkingDirectory:** Must be `/apps/oracle` NOT `/oracle`
-   - Common mistake: Using `/home/pi/code/mqtt-ollama-presentation/oracle`
-   - ✅ Correct: `/home/pi/code/mqtt-ollama-presentation/apps/oracle`
+    - Common mistake: Using `/home/pi/code/mqtt-ollama-presentation/oracle`
+    - ✅ Correct: `/home/pi/code/mqtt-ollama-presentation/apps/oracle`
 
-2. **ExecStart - Node path:** Use the `current` symlink for easy version management
-   - Recommended: `/home/pi/.nvm/versions/node/current/bin/node`
-   - This symlink points to your active Node version (created in [Raspberry Pi setup](raspberry-pi-setup.md#3-create-node-version-symlink-important))
-   - Alternative: Use specific version path like `/home/pi/.nvm/versions/node/v24.9.0/bin/node` (requires editing service file when upgrading Node)
+2. **ExecStart - Node path:** Use the `current` symlink for version-agnostic Node.js management
+    - ✅ Recommended: `/home/pi/.nvm/versions/node/current/bin/node`
+    - This symlink points to your active Node version (created
+      in [Raspberry Pi setup](raspberry-pi-setup.md#3-create-node-version-symlink-important))
+    - When you upgrade Node.js, just update the symlink - no need to edit service files!
 
 3. **ExecStart - Application path:** Must match WorkingDirectory
-   - Full path: `<node-binary> <WorkingDirectory>/node_modules/.bin/next start`
+    - Full path: `<node-binary> <WorkingDirectory>/node_modules/.bin/next start`
+    - Using `next start` directly is more reliable than `npm start` for production deployments
 
 4. **Environment variables:** All required variables must be defined in the service file
-   - Add Auth0 credentials if using authentication
-   - Adjust MQTT broker URL if not running locally
+    - Add Auth0 credentials if using authentication
+    - Adjust MQTT broker URL if not running locally
+    - Environment PATH must include NVM's node binary location
+
+5. **LOG_LEVEL:** Controls verbosity of MQTT client and other logging
+    - `info` (default): Production mode - only errors and important events
+    - `debug`: Development/troubleshooting mode - verbose logging for MQTT operations
+    - When troubleshooting, change to `debug` and restart service to see detailed MQTT publish/subscribe logs
 
 ### 3. Enable and Start Service
 
@@ -270,6 +282,7 @@ Type=simple
 User=$USER
 WorkingDirectory=$SCRIPT_DIR
 Environment="NODE_ENV=production"
+Environment="LOG_LEVEL=info"
 Environment="PORT=3000"
 Environment="PATH=/home/$USER/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/home/$USER/.nvm/versions/node/current/bin/npm start
@@ -332,13 +345,16 @@ chmod +x install-service.sh
 #### Issue 1: "Could not find a production build in the '.next' directory"
 
 **Symptoms:**
+
 - Service fails immediately after starting
-- Logs show: `Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'`
+- Logs show:
+  `Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'`
 
 **Cause:**
 The Next.js production build was not created before starting the service.
 
 **Fix:**
+
 ```bash
 cd ~/code/mqtt-ollama-presentation/apps/oracle
 npm run build
@@ -346,26 +362,31 @@ sudo systemctl restart oracle.service
 ```
 
 **Verify build completed:**
+
 ```bash
 ls -la .next/
 ```
 
 **Prevention:**
-Always run `npm run build` before deploying or updating the service. Consider adding a pre-deployment script to automate this.
+Always run `npm run build` before deploying or updating the service. Consider adding a pre-deployment script to automate
+this.
 
 ---
 
 #### Issue 2: "Changing to the requested working directory failed: No such file or directory"
 
 **Symptoms:**
+
 - Service shows status code `200/CHDIR`
 - Service status shows: "activating (auto-restart)"
 - Logs show: `Main process exited, code=exited, status=200/CHDIR`
 
 **Cause:**
-The `WorkingDirectory` path in the service file is incorrect. This commonly happens when the path points to `/oracle` instead of `/apps/oracle`.
+The `WorkingDirectory` path in the service file is incorrect. This commonly happens when the path points to `/oracle`
+instead of `/apps/oracle`.
 
 **Diagnosis:**
+
 ```bash
 # Check if the directory exists
 ls -la /home/pi/code/mqtt-ollama-presentation/apps/oracle
@@ -375,6 +396,7 @@ sudo cat /etc/systemd/system/oracle.service | grep WorkingDirectory
 ```
 
 **Fix:**
+
 1. Edit the service file:
    ```bash
    sudo nano /etc/systemd/system/oracle.service
@@ -399,6 +421,7 @@ sudo cat /etc/systemd/system/oracle.service | grep WorkingDirectory
 
 **Prevention:**
 Double-check the directory structure before creating the service file. The correct structure is:
+
 - ✅ `/mqtt-ollama-presentation/apps/oracle`
 - ❌ `/mqtt-ollama-presentation/oracle`
 
@@ -407,6 +430,7 @@ Double-check the directory structure before creating the service file. The corre
 ### Other Common Issues
 
 **Check logs:**
+
 ```bash
 sudo journalctl -u oracle -n 100 --no-pager
 ```
@@ -444,12 +468,14 @@ sudo journalctl -u oracle -n 100 --no-pager
 ### App crashes on startup
 
 **Check for missing environment variables:**
+
 ```bash
 # View service environment
 sudo systemctl show oracle | grep Environment
 ```
 
 **Test app manually first:**
+
 ```bash
 cd ~/code/mqtt-ollama-presentation/apps/oracle
 npm start
@@ -461,11 +487,13 @@ If it works manually but not as a service, the issue is likely environment varia
 ### High memory usage
 
 **Check memory:**
+
 ```bash
 free -h
 ```
 
 **Monitor service memory:**
+
 ```bash
 sudo systemctl status oracle
 ```
@@ -480,11 +508,13 @@ MemoryLimit=1G
 ### Logs not showing
 
 **Verify journald is running:**
+
 ```bash
 sudo systemctl status systemd-journald
 ```
 
 **View all logs:**
+
 ```bash
 sudo journalctl -u oracle --all
 ```
@@ -560,6 +590,7 @@ curl http://localhost
 ### Nginx 502 Bad Gateway Error
 
 **Symptoms:**
+
 - Nginx returns "502 Bad Gateway"
 - Nginx error log shows: `connect() failed (111: Connection refused) while connecting to upstream`
 
@@ -567,6 +598,7 @@ curl http://localhost
 The backend service (oracle.service) on port 3000 is not running or not accessible.
 
 **Diagnosis:**
+
 ```bash
 # Check if oracle service is running
 systemctl status oracle.service
@@ -579,6 +611,7 @@ sudo tail -50 /var/log/nginx/error.log
 ```
 
 **Fix:**
+
 1. Ensure oracle service is running:
    ```bash
    sudo systemctl start oracle.service
@@ -591,9 +624,9 @@ sudo tail -50 /var/log/nginx/error.log
    ```
 
 3. Common causes of service failure:
-   - Missing production build → Run `npm run build`
-   - Incorrect directory path → Fix `WorkingDirectory` in service file
-   - See "Critical Issues" in Troubleshooting section above
+    - Missing production build → Run `npm run build`
+    - Incorrect directory path → Fix `WorkingDirectory` in service file
+    - See "Critical Issues" in Troubleshooting section above
 
 4. After fixing, restart nginx:
    ```bash
@@ -635,9 +668,15 @@ Before going to production:
 <!-- Reference Links - All links defined here for easy maintenance -->
 
 <!-- Internal Documentation -->
+
 [readme]: ../README.md
+
 [getting-started]: GETTING-STARTED.md
+
 [pi-setup]: raspberry-pi-setup.md
+
 [pi-setup-node]: raspberry-pi-setup.md#3-create-node-version-symlink-important
+
 [zwave-deploy]: zwave-js-ui-deploy.md
+
 [docs-dir]: .

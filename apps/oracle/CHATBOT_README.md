@@ -2,7 +2,8 @@
 
 ## Overview
 
-This is the AI-powered chatbot module for the MQTT + Ollama Home Automation system. It provides a natural language interface to control smart home devices using LangChain.js and Ollama running locally.
+This is the AI-powered chatbot module for the MQTT + Ollama Home Automation system. It provides a natural language
+interface to control smart home devices using LangChain.js and Ollama running locally.
 
 ## Architecture
 
@@ -75,6 +76,7 @@ cp .env.example .env.local
 ```
 
 Edit `.env.local`:
+
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3:1.7b
@@ -88,6 +90,7 @@ node test-ollama.mjs
 ```
 
 Expected output:
+
 ```
 Testing Ollama connection...
 
@@ -102,11 +105,13 @@ Response: working
 ⚠️ **Important:** Do NOT run `npm run dev` yourself! The user should run the dev server manually in their own terminal.
 
 User should run:
+
 ```bash
 npm run dev
 ```
 
 This starts:
+
 - Tailwind CSS watcher (compiles CSS on changes)
 - Next.js dev server on http://localhost:3000
 
@@ -119,19 +124,19 @@ Navigate to: http://localhost:3000/chat
 ### Implemented ✅
 
 1. **Streaming Chat Interface**
-   - Real-time AI responses using Server-Sent Events (SSE)
-   - LangChain.js integration with ChatOllama
-   - Message history display
-   - Loading indicators
+    - Real-time AI responses using Server-Sent Events (SSE)
+    - LangChain.js integration with ChatOllama
+    - Message history display
+    - Loading indicators
 
 2. **LangChain Tools**
-   - `list_devices` - Lists all available devices (mock data)
-   - `control_device` - Controls devices by name (mock implementation)
+    - `list_devices` - Lists all available devices (mock data)
+    - `control_device` - Controls devices by name (mock implementation)
 
 3. **UI Components**
-   - ChatInterface - Main chat container
-   - ChatMessage - Individual message display
-   - shadcn/ui base components (Button, Input, Card)
+    - ChatInterface - Main chat container
+    - ChatMessage - Individual message display
+    - shadcn/ui base components (Button, Input, Card)
 
 ### Not Yet Implemented ❌
 
@@ -148,6 +153,7 @@ Navigate to: http://localhost:3000/chat
 Handles streaming chat requests.
 
 **Request:**
+
 ```json
 {
   "messages": [
@@ -161,6 +167,7 @@ Handles streaming chat requests.
 
 **Response:**
 Streams response as Server-Sent Events (SSE):
+
 ```
 data: I've
 data: turned
@@ -172,6 +179,7 @@ data: light
 ```
 
 **Headers:**
+
 - `Content-Type: text/event-stream`
 - `Cache-Control: no-cache`
 - `Connection: keep-alive`
@@ -191,6 +199,7 @@ node test-ollama.mjs
 ```
 
 Or manually with curl:
+
 ```bash
 curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
@@ -218,6 +227,7 @@ curl -X POST http://localhost:3000/api/chat \
 ```
 
 **Example:**
+
 ```
 User: "What devices are available?"
 AI calls: list_devices()
@@ -243,6 +253,7 @@ Response: "Available devices:
 ```
 
 **Example:**
+
 ```
 User: "Turn on the living room light"
 AI calls: control_device({
@@ -287,11 +298,13 @@ Response: "Turned on Living Room Light"
 ### "Tailwind CSS not working"
 
 The project uses Tailwind v4 with a custom build process. Make sure to run:
+
 ```bash
 npm run dev:css
 ```
 
 Or for production:
+
 ```bash
 npm run build:css
 ```
@@ -308,25 +321,25 @@ npm run build:css
 To complete the chatbot implementation:
 
 1. **MQTT Integration**
-   - Implement actual MQTT client in tools
-   - Connect to Mosquitto broker
-   - Subscribe to device state topics
+    - Implement actual MQTT client in tools
+    - Connect to Mosquitto broker
+    - Subscribe to device state topics
 
 2. **Database Integration**
-   - Set up Prisma with SQLite
-   - Implement device lookup
-   - Store conversation history
+    - Set up Prisma with SQLite
+    - Implement device lookup
+    - Store conversation history
 
 3. **Authentication**
-   - Integrate Auth0
-   - Protect chat routes
-   - Associate conversations with users
+    - Integrate Auth0
+    - Protect chat routes
+    - Associate conversations with users
 
 4. **Enhanced Features**
-   - Voice input (Whisper)
-   - Multi-modal support
-   - Personality system
-   - Automation suggestions
+    - Voice input (Whisper)
+    - Multi-modal support
+    - Personality system
+    - Automation suggestions
 
 ## References
 

@@ -4,14 +4,17 @@ Last Updated: 2025-10-12
 
 ## Overview
 
-The `voice-gateway-oww` is a small Node.js service that adds offline, Alexa‑style voice commands to the MQTT + Ollama system. It runs alongside the Oracle Next.js app and communicates via MQTT. Current stack:
+The `voice-gateway-oww` is a small Node.js service that adds offline, Alexa‑style voice commands to the MQTT + Ollama
+system. It runs alongside the Oracle Next.js app and communicates via MQTT. Current stack:
+
 - Wake word: OpenWakeWord (model: "Hey Jarvis")
 - STT: Whisper via Ollama HTTP API (local)
 - TTS: Piper (local)
-- Transport: MQTT (HiveMQ at 10.0.0.58:31883)
+- Transport: MQTT (HiveMQ at localhost:1883)
 - Audio: ALSA 16kHz mono (USB mic/speaker)
 
 Why a separate service?
+
 - Real‑time audio needs a dedicated, always‑on process
 - Keeps Next.js HTTP/WebSocket separate from mic/speaker loops
 - Deployable on a different device (e.g., Raspberry Pi)
@@ -34,23 +37,23 @@ Why a separate service?
 
 - Publish: `voice/req`
   {
-    "transcription": "turn on the living room lights",
-    "timestamp": "2025-10-11T15:30:00Z",
-    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+  "transcription": "turn on the living room lights",
+  "timestamp": "2025-10-11T15:30:00Z",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000"
   }
 
 - Publish: `voice/status`
   {
-    "state": "listening" | "recording" | "transcribing" | "speaking" | "idle" | "error",
-    "wake_word_active": true,
-    "error": "optional"
+  "state": "listening" | "recording" | "transcribing" | "speaking" | "idle" | "error",
+  "wake_word_active": true,
+  "error": "optional"
   }
 
 - Subscribe: `voice/res`
   {
-    "response": "Turning on the living room lights now.",
-    "session_id": "550e8400-e29b-41d4-a716-446655440000",
-    "timestamp": "2025-10-11T15:30:02Z"
+  "response": "Turning on the living room lights now.",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-10-11T15:30:02Z"
   }
 
 ---
@@ -58,10 +61,12 @@ Why a separate service?
 ## Configuration (env)
 
 Required
-- MQTT_BROKER_URL=mqtt://10.0.0.58:31883
+
+- MQTT_BROKER_URL=mqtt://localhost:1883
 - OLLAMA_BASE_URL=http://localhost:11434
 
 Common (defaults shown)
+
 - OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx
 - OWW_THRESHOLD=0.5
 - MIC_DEVICE=plughw:2,0

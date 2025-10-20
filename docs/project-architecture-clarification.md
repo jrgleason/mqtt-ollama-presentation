@@ -2,11 +2,13 @@
 
 ## What is "Oracle"?
 
-**Oracle is NOT the database company!** It's the name of your **Next.js chatbot application** that serves as the web interface for home automation.
+**Oracle is NOT the database company!** It's the name of your **Next.js chatbot application** that serves as the web
+interface for home automation.
 
 ### Why the name "Oracle"?
 
-The name "Oracle" likely refers to the AI agent being an "oracle" (wise advisor) that answers questions and controls your home. Think of it as the name of your smart home assistant app.
+The name "Oracle" likely refers to the AI agent being an "oracle" (wise advisor) that answers questions and controls
+your home. Think of it as the name of your smart home assistant app.
 
 ---
 
@@ -19,6 +21,7 @@ Your project has **TWO different applications** that serve different purposes:
 **Purpose:** Web-based chatbot interface for home automation
 
 **Technology Stack:**
+
 - **Framework:** Next.js 14+ with App Router
 - **AI:** LangChain.js + Ollama (for natural language processing)
 - **Database:** SQLite with **Prisma ORM** (for device metadata)
@@ -27,6 +30,7 @@ Your project has **TWO different applications** that serve different purposes:
 - **UI:** React + Tailwind CSS
 
 **What it does:**
+
 ```
 User types: "Turn on living room lights"
   ↓
@@ -44,6 +48,7 @@ UI updates with confirmation
 ```
 
 **Why it uses Prisma:**
+
 - Stores device metadata (names, locations, types)
 - Stores conversation history
 - Stores user preferences
@@ -55,6 +60,7 @@ UI updates with confirmation
 **Purpose:** Standalone voice command system with wake word detection
 
 **Technology Stack:**
+
 - **Runtime:** Node.js (NOT Next.js)
 - **Wake Word:** OpenWakeWord ("Hey Jarvis")
 - **STT:** Whisper via Ollama (speech-to-text)
@@ -64,6 +70,7 @@ UI updates with confirmation
 - **Database:** None! Just fires MQTT commands
 
 **What it does:**
+
 ```
 User says: "Hey Jarvis, turn on the lights"
   ↓
@@ -81,6 +88,7 @@ Piper speaks: "Turning on the lights"
 ```
 
 **Why it does NOT use Prisma:**
+
 - Designed to run on Raspberry Pi (lightweight)
 - No web interface needed
 - No database needed (just MQTT commands)
@@ -93,6 +101,7 @@ Piper speaks: "Turning on the lights"
 ### ✅ **Prisma IS Used in Oracle** (`apps/oracle/`)
 
 **File:** `apps/oracle/src/lib/db/client.ts`
+
 ```typescript
 import { PrismaClient } from '@prisma/client';
 
@@ -100,6 +109,7 @@ export const prisma = new PrismaClient();
 ```
 
 **Schema:** `apps/oracle/prisma/schema.prisma`
+
 ```prisma
 model Device {
   id          String   @id @default(cuid())
@@ -114,10 +124,12 @@ model Device {
 ```
 
 **Used by LangChain Tools:**
+
 - `device-list-tool.ts` - Queries devices from database
 - `device-control-tool.ts` - Looks up device info before sending MQTT
 
 **Example Query:**
+
 ```typescript
 const devices = await prisma.device.findMany({
   where: { location: 'living room' },
@@ -128,12 +140,14 @@ const devices = await prisma.device.findMany({
 ### ❌ **Prisma is NOT Used in Voice Gateway** (`apps/voice-gateway-oww/`)
 
 **Why not:**
+
 1. **Performance** - Database queries add latency to voice responses
 2. **Simplicity** - Voice gateway is stateless, just MQTT commands
 3. **Independence** - Can run without Oracle app
 4. **Memory** - Raspberry Pi has limited RAM
 
 **Instead, voice gateway:**
+
 - Sends MQTT commands directly (e.g., `home/light/living-room/set on`)
 - Doesn't need to know device IDs
 - Just passes commands to MQTT broker
@@ -144,16 +158,17 @@ const devices = await prisma.device.findMany({
 
 Let me clarify the names:
 
-| Name | What It Is | Used Where |
-|------|-----------|------------|
-| **Prisma** | Database ORM (TypeScript) | Oracle app only |
-| **Piper** | Text-to-Speech engine | Voice gateway only |
-| **Ollama** | Local LLM runtime | Both apps! |
-| **Oracle** | YOUR app name (not the company!) | `apps/oracle/` directory |
-| **OpenWakeWord** | Wake word detection | Voice gateway only |
-| **Whisper** | Speech-to-Text (via Ollama) | Voice gateway only |
+| Name             | What It Is                       | Used Where               |
+|------------------|----------------------------------|--------------------------|
+| **Prisma**       | Database ORM (TypeScript)        | Oracle app only          |
+| **Piper**        | Text-to-Speech engine            | Voice gateway only       |
+| **Ollama**       | Local LLM runtime                | Both apps!               |
+| **Oracle**       | YOUR app name (not the company!) | `apps/oracle/` directory |
+| **OpenWakeWord** | Wake word detection              | Voice gateway only       |
+| **Whisper**      | Speech-to-Text (via Ollama)      | Voice gateway only       |
 
 **Your earlier confusion:**
+
 - You thought "Prisma" was the Piper TTS voice name
 - Actually "Amy" is the Piper voice, not "Prisma"
 - "Prisma" is a database tool, not a voice!
@@ -211,12 +226,14 @@ Let me clarify the names:
 ### ✅ **Keep Prisma in Oracle App**
 
 Prisma is **intentionally used** in the Oracle app because:
+
 1. You need to store device metadata
 2. You need conversation history
 3. You want to query devices by location/type
 4. Type-safe database operations
 
 **Files that SHOULD have Prisma:**
+
 - `apps/oracle/src/lib/db/client.ts`
 - `apps/oracle/src/lib/langchain/tools/device-list-tool.ts`
 - `apps/oracle/src/lib/langchain/tools/device-control-tool.ts`
@@ -226,12 +243,14 @@ Prisma is **intentionally used** in the Oracle app because:
 ### ✅ **Keep Prisma Out of Voice Gateway**
 
 The voice gateway **intentionally does NOT use Prisma** because:
+
 1. Lightweight and fast
 2. Stateless voice commands
 3. Direct MQTT communication
 4. No database needed
 
 **Files that should NOT have Prisma:**
+
 - `apps/voice-gateway-oww/src/main.js`
 - `apps/voice-gateway-oww/src/ollama-client.js`
 - `apps/voice-gateway-oww/package.json`
@@ -243,19 +262,19 @@ The voice gateway **intentionally does NOT use Prisma** because:
 ### ❌ **Incorrect References to Remove:**
 
 1. **In Documentation** - Calling Amy voice "Prisma"
-   - ✅ Already fixed in `docs/piper-voice-options.md`
-   - ✅ Already fixed in `docs/piper-tts-guide.md`
-   - ✅ Already fixed in `docs/outline.md`
+    - ✅ Already fixed in `docs/piper-voice-options.md`
+    - ✅ Already fixed in `docs/piper-tts-guide.md`
+    - ✅ Already fixed in `docs/outline.md`
 
 2. **Nothing else!** - Prisma is correctly used in Oracle app
 
 ### ✅ **Correct Usage to Keep:**
 
 1. **In Oracle App** - Prisma for database
-   - `apps/oracle/src/lib/db/client.ts` - Prisma client
-   - `apps/oracle/src/lib/langchain/tools/*.ts` - Database queries
-   - `apps/oracle/prisma/schema.prisma` - Database schema
-   - `apps/oracle/package.json` - Prisma dependencies
+    - `apps/oracle/src/lib/db/client.ts` - Prisma client
+    - `apps/oracle/src/lib/langchain/tools/*.ts` - Database queries
+    - `apps/oracle/prisma/schema.prisma` - Database schema
+    - `apps/oracle/package.json` - Prisma dependencies
 
 ---
 
@@ -264,6 +283,7 @@ The voice gateway **intentionally does NOT use Prisma** because:
 ### Scenario: User wants to turn on living room lights
 
 **Via Web (Oracle):**
+
 ```
 1. User types: "Turn on living room lights"
 2. Oracle queries Prisma: SELECT * FROM Device WHERE location='living room'
@@ -274,6 +294,7 @@ The voice gateway **intentionally does NOT use Prisma** because:
 ```
 
 **Via Voice (Voice Gateway):**
+
 ```
 1. User says: "Hey Jarvis, turn on living room lights"
 2. Whisper transcribes: "turn on living room lights"

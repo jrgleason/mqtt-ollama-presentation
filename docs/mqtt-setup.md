@@ -4,9 +4,11 @@
 
 ---
 
-This guide provides comprehensive instructions for setting up and configuring Mosquitto MQTT broker on Raspberry Pi for home automation.
+This guide provides comprehensive instructions for setting up and configuring Mosquitto MQTT broker on Raspberry Pi for
+home automation.
 
 **What you'll learn:**
+
 - Install and configure Mosquitto MQTT broker
 - Set up authentication and security
 - Integrate ZWave-JS-UI with MQTT
@@ -37,6 +39,7 @@ This guide provides comprehensive instructions for setting up and configuring Mo
 ### Why MQTT?
 
 **Benefits for Home Automation:**
+
 - ✅ **Lightweight** - Low bandwidth, perfect for Raspberry Pi
 - ✅ **Publish/Subscribe** - Many clients can react to the same event
 - ✅ **Retained Messages** - New clients get device state immediately
@@ -62,6 +65,7 @@ This guide provides comprehensive instructions for setting up and configuring Mo
 ```
 
 **Key Concepts:**
+
 - **Broker:** Central server that routes messages (Mosquitto)
 - **Publisher:** Sends messages to topics (ZWave-JS-UI)
 - **Subscriber:** Listens to topics (Oracle app, Voice gateway)
@@ -103,6 +107,7 @@ sudo systemctl start mosquitto
 ```
 
 **Expected Output:**
+
 ```
 ● mosquitto.service - Mosquitto MQTT Broker
    Loaded: loaded (/lib/systemd/system/mosquitto.service; enabled)
@@ -116,6 +121,7 @@ sudo systemctl start mosquitto
 ### Default Configuration
 
 By default, Mosquitto:
+
 - Listens only on `localhost:1883` (not accessible from network)
 - Requires authentication (no anonymous access)
 - Has minimal logging
@@ -195,6 +201,7 @@ sudo systemctl status mosquitto
 ### Why Authentication?
 
 **Security reasons:**
+
 - Prevent unauthorized device control
 - Isolate different clients (zwave, oracle, voice-gateway)
 - Audit who published what message
@@ -218,6 +225,7 @@ sudo cat /etc/mosquitto/passwd
 ```
 
 **Expected output:**
+
 ```
 zwave:$7$101$hashed_password...
 oracle:$7$101$hashed_password...
@@ -300,13 +308,13 @@ sudo journalctl -u mosquitto -n 20
    ```
 
 2. **Navigate to Settings:**
-   - Click **Settings** in left sidebar
-   - Click **MQTT** tab
+    - Click **Settings** in left sidebar
+    - Click **MQTT** tab
 
 3. **Basic Settings:**
 
    | Field | Value | Description |
-   |-------|-------|-------------|
+      |-------|-------|-------------|
    | **Name** | `Mosquitto Local` | Friendly name |
    | **Host** | `localhost` or `127.0.0.1` | MQTT broker address |
    | **Port** | `1883` | Default MQTT port |
@@ -316,7 +324,7 @@ sudo journalctl -u mosquitto -n 20
 4. **Authentication (if enabled):**
 
    | Field | Value |
-   |-------|-------|
+      |-------|-------|
    | **Username** | `zwave` |
    | **Password** | `your-password` |
 
@@ -325,7 +333,7 @@ sudo journalctl -u mosquitto -n 20
 5. **Advanced Settings:**
 
    | Field | Value | Description |
-   |-------|-------|-------------|
+      |-------|-------|-------------|
    | **QoS** | `1` | At-least-once delivery |
    | **Retain** | `true` | Retain device state messages |
    | **Clean** | `true` | Clean session on connect |
@@ -335,7 +343,7 @@ sudo journalctl -u mosquitto -n 20
    Toggle **Gateway Enabled** to **ON**
 
    | Field | Value | Description |
-   |-------|-------|-------------|
+      |-------|-------|-------------|
    | **Gateway Type** | `Manual` | Manual device control |
    | **Payload Type** | `JSON with time` | Include timestamp |
    | **Send Z-Wave Events** | `ON` | Publish state changes |
@@ -344,8 +352,8 @@ sudo journalctl -u mosquitto -n 20
 7. **Click Save**
 
    You should see:
-   - ✅ Green success message
-   - ✅ Connection status: **Connected**
+    - ✅ Green success message
+    - ✅ Connection status: **Connected**
 
 ### Verify Connection
 
@@ -366,6 +374,7 @@ Now toggle a device in ZWave-JS-UI and watch messages appear.
 ### Two-Terminal Test
 
 **Terminal 1 - Subscriber (listen for messages):**
+
 ```bash
 # Subscribe to test topic
 mosquitto_sub -h localhost -t "test/topic" -v
@@ -375,6 +384,7 @@ mosquitto_sub -h localhost -t "test/topic" -v -u oracle -P your-password
 ```
 
 **Terminal 2 - Publisher (send messages):**
+
 ```bash
 # Publish a message
 mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT!"
@@ -384,6 +394,7 @@ mosquitto_pub -h localhost -t "test/topic" -m "Hello MQTT!" -u oracle -P your-pa
 ```
 
 **Expected in Terminal 1:**
+
 ```
 test/topic Hello MQTT!
 ```
@@ -413,6 +424,7 @@ mosquitto_pub -h localhost -t "test" -m "qos2" -q 2
 ```
 
 **QoS Recommendations:**
+
 - **QoS 0:** Non-critical updates (temperature readings)
 - **QoS 1:** Important events (motion detection, device commands)
 - **QoS 2:** Critical operations (security system, locks)
@@ -481,6 +493,7 @@ ZWave-JS-UI sends JSON payloads:
 ```
 
 **Device state update:**
+
 ```json
 {
   "status": "alive",
@@ -489,6 +502,7 @@ ZWave-JS-UI sends JSON payloads:
 ```
 
 **Sensor data:**
+
 ```json
 {
   "time": 1697558400,
@@ -504,6 +518,7 @@ ZWave-JS-UI sends JSON payloads:
 ### 1. Command Line (mosquitto_sub)
 
 **Basic monitoring:**
+
 ```bash
 # All messages (verbose)
 mosquitto_sub -h localhost -t "#" -v
@@ -519,6 +534,7 @@ mosquitto_sub -h localhost -t "zwave/#" -v -F "%I:%M:%S %t %p"
 ```
 
 **Advanced filtering:**
+
 ```bash
 # Only status messages
 mosquitto_sub -h localhost -t "zwave/+/status" -v
@@ -532,16 +548,19 @@ mosquitto_sub -h localhost -t "zwave/+/switch_binary/#" -v
 **Best for visual exploration of topics.**
 
 **Installation (on your laptop, not Pi):**
+
 1. Download from: https://mqtt-explorer.com/
 2. Install for your OS (Windows, macOS, Linux)
 
 **Connect to Pi:**
+
 - **Host:** `<pi-ip>`
 - **Port:** `1883`
 - **Username/Password:** (if configured)
 - Click **Connect**
 
 **Features:**
+
 - ✅ Visual topic tree
 - ✅ Message history
 - ✅ Publish messages
@@ -567,6 +586,7 @@ sudo grep "New connection" /var/log/mosquitto/mosquitto.log
 ### 4. Node-RED (Advanced Automation)
 
 **Install Node-RED:**
+
 ```bash
 # Install globally
 sudo npm install -g --unsafe-perm node-red
@@ -578,6 +598,7 @@ node-red
 ```
 
 **Use Node-RED to:**
+
 - Create visual MQTT workflows
 - Transform messages
 - Create automation rules
@@ -592,11 +613,13 @@ node-red
 Restrict which users can access which topics.
 
 **Create ACL file:**
+
 ```bash
 sudo nano /etc/mosquitto/acl
 ```
 
 **Example ACL:**
+
 ```conf
 # User 'zwave' can read/write all zwave topics
 user zwave
@@ -614,17 +637,20 @@ topic write voice/#
 ```
 
 **Enable ACL in config:**
+
 ```bash
 sudo nano /etc/mosquitto/conf.d/custom.conf
 ```
 
 Add:
+
 ```conf
 # Use ACL file
 acl_file /etc/mosquitto/acl
 ```
 
 **Restart Mosquitto:**
+
 ```bash
 sudo systemctl restart mosquitto
 ```
@@ -634,11 +660,13 @@ sudo systemctl restart mosquitto
 Allow browser clients to connect via WebSocket.
 
 **Edit config:**
+
 ```bash
 sudo nano /etc/mosquitto/conf.d/custom.conf
 ```
 
 **Add WebSocket listener:**
+
 ```conf
 # WebSocket listener on port 9001
 listener 9001
@@ -651,11 +679,13 @@ http_dir /var/www/mosquitto
 ```
 
 **Restart:**
+
 ```bash
 sudo systemctl restart mosquitto
 ```
 
 **Test WebSocket:**
+
 ```javascript
 // In browser console
 const client = new Paho.MQTT.Client("ws://<pi-ip>:9001", "clientId");
@@ -667,6 +697,7 @@ client.connect({onSuccess: () => console.log("Connected!")});
 Connect local broker to cloud MQTT service (AWS IoT, HiveMQ Cloud, etc.)
 
 **Example bridge config:**
+
 ```conf
 # Bridge to HiveMQ Cloud
 connection hivemq-bridge
@@ -686,6 +717,7 @@ topic cloud/commands/# in 1
 ### Logging Levels
 
 **Adjust logging verbosity:**
+
 ```conf
 # Minimal logging (production)
 log_type error
@@ -704,6 +736,7 @@ log_type unsubscribe
 ### Performance Tuning
 
 **For high-traffic setups:**
+
 ```conf
 # Increase maximum connections
 max_connections 1000
@@ -725,6 +758,7 @@ persistence false
 ### Mosquitto Won't Start
 
 **Check logs:**
+
 ```bash
 sudo journalctl -u mosquitto -n 50
 ```
@@ -732,6 +766,7 @@ sudo journalctl -u mosquitto -n 50
 **Common issues:**
 
 **1. Port already in use:**
+
 ```bash
 # Check what's using port 1883
 sudo lsof -i :1883
@@ -741,6 +776,7 @@ sudo kill <PID>
 ```
 
 **2. Configuration syntax error:**
+
 ```bash
 # Test configuration
 sudo mosquitto -c /etc/mosquitto/mosquitto.conf -v
@@ -750,6 +786,7 @@ sudo mosquitto -c /etc/mosquitto/mosquitto.conf -v
 ```
 
 **3. Permission errors:**
+
 ```bash
 # Fix ownership
 sudo chown -R mosquitto:mosquitto /var/lib/mosquitto
@@ -864,6 +901,7 @@ sudo systemctl restart zwave-js-ui
 **Symptom:** Mosquitto using high CPU
 
 **Causes:**
+
 - Too many log messages
 - Thousands of retained messages
 - Message loops (clients republishing to same topic)
@@ -948,23 +986,23 @@ sudo journalctl -u mosquitto -f
 
 ### Configuration Files
 
-| File | Purpose |
-|------|---------|
-| `/etc/mosquitto/mosquitto.conf` | Main config (don't edit) |
-| `/etc/mosquitto/conf.d/custom.conf` | Custom config |
-| `/etc/mosquitto/passwd` | Password file |
-| `/etc/mosquitto/acl` | Access control list |
-| `/var/log/mosquitto/mosquitto.log` | Log file |
-| `/var/lib/mosquitto/` | Persistence directory |
+| File                                | Purpose                  |
+|-------------------------------------|--------------------------|
+| `/etc/mosquitto/mosquitto.conf`     | Main config (don't edit) |
+| `/etc/mosquitto/conf.d/custom.conf` | Custom config            |
+| `/etc/mosquitto/passwd`             | Password file            |
+| `/etc/mosquitto/acl`                | Access control list      |
+| `/var/log/mosquitto/mosquitto.log`  | Log file                 |
+| `/var/lib/mosquitto/`               | Persistence directory    |
 
 ### Default Ports
 
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 1883 | TCP | Standard MQTT |
-| 8883 | TCP | MQTT over TLS |
-| 9001 | WS | WebSocket MQTT |
-| 8080 | WSS | Secure WebSocket |
+| Port | Protocol | Purpose          |
+|------|----------|------------------|
+| 1883 | TCP      | Standard MQTT    |
+| 8883 | TCP      | MQTT over TLS    |
+| 9001 | WS       | WebSocket MQTT   |
+| 8080 | WSS      | Secure WebSocket |
 
 ---
 
@@ -973,29 +1011,29 @@ sudo journalctl -u mosquitto -f
 **After setting up MQTT:**
 
 1. **Integrate with Oracle App**
-   - Configure MQTT client in Oracle app
-   - Subscribe to ZWave device topics
-   - Publish device control commands
+    - Configure MQTT client in Oracle app
+    - Subscribe to ZWave device topics
+    - Publish device control commands
 
 2. **Set Up Voice Gateway**
-   - Connect voice gateway to MQTT
-   - Subscribe to transcription topics
-   - Publish AI responses
+    - Connect voice gateway to MQTT
+    - Subscribe to transcription topics
+    - Publish AI responses
 
 3. **Create Automation Rules**
-   - Use Node-RED for complex workflows
-   - Set up time-based automations
-   - Create device trigger rules
+    - Use Node-RED for complex workflows
+    - Set up time-based automations
+    - Create device trigger rules
 
 4. **Harden Security**
-   - Enable authentication (if not already)
-   - Set up ACLs for topic access control
-   - Configure TLS/SSL for encrypted connections
+    - Enable authentication (if not already)
+    - Set up ACLs for topic access control
+    - Configure TLS/SSL for encrypted connections
 
 5. **Monitor and Optimize**
-   - Use MQTT Explorer to visualize topics
-   - Monitor logs for errors
-   - Tune performance settings
+    - Use MQTT Explorer to visualize topics
+    - Monitor logs for errors
+    - Tune performance settings
 
 ---
 
@@ -1008,17 +1046,27 @@ sudo journalctl -u mosquitto -f
 <!-- Reference Links - All links defined here for easy maintenance -->
 
 <!-- Main Documentation -->
+
 [readme]: ../README.md
+
 [docs-dir]: .
+
 [getting-started]: GETTING-STARTED.md
 
 <!-- Setup Guides -->
+
 [zwave-deploy]: zwave-js-ui-deploy.md
+
 [oracle-setup]: oracle-systemd-setup.md
+
 [pi-setup]: raspberry-pi-setup.md
 
 <!-- External Resources -->
+
 [mqtt-org]: https://mqtt.org/
+
 [mosquitto-docs]: https://mosquitto.org/documentation/
+
 [mqtt-explorer]: https://mqtt-explorer.com/
+
 [hivemq-guide]: https://www.hivemq.com/mqtt-essentials/

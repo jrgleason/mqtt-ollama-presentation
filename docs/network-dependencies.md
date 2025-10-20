@@ -18,7 +18,7 @@ After pre-pulls, the demo runs fully local.
 
 ## Local-only at runtime (no internet)
 
-- MQTT Broker: HiveMQ CE at `mqtt://10.0.0.58:31883`
+- MQTT Broker: HiveMQ CE at `mqtt://localhost:1883`
 - Ollama API: `http://localhost:11434` (or Pi IP)
 - Z-Wave: zwave-js-ui (local UI + MQTT gateway)
 - Voice Gateway: OpenWakeWord + Whisper via Ollama + Piper
@@ -28,46 +28,46 @@ After pre-pulls, the demo runs fully local.
 ## Optional Cloud (Auth0)
 
 - Auth: Auth0 is recommended but optional and currently deferred for the live demo.
-  - If enabled: requires internet during auth flows (authorize, token exchange, JWKS). See quickstart for env.
-  - If disabled: run fully local/offline for demo; remove/skip auth middleware.
+    - If enabled: requires internet during auth flows (authorize, token exchange, JWKS). See quickstart for env.
+    - If disabled: run fully local/offline for demo; remove/skip auth middleware.
 
 ---
 
 ## Demo Environment Options
 
 - Primary plan (local-first):
-  - No internet required at runtime (auth disabled)
-  - MQTT, Ollama, Z-Wave, Voice all local
+    - No internet required at runtime (auth disabled)
+    - MQTT, Ollama, Z-Wave, Voice all local
 
 - If demonstrating Auth0 (optional):
-  - Internet required for login
-  - Keep a pre-authenticated session as backup; have hotspot ready
+    - Internet required for login
+    - Keep a pre-authenticated session as backup; have hotspot ready
 
 - Emergency offline:
-  - Disable auth entirely; proceed with full local stack
+    - Disable auth entirely; proceed with full local stack
 
 ---
 
 ## Summary Table
 
-| Service | Network Type | Required During Demo? | Notes |
-|---------|--------------|-----------------------|-------|
-| Auth0 (optional) | Internet | No (Deferred by default) | Required only if you choose to show login |
-| Ollama model pulls | Internet | No (pre-download) | Pre-pull models; cached locally |
-| npm install | Internet | No (pre-install) | Cached in node_modules |
-| OpenWakeWord model | Local file | No | Store ONNX under models/ |
-| MQTT Broker (HiveMQ) | Local | Yes | Local TCP/WebSocket |
-| Ollama API (runtime) | Local | Yes | Local HTTP |
-| zwave-js-ui | Local | Yes | Local UI + MQTT gateway |
-| Docker images | Internet | No (pre-pull) | Cached locally |
-| GitHub | Internet | No | Code cloned ahead of time |
+| Service              | Network Type | Required During Demo?    | Notes                                     |
+|----------------------|--------------|--------------------------|-------------------------------------------|
+| Auth0 (optional)     | Internet     | No (Deferred by default) | Required only if you choose to show login |
+| Ollama model pulls   | Internet     | No (pre-download)        | Pre-pull models; cached locally           |
+| npm install          | Internet     | No (pre-install)         | Cached in node_modules                    |
+| OpenWakeWord model   | Local file   | No                       | Store ONNX under models/                  |
+| MQTT Broker (HiveMQ) | Local        | Yes                      | Local TCP/WebSocket                       |
+| Ollama API (runtime) | Local        | Yes                      | Local HTTP                                |
+| zwave-js-ui          | Local        | Yes                      | Local UI + MQTT gateway                   |
+| Docker images        | Internet     | No (pre-pull)            | Cached locally                            |
+| GitHub               | Internet     | No                       | Code cloned ahead of time                 |
 
 ---
 
 ## Pre-Demo Checklist (short)
 
 - ollama list → models present (llama3.2 and whisper)
-- MQTT reachable at 10.0.0.58:31883
+- MQTT reachable at localhost:1883
 - Ollama reachable at http://localhost:11434
 - zwave-js-ui up on Pi, MQTT gateway enabled
 - Optional: Auth0 env configured (if showing auth)
