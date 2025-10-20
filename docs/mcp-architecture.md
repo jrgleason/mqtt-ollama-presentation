@@ -363,7 +363,7 @@ Error: spawn ENOENT
 - Verify Node.js is in PATH (especially for systemd services)
 - For systemd services, ensure PATH includes NVM node location:
   ```ini
-  Environment="PATH=/home/pi/.nvm/versions/node/v24.9.0/bin:/usr/local/bin:/usr/bin:/bin"
+  Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/bin:/usr/bin:/bin"
   ```
 - Check zwave-mcp-server path in client code
 - Ensure zwave-mcp-server dependencies are installed:

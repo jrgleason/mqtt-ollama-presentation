@@ -1032,7 +1032,7 @@ Environment="TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx"
 Environment="TTS_VOLUME=1.0"
 Environment="TTS_SPEED=3.0"
 
-ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
+ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal

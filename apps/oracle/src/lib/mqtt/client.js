@@ -3,6 +3,7 @@ import mqtt from 'mqtt';
 const MQTT_BROKER_URL = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883';
 const MQTT_USERNAME = process.env.MQTT_USERNAME || '';
 const MQTT_PASSWORD = process.env.MQTT_PASSWORD || '';
+const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
 
 class MQTTClientSingleton {
     constructor() {
@@ -55,7 +56,7 @@ class MQTTClientSingleton {
             this.client = mqtt.connect(MQTT_BROKER_URL, options);
 
             this.client.on('connect', () => {
-                console.log('[MQTT] Connected to broker:', MQTT_BROKER_URL);
+                if (DEBUG) console.log('[MQTT] Connected to broker:', MQTT_BROKER_URL);
                 this.connecting = false;
                 resolve(this.client);
             });
@@ -79,37 +80,41 @@ class MQTTClientSingleton {
             });
 
             this.client.on('reconnect', () => {
-                console.log('[MQTT] Reconnecting...');
+                if (DEBUG) console.log('[MQTT] Reconnecting...');
             });
 
             this.client.on('close', () => {
-                console.log('[MQTT] Connection closed');
+                if (DEBUG) console.log('[MQTT] Connection closed');
             });
         });
     }
 
     async publish(topic, message, options = {}) {
-        console.log('[MQTT] publish() called', {
-            topic,
-            message,
-            connected: this.client?.connected,
-            clientExists: !!this.client
-        });
+        if (DEBUG) {
+            console.log('[MQTT] publish() called', {
+                topic,
+                message,
+                connected: this.client?.connected,
+                clientExists: !!this.client
+            });
+        }
 
         if (!this.client || !this.client.connected) {
-            console.log('[MQTT] Not connected, attempting to connect...');
+            if (DEBUG) console.log('[MQTT] Not connected, attempting to connect...');
             await this.connect();
-            console.log('[MQTT] Connected successfully, broker:', MQTT_BROKER_URL);
+            if (DEBUG) console.log('[MQTT] Connected successfully, broker:', MQTT_BROKER_URL);
         }
 
         const payload = typeof message === 'string' ? message : JSON.stringify(message);
 
-        console.log('[MQTT] About to publish:', {
-            topic,
-            payload,
-            qos: options.qos || 0,
-            brokerUrl: MQTT_BROKER_URL
-        });
+        if (DEBUG) {
+            console.log('[MQTT] About to publish:', {
+                topic,
+                payload,
+                qos: options.qos || 0,
+                brokerUrl: MQTT_BROKER_URL
+            });
+        }
 
         return new Promise((resolve, reject) => {
             this.client.publish(topic, payload, {qos: options.qos || 0}, (error) => {
@@ -117,7 +122,7 @@ class MQTTClientSingleton {
                     console.error('[MQTT] Publish error:', error);
                     reject(error);
                 } else {
-                    console.log('[MQTT] ✅ Publish SUCCESS to', topic, ':', payload);
+                    if (DEBUG) console.log('[MQTT] ✅ Publish SUCCESS to', topic, ':', payload);
                     resolve();
                 }
             });
@@ -135,7 +140,7 @@ class MQTTClientSingleton {
                     console.error('[MQTT] Subscribe error:', error);
                     reject(error);
                 } else {
-                    console.log('[MQTT] Subscribed to:', topic);
+                    if (DEBUG) console.log('[MQTT] Subscribed to:', topic);
 
                     if (!this.subscribers.has(topic)) {
                         this.subscribers.set(topic, new Set());
@@ -145,7 +150,6 @@ class MQTTClientSingleton {
                     resolve();
                 }
             });
-        });
     }
 
     async unsubscribe(topic, callback) {
@@ -159,7 +163,7 @@ class MQTTClientSingleton {
                     console.error('[MQTT] Unsubscribe error:', error);
                     reject(error);
                 } else {
-                    console.log('[MQTT] Unsubscribed from:', topic);
+                    if (DEBUG) console.log('[MQTT] Unsubscribed from:', topic);
 
                     if (callback && this.subscribers.has(topic)) {
                         this.subscribers.get(topic).delete(callback);
@@ -180,7 +184,7 @@ class MQTTClientSingleton {
 
         return new Promise((resolve) => {
             this.client.end(false, {}, () => {
-                console.log('[MQTT] Disconnected');
+                if (DEBUG) console.log('[MQTT] Disconnected');
                 this.client = null;
                 resolve();
             });

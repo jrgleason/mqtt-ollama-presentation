@@ -10,7 +10,7 @@ WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww
 Environment="NODE_ENV=production"
 Environment="LOG_LEVEL=info"
 Environment="VIRTUAL_ENV=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv"
-Environment="PATH=/home/pi/code/whisper.cpp/build/bin:/home/pi/.nvm/versions/node/v24.9.0/bin:/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=/home/pi/code/whisper.cpp/build/bin:/home/pi/.nvm/versions/node/current/bin:/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv/bin:/usr/local/bin:/usr/bin:/bin"
 
 # OpenWakeWord Configuration
 Environment="OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx"
@@ -54,7 +54,7 @@ Environment="TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx"
 Environment="TTS_VOLUME=1.0"
 Environment="TTS_SPEED=3.0"
 
-ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
+ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal

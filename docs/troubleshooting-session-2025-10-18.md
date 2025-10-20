@@ -149,7 +149,7 @@ console.error('[MCP DEBUG] Raw nodes from ZWave-JS-UI:', JSON.stringify(liveNode
 ### 4. `/etc/systemd/system/oracle.service` (Previously)
 **Change:** Added NVM node to PATH for MCP server spawning
 ```ini
-Environment="PATH=/home/pi/.nvm/versions/node/v24.9.0/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="ZWAVE_UI_URL=http://localhost:8091"
 Environment="ZWAVE_UI_AUTH_ENABLED=false"
 ```
@@ -157,7 +157,7 @@ Environment="ZWAVE_UI_AUTH_ENABLED=false"
 ### 5. `/etc/systemd/system/voice-gateway-oww.service` (Previously)
 **Change:** Same PATH fix for voice gateway
 ```ini
-Environment="PATH=/home/pi/.nvm/versions/node/v24.9.0/bin:..."
+Environment="PATH=/home/pi/.nvm/versions/node/current/bin:..."
 Environment="ZWAVE_UI_URL=http://localhost:8091"
 Environment="ZWAVE_UI_AUTH_ENABLED=false"
 ```
@@ -246,6 +246,7 @@ systemctl status oracle.service
 5. **21:05** - Diagnosed device as DEAD (battery likely died)
 6. **21:08** - User checking battery on physical device
 7. **21:10** - Updated documentation with troubleshooting guide
+8. **October 19, 2025** - Added MQTT client conditional debug logging
 
 ---
 
@@ -259,4 +260,45 @@ systemctl status oracle.service
 
 ---
 
-**Session Status:** Paused - waiting for user to replace battery and verify device comes online
+## Additional Improvements Made
+
+### MQTT Client Debug Logging (October 19, 2025)
+
+**Problem:** MQTT client was flooding production logs with verbose debug output on every publish operation.
+
+**Solution:** Added conditional debug logging controlled by environment variables:
+
+```javascript
+// In apps/oracle/src/lib/mqtt/client.js
+const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
+
+// Verbose logs now gated:
+if (DEBUG) console.log('[MQTT] publish() called', {...});
+if (DEBUG) console.log('[MQTT] About to publish:', {...});
+
+// Error logs always shown:
+console.error('[MQTT] Publish error:', error);  // Always logged
+```
+
+**Usage:**
+- **Production mode** (default): `NODE_ENV=production` → Only errors logged
+- **Debug mode**: `LOG_LEVEL=debug` → Full verbose logging enabled
+- **Development mode**: `NODE_ENV=development` → Full verbose logging enabled
+
+**To enable debug logging in systemd services:**
+```bash
+# Edit oracle service
+sudo nano /etc/systemd/system/oracle.service
+
+# Change:
+Environment="LOG_LEVEL=info"
+# To:
+Environment="LOG_LEVEL=debug"
+
+# Restart and view logs
+sudo systemctl restart oracle.service
+journalctl -u oracle.service -f
+```
+
+---
+

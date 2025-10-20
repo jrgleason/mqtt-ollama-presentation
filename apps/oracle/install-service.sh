@@ -34,6 +34,7 @@ Type=simple
 User=$USER
 WorkingDirectory=$SCRIPT_DIR
 Environment="NODE_ENV=production"
+Environment="LOG_LEVEL=info"
 Environment="PORT=3000"
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 Environment="DATABASE_URL=file:./prisma/dev.db"

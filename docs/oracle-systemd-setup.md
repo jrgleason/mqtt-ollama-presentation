@@ -55,6 +55,7 @@ Type=simple
 User=pi
 WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
 Environment="NODE_ENV=production"
+Environment="LOG_LEVEL=info"
 Environment="PORT=3000"
 Environment="PATH=/home/pi/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="OLLAMA_BASE_URL=http://localhost:11434"
@@ -81,10 +82,10 @@ WantedBy=multi-user.target
    - Common mistake: Using `/home/pi/code/mqtt-ollama-presentation/oracle`
    - ✅ Correct: `/home/pi/code/mqtt-ollama-presentation/apps/oracle`
 
-2. **ExecStart - Node path:** Use the `current` symlink for easy version management
-   - Recommended: `/home/pi/.nvm/versions/node/current/bin/node`
+2. **ExecStart - Node path:** Use the `current` symlink for version-agnostic Node.js management
+   - ✅ Recommended: `/home/pi/.nvm/versions/node/current/bin/node`
    - This symlink points to your active Node version (created in [Raspberry Pi setup](raspberry-pi-setup.md#3-create-node-version-symlink-important))
-   - Alternative: Use specific version path like `/home/pi/.nvm/versions/node/v24.9.0/bin/node` (requires editing service file when upgrading Node)
+   - When you upgrade Node.js, just update the symlink - no need to edit service files!
 
 3. **ExecStart - Application path:** Must match WorkingDirectory
    - Full path: `<node-binary> <WorkingDirectory>/node_modules/.bin/next start`
@@ -94,6 +95,11 @@ WantedBy=multi-user.target
    - Add Auth0 credentials if using authentication
    - Adjust MQTT broker URL if not running locally
    - Environment PATH must include NVM's node binary location
+
+5. **LOG_LEVEL:** Controls verbosity of MQTT client and other logging
+   - `info` (default): Production mode - only errors and important events
+   - `debug`: Development/troubleshooting mode - verbose logging for MQTT operations
+   - When troubleshooting, change to `debug` and restart service to see detailed MQTT publish/subscribe logs
 
 ### 3. Enable and Start Service
 
@@ -272,6 +278,7 @@ Type=simple
 User=$USER
 WorkingDirectory=$SCRIPT_DIR
 Environment="NODE_ENV=production"
+Environment="LOG_LEVEL=info"
 Environment="PORT=3000"
 Environment="PATH=/home/$USER/.nvm/versions/node/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ExecStart=/home/$USER/.nvm/versions/node/current/bin/npm start
