@@ -7,7 +7,7 @@ Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js c
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 24+
 - Docker & Docker Compose
 - Ollama running on the host with at least one chat model (for example `ollama pull llama3.2:1b`)
 - Optional hardware: Z-Wave USB controller, microphones, speakers
@@ -31,7 +31,7 @@ Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js c
 
 ### Raspberry Pi 5 Deployment
 1. Prepare the Pi 5 (OS flash, updates, audio devices, Z-Wave hat/USB stick).
-2. Install Node.js 20, Docker, and Ollama (or point to another host running Ollama).
+2. Install Node.js 24, Docker, and Ollama (or point to another host running Ollama).
 3. Follow the service setup checklist in [Getting Started][get-started] to configure MQTT, zwave-js-ui, Oracle, and optional voice features.
 
 ## Project Layout

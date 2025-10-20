@@ -8,9 +8,10 @@ import {ChatOllama} from '@langchain/ollama';
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 const DEFAULT_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:0.5b';
+const DEBUG = process.env.LOG_LEVEL === 'debug' || process.env.NODE_ENV === 'development';
 
-// Only log debug info in development
-if (process.env.NODE_ENV !== 'production') {
+// Only log debug info in development or debug mode
+if (DEBUG) {
     console.log('[ollama/client] ========== OLLAMA DEBUG START ==========');
     console.log('[ollama/client] All OLLAMA env vars:', {
         OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,

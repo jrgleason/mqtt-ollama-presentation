@@ -14,7 +14,7 @@ Automatically builds and tests all projects in the monorepo on every commit.
 
 **What it does:**
 
-1. **Multi-version testing**: Tests against Node.js 20.x and 22.x
+1. **Multi-version testing**: Tests against Node.js 24.x and 26.x
 2. **Builds all projects:**
    - Oracle (Next.js app)
    - ZWave MCP Server
@@ -142,4 +142,3 @@ Potential additions to consider:
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [setup-node Action](https://github.com/actions/setup-node)
 - [Project README](../../README.md)
-

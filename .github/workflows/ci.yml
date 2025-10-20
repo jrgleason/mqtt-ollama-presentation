@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [24.x, 26.x]
       fail-fast: false
 
     steps:
@@ -113,4 +113,3 @@ jobs:
           echo "- ZWave MCP Server" >> $GITHUB_STEP_SUMMARY
           echo "- Voice Gateway OWW" >> $GITHUB_STEP_SUMMARY
           echo "- Voice Gateway Common" >> $GITHUB_STEP_SUMMARY
-
