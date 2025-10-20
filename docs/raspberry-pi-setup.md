@@ -5,16 +5,19 @@
 ---
 
 **Hardware:**
+
 - Raspberry Pi 5 (8GB recommended)
 - Aeotec Z-Pi 7 HAT (Z-Wave 700 series controller)
 - MicroSD card (32GB+ recommended)
 
 **Software Stack:**
+
 - Raspberry Pi OS (64-bit)
 - zwave-js-ui (Z-Wave MQTT gateway)
 - Ollama (Local LLM runtime)
 - llama3.2:1b or llama3.2:3b model for Oracle app (tool calling support required)
-- qwen2.5:0.5b model recommended for voice gateway (optimized for speed - see [Performance Optimization](performance-optimization.md))
+- qwen2.5:0.5b model recommended for voice gateway (optimized for speed -
+  see [Performance Optimization](performance-optimization.md))
 
 ---
 
@@ -78,6 +81,7 @@ ls -la ~/.nvm/versions/node/
 ```
 
 **Why use a symlink?**
+
 - Services reference `/home/pi/.nvm/versions/node/current/bin/node`
 - When you upgrade Node, just update the symlink
 - No need to edit service files
@@ -120,6 +124,7 @@ enable_uart=1
 ```
 
 **Explanation:**
+
 - `disable-bt-pi5`: Frees up the UART from Bluetooth
 - `enable_uart=1`: Enables the primary UART for serial communication
 
@@ -231,6 +236,7 @@ EOF
 ```
 
 **Key settings:**
+
 - `mqtt.host`: Your MQTT broker IP (HiveMQ Kubernetes NodePort)
 - `mqtt.port`: MQTT broker port (31883 for HiveMQ NodePort)
 - `zwave.port`: Serial port for Z-Pi 7 HAT (`/dev/ttyAMA0`)
@@ -241,24 +247,28 @@ EOF
 Z-Wave JS UI has two different MQTT topic formats:
 
 **Default Format (nodeNames: false or omitted):**
+
 ```
 zwave/<nodeId>/<commandClass>/<endpoint>/<property>/set
 Example: zwave/3/37/0/targetValue/set
 ```
 
 **Human-Readable Format (nodeNames: true) - WHAT WE USE:**
+
 ```
 zwave/<location>/<deviceName>/<commandClass>/<endpoint>/<property>/set
 Example: zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
 ```
 
 **This project uses `nodeNames: true`** because:
+
 - ✅ Device names and locations are human-readable and meaningful
 - ✅ Easier to debug and monitor MQTT traffic
 - ✅ More user-friendly for presentations and demos
 - ✅ Matches Home Assistant and other home automation platforms
 
-**You MUST set `nodeNames: true` in your gateway configuration** or the MCP server will not be able to match device names to MQTT topics correctly.
+**You MUST set `nodeNames: true` in your gateway configuration** or the MCP server will not be able to match device
+names to MQTT topics correctly.
 
 ### 5. Start ZWaveJsUI
 
@@ -309,7 +319,8 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-**Note:** We use `/home/pi/.nvm/versions/node/current/bin/node` which references the symlink created earlier. This allows Node version upgrades without editing this file.
+**Note:** We use `/home/pi/.nvm/versions/node/current/bin/node` which references the symlink created earlier. This
+allows Node version upgrades without editing this file.
 
 ```bash
 # Enable and start service
@@ -328,6 +339,7 @@ sudo systemctl status zwave-js-ui
 ### Why Mosquitto?
 
 **Eclipse Mosquitto** is the recommended MQTT broker for Raspberry Pi due to:
+
 - Extremely lightweight (~200KB footprint)
 - Minimal CPU/RAM usage
 - Single apt command installation
@@ -335,7 +347,8 @@ sudo systemctl status zwave-js-ui
 - Perfect for home automation scale
 - Best compatibility with zwave-js-ui
 
-**Alternative considered:** NanoMQ offers 10x faster performance on multi-core CPUs but uses more resources. Mosquitto is ideal for demos and local development.
+**Alternative considered:** NanoMQ offers 10x faster performance on multi-core CPUs but uses more resources. Mosquitto
+is ideal for demos and local development.
 
 ### 1. Install Mosquitto
 
@@ -436,11 +449,13 @@ sudo systemctl status mosquitto
 Open two terminal windows:
 
 **Terminal 1 - Subscribe:**
+
 ```bash
 mosquitto_sub -h localhost -t "test/topic" -v
 ```
 
 **Terminal 2 - Publish:**
+
 ```bash
 mosquitto_pub -h localhost -t "test/topic" -m "Hello from Mosquitto!"
 ```
@@ -560,6 +575,7 @@ sudo systemctl reload nginx
 ```
 
 **What this does:**
+
 - Proxies all HTTP requests on port 80 to the Next.js app on port 3000
 - Enables WebSocket support for Next.js hot reload
 - Configures proper headers for SSE streaming (chat responses)
@@ -567,6 +583,7 @@ sudo systemctl reload nginx
 - Optional health check endpoint at `/health`
 
 **Access the app:**
+
 - Before nginx: `http://<pi-ip>:3000`
 - After nginx: `http://<pi-ip>` (port 80)
 
@@ -603,26 +620,27 @@ ollama --version
 
 **IMPORTANT: Tool Calling Support Required**
 
-This project uses LangChain's ToolCallingAgent to control smart home devices. **You must use a model that supports tool/function calling.**
+This project uses LangChain's ToolCallingAgent to control smart home devices. **You must use a model that supports
+tool/function calling.**
 
 **Recommended Models (Tool Calling Supported):**
 
-| Model | Size | Speed | Tool Support | Best For |
-|-------|------|-------|--------------|----------|
-| `llama3.2:1b` | 1.3GB | ⚡⚡⚡ Fast | ✅ Yes | **Recommended** - Fastest with tools |
-| `llama3.2:3b` | 2GB | ⚡⚡ Medium | ✅ Yes | Best accuracy, acceptable speed |
-| `qwen3:1.7b` | 1.9GB | ⚡⚡⚡ Fast | ✅ Yes | Good alternative to llama3.2 |
-| `mistral` | 4.1GB | ⚡ Slow | ✅ Yes | Best accuracy, slow on Pi |
-| `smollm2:1.7b` | 1.7GB | ⚡⚡⚡ Fast | ✅ Yes | Experimental, fast |
+| Model          | Size  | Speed     | Tool Support | Best For                             |
+|----------------|-------|-----------|--------------|--------------------------------------|
+| `llama3.2:1b`  | 1.3GB | ⚡⚡⚡ Fast  | ✅ Yes        | **Recommended** - Fastest with tools |
+| `llama3.2:3b`  | 2GB   | ⚡⚡ Medium | ✅ Yes        | Best accuracy, acceptable speed      |
+| `qwen3:1.7b`   | 1.9GB | ⚡⚡⚡ Fast  | ✅ Yes        | Good alternative to llama3.2         |
+| `mistral`      | 4.1GB | ⚡ Slow    | ✅ Yes        | Best accuracy, slow on Pi            |
+| `smollm2:1.7b` | 1.7GB | ⚡⚡⚡ Fast  | ✅ Yes        | Experimental, fast                   |
 
 **Models WITHOUT Tool Support (DO NOT USE):**
 
-| Model | Why It Fails |
-|-------|-------------|
-| `qwen3:1.7b` | ❌ Qwen 3 series lacks tool calling |
-| `gemma2:2b` | ❌ No function calling support |
-| `phi3:3.8b` | ❌ Does not support tools |
-| `phi3.5:3.8b` | ❌ No tool calling capability |
+| Model         | Why It Fails                       |
+|---------------|------------------------------------|
+| `qwen3:1.7b`  | ❌ Qwen 3 series lacks tool calling |
+| `gemma2:2b`   | ❌ No function calling support      |
+| `phi3:3.8b`   | ❌ Does not support tools           |
+| `phi3.5:3.8b` | ❌ No tool calling capability       |
 
 **Installation:**
 
@@ -637,6 +655,7 @@ ollama pull llama3.2:3b
 **Testing Tool Support:**
 
 After pulling a model, verify it works with your LangChain agent. You should see log messages like:
+
 ```
 Using list_devices...
 Using control_device...
@@ -706,6 +725,7 @@ tail -f store/logs/zwavejs_*.log
 ```
 
 Look for:
+
 - ✅ `DRIVER serial port opened`
 - ✅ `CNTRLR received API capabilities`
 - ❌ Avoid: `invalid data`, `no response from controller`
@@ -754,6 +774,7 @@ vcgencmd measure_temp
 ```
 
 **Recommended monitoring:**
+
 - Temperature should stay < 70°C under load
 - Free RAM > 2GB when running all services
 - CPU usage spikes during Ollama inference are normal
@@ -769,6 +790,7 @@ vcgencmd measure_temp
 **Cause:** Linux console is using `/dev/ttyAMA0`
 
 **Fix:**
+
 1. Check `/boot/firmware/cmdline.txt` - ensure `console=serial0,115200` is removed
 2. Check `/boot/firmware/config.txt` - ensure `enable_uart=1` and `dtoverlay=disable-bt-pi5`
 3. Reboot: `sudo reboot`
@@ -778,6 +800,7 @@ vcgencmd measure_temp
 **Cause:** User not in `dialout` group
 
 **Fix:**
+
 ```bash
 sudo usermod -a -G dialout $USER
 # Log out and back in, or reboot
@@ -788,6 +811,7 @@ sudo usermod -a -G dialout $USER
 **Cause:** Serial console conflict or baud rate mismatch
 
 **Fix:**
+
 1. Verify console is disabled in cmdline.txt
 2. Try different baud rates in ZWaveJsUI settings (115200 is default for Z-Pi 7)
 3. Check physical HAT connection
@@ -799,6 +823,7 @@ sudo usermod -a -G dialout $USER
 **Cause:** Ollama service not running
 
 **Fix:**
+
 ```bash
 sudo systemctl start ollama
 sudo systemctl status ollama
@@ -809,6 +834,7 @@ sudo systemctl status ollama
 **Cause:** Model too large or insufficient RAM
 
 **Fix:**
+
 - Use smaller model: `ollama pull qwen3:1.7b`
 - Check RAM: `free -h` (should have 2GB+ free)
 - Close other applications
@@ -818,6 +844,7 @@ sudo systemctl status ollama
 **Cause:** Network issues or disk space
 
 **Fix:**
+
 ```bash
 # Check disk space
 df -h
@@ -836,6 +863,7 @@ ollama pull qwen3:1.7b
 **Cause:** Firewall or incorrect broker address
 
 **Fix:**
+
 ```bash
 # Test MQTT connection
 mosquitto_sub -h 10.0.0.58 -p 31883 -t "test" -v
@@ -874,6 +902,7 @@ arm_boost=1
 ### 3. Monitor Temperature
 
 If Pi gets hot (>70°C):
+
 - Add heatsink or active cooling
 - Ensure good airflow around Z-Pi 7 HAT
 
@@ -909,14 +938,23 @@ After completing this setup:
 <!-- Reference Links - All links defined here for easy maintenance -->
 
 <!-- Internal Documentation -->
+
 [readme]: ../README.md
+
 [getting-started]: GETTING-STARTED.md
+
 [oracle-setup]: oracle-systemd-setup.md
+
 [zwave-deploy]: zwave-js-ui-deploy.md
+
 [docs-dir]: .
 
 <!-- External Documentation -->
+
 [z-pi7-guide]: https://aeotec.freshdesk.com/support/solutions/articles/6000230551-z-pi-7-user-guide-
+
 [zwave-docs]: https://zwave-js.github.io/zwave-js-ui/
+
 [ollama-docs]: https://github.com/ollama/ollama
+
 [pi-uart-docs]: https://www.raspberrypi.com/documentation/computers/configuration.html#configuring-uarts

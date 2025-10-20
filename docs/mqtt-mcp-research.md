@@ -1,6 +1,8 @@
 # [Archived – Deprecated] MQTT Integration via MCP Server (Historical)
 
-This document is kept for reference only. We have moved to direct MQTT integration from the app (no custom MCP server) for the demo. See:
+This document is kept for reference only. We have moved to direct MQTT integration from the app (no custom MCP server)
+for the demo. See:
+
 - docs/requirements.md (Condensed for Demo)
 - docs/zwave-integration-plan.md (Demo-Focused)
 
@@ -12,13 +14,18 @@ This document is kept for reference only. We have moved to direct MQTT integrati
 
 **Decision: Build Custom TypeScript MCP Server (No Python)**
 
-After extensive research, we've decided to **build a custom TypeScript MCP server** that combines MQTT control with Z-Wave JS UI device discovery. This approach provides clean separation of concerns, full type safety, and aligns perfectly with our Next.js/TypeScript stack - **no Python dependencies**.
+After extensive research, we've decided to **build a custom TypeScript MCP server** that combines MQTT control with
+Z-Wave JS UI device discovery. This approach provides clean separation of concerns, full type safety, and aligns
+perfectly with our Next.js/TypeScript stack - **no Python dependencies**.
 
-**Key Finding:** While `@emqx-ai/mcp-mqtt-sdk` provides excellent MQTT MCP capabilities, we need to combine it with Z-Wave JS UI API access for device discovery. A custom TypeScript implementation gives us full control over both aspects.
+**Key Finding:** While `@emqx-ai/mcp-mqtt-sdk` provides excellent MQTT MCP capabilities, we need to combine it with
+Z-Wave JS UI API access for device discovery. A custom TypeScript implementation gives us full control over both
+aspects.
 
 ## Why MCP for MQTT?
 
 **Key Benefits:**
+
 - **Separation of Concerns:** AI orchestration (Oracle) separate from device communication (MCP server)
 - **Standardization:** Anthropic's official protocol with growing ecosystem (100+ servers)
 - **Reusability:** Same MCP server works with Claude Desktop, Cursor, Cline, etc.
@@ -32,27 +39,32 @@ After extensive research, we've decided to **build a custom TypeScript MCP serve
 **No Python. No external MCP servers. Pure TypeScript stack.**
 
 **MCP Framework:**
+
 - `@modelcontextprotocol/sdk` - Official Anthropic MCP SDK
 - Stdio transport for Claude Desktop/Oracle integration
 - Full TypeScript type safety
 
 **MQTT Client:**
+
 - `mqtt` (mqtt.js) - Battle-tested MQTT client
 - Direct connection to HiveMQ broker
 - QoS support, topic wildcards, retained messages
 
 **Z-Wave Integration:**
+
 - HTTP client (`node-fetch`) for Z-Wave JS UI REST API
 - WebSocket (Socket.IO client) for real-time updates (optional)
 - Device registry building and caching
 
 **Validation:**
+
 - `zod` - Runtime type validation for tool parameters
 - TypeScript compile-time validation
 
 ### Why Custom TypeScript Implementation?
 
 **✔ Advantages:**
+
 - **Single Language** - No Python runtime, no language context switching
 - **Full Control** - Combine MQTT + Z-Wave API in one server
 - **Type Safety** - End-to-end TypeScript from Oracle to MCP server
@@ -62,6 +74,7 @@ After extensive research, we've decided to **build a custom TypeScript MCP serve
 - **Lighter Weight** - No Python interpreter, faster startup
 
 **✖ What We Avoid:**
+
 - Python runtime requirements
 - Language/toolchain mixing
 - Python-to-Node.js bridge complexity
@@ -116,6 +129,7 @@ After extensive research, we've decided to **build a custom TypeScript MCP serve
 ```
 
 **Key Points:**
+
 - **TypeScript-Only Stack:** No Python, single language across entire stack
 - **Local-first:** All components on local network, zero internet during demo
 - **Dual Integration:** MCP server queries Z-Wave JS UI (HTTP) and controls via MQTT
@@ -206,16 +220,16 @@ await server.connect(transport);
 
 ## Decision: MCP Server vs Direct MQTT
 
-| Key Factors | MCP Server (Recommended) | Direct MQTT.js |
-|-------------|-------------------------|----------------|
-| **Architecture** | ✅ Clean separation, testable | ❌ Mixed concerns |
-| **Reusability** | ✅ Works with Claude Desktop, Cursor, etc. | ❌ Oracle-only |
-| **Setup** | ✅ TypeScript (same stack) | ✅ Simple (fewer parts) |
-| **Learning** | ⚠️ Need to learn MCP | ✅ Standard MQTT |
-| **Security** | ✅ Credentials isolated | ⚠️ In Oracle .env |
-| **Type Safety** | ✅ Full TS + Zod validation | ⚠️ Manual typing |
-| **Performance** | ⚠️ +5-10ms, +50MB | ✅ Minimal overhead |
-| **Future-proof** | ✅ Industry standard | ⚠️ Custom integration |
+| Key Factors      | MCP Server (Recommended)                  | Direct MQTT.js         |
+|------------------|-------------------------------------------|------------------------|
+| **Architecture** | ✅ Clean separation, testable              | ❌ Mixed concerns       |
+| **Reusability**  | ✅ Works with Claude Desktop, Cursor, etc. | ❌ Oracle-only          |
+| **Setup**        | ✅ TypeScript (same stack)                 | ✅ Simple (fewer parts) |
+| **Learning**     | ⚠️ Need to learn MCP                      | ✅ Standard MQTT        |
+| **Security**     | ✅ Credentials isolated                    | ⚠️ In Oracle .env      |
+| **Type Safety**  | ✅ Full TS + Zod validation                | ⚠️ Manual typing       |
+| **Performance**  | ⚠️ +5-10ms, +50MB                         | ✅ Minimal overhead     |
+| **Future-proof** | ✅ Industry standard                       | ⚠️ Custom integration  |
 
 **Winner: MCP Server** - Better architecture, reusability, and future-proofing outweigh slight complexity increase.
 
@@ -230,17 +244,20 @@ await server.connect(transport);
 ## Network Dependencies
 
 **Setup (one-time, requires internet):**
+
 - `npm install @emqx-ai/mcp-mqtt-sdk`
 - Docker images: hivemq, ollama, zwave-js-ui
 - Ollama model: qwen3:1.7b
 
 **Demo (local only, zero internet):**
+
 - ✅ All components on local network
 - ✅ Fully offline-capable
 
 ## References
 
 **Primary:**
+
 - [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk) - Official TypeScript MCP SDK
 - [Model Context Protocol](https://modelcontextprotocol.info/) - Official MCP documentation
 - [mqtt.js](https://github.com/mqttjs/MQTT.js) - MQTT client for Node.js
@@ -256,35 +273,35 @@ await server.connect(transport);
    ```
 
 2. **Create MCP Server Module** (`zwave-mcp-server/`)
-   - Implement custom TypeScript MCP server
-   - Add Z-Wave JS UI HTTP client
-   - Add MQTT client for device control
-   - Build device registry mapping
+    - Implement custom TypeScript MCP server
+    - Add Z-Wave JS UI HTTP client
+    - Add MQTT client for device control
+    - Build device registry mapping
 
 3. **Implement Core Tools**
-   - `list_devices()` - Query Z-Wave JS UI API
-   - `control_device(name, action, value)` - Publish MQTT commands
-   - `get_device_state(name)` - Read current device states
+    - `list_devices()` - Query Z-Wave JS UI API
+    - `control_device(name, action, value)` - Publish MQTT commands
+    - `get_device_state(name)` - Read current device states
 
 4. **Update Oracle Integration**
-   - Add MCP client to LangChain tools
-   - Configure stdio transport
-   - Test tool calling from Oracle
+    - Add MCP client to LangChain tools
+    - Configure stdio transport
+    - Test tool calling from Oracle
 
 5. **Update Architecture Diagram** (`docs/architecture.md`)
-   - Show TypeScript-only stack
-   - Illustrate MCP stdio transport
-   - Document tool calling flow
+    - Show TypeScript-only stack
+    - Illustrate MCP stdio transport
+    - Document tool calling flow
 
 6. **Test Integration**
-   - Verify MCP server starts with stdio
-   - Test device discovery and control
-   - Validate Oracle → MCP → Device flow
+    - Verify MCP server starts with stdio
+    - Test device discovery and control
+    - Validate Oracle → MCP → Device flow
 
 7. **Prepare for CodeMash Demo** (January 12, 2026)
-   - Practice full integration 10+ times
-   - Create fallback scenarios (mock devices)
-   - Record backup demo video
-   - Prepare architecture explanation slides
+    - Practice full integration 10+ times
+    - Create fallback scenarios (mock devices)
+    - Record backup demo video
+    - Prepare architecture explanation slides
 
 **Research Complete ✅** - Custom TypeScript MCP approach finalized, ready to implement!

@@ -11,6 +11,7 @@ This directory contains all application services for the MQTT + Ollama home auto
 **Technology:** Next.js 15 + TypeScript + Prisma + LangChain.js
 
 **Purpose:**
+
 - Web-based chat interface
 - Natural language command processing
 - Device control via LangChain tools
@@ -30,6 +31,7 @@ This directory contains all application services for the MQTT + Ollama home auto
 **Technology:** Node.js 20 + OpenWakeWord + Ollama Whisper + Piper TTS
 
 **Purpose:**
+
 - Wake word detection ("Hey Jarvis" via OpenWakeWord)
 - Voice Activity Detection (VAD)
 - Local speech-to-text (Whisper via Ollama)
@@ -51,6 +53,7 @@ This directory contains all application services for the MQTT + Ollama home auto
 **Technology:** TypeScript + MCP SDK + zwave-js-ui MQTT
 
 **Purpose:**
+
 - MCP server for Z-Wave device access
 - Integration with Claude Desktop / Claude Code
 - MQTT-based device control
@@ -90,11 +93,13 @@ This directory contains all application services for the MQTT + Ollama home auto
 All services communicate via **MQTT** (except MCP Server which uses MCP protocol):
 
 **Oracle ↔ Voice Gateway:**
+
 - `voice/req` - Voice transcriptions → Oracle
 - `voice/res` - AI responses → Voice Gateway
 - `voice/status` - Gateway status updates
 
 **Oracle ↔ Z-Wave Devices:**
+
 - `zwave/+/status` - Device state updates
 - `zwave/+/set` - Device commands
 
@@ -225,11 +230,11 @@ npm run type-check
 
 ## Project Status
 
-| Service | Status | Priority | Phase |
-|---------|--------|----------|-------|
-| **Oracle** | 🔄 In Progress | 🔴 CRITICAL | Phase 2-4 |
-| **Voice Gateway OWW** | ✅ Implemented | 🎯 Stretch | Phase 5 |
-| **MCP Server** | 🔧 Experimental | 🎯 Optional | - |
+| Service               | Status          | Priority    | Phase     |
+|-----------------------|-----------------|-------------|-----------|
+| **Oracle**            | 🔄 In Progress  | 🔴 CRITICAL | Phase 2-4 |
+| **Voice Gateway OWW** | ✅ Implemented   | 🎯 Stretch  | Phase 5   |
+| **MCP Server**        | 🔧 Experimental | 🎯 Optional | -         |
 
 ---
 

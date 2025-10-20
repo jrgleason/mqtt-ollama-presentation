@@ -1,4 +1,5 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project bootstrapped with [
+`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Oracle - AI Home Automation Assistant
 
@@ -42,8 +43,8 @@ MQTT_BROKER_URL=mqtt://127.0.0.1:1883
 
 - `NODE_ENV`: Set to `development` for dev mode or `production` for production
 - `LOG_LEVEL`: Controls logging verbosity
-  - `info` (production default): Only errors and important events
-  - `debug` (development default): Verbose logging including MQTT operations
+    - `info` (production default): Only errors and important events
+    - `debug` (development default): Verbose logging including MQTT operations
 - `MQTT_BROKER_URL`: URL to your MQTT broker (e.g., Mosquitto)
 - `OLLAMA_BASE_URL`: URL to your Ollama instance for LLM inference
 
@@ -64,6 +65,7 @@ LOG_LEVEL=debug npm run dev
 ### Production Deployment
 
 For production deployment on Raspberry Pi or other servers, see:
+
 - [Systemd Service Setup](../../docs/oracle-systemd-setup.md)
 - [Getting Started Guide](../../docs/GETTING-STARTED.md)
 
@@ -78,12 +80,20 @@ npm start
 ## Project Structure
 
 - `src/app/` - Next.js app router pages and layouts
-- `src/lib/mqtt/` - MQTT client for device communication
+- `src/lib/mqtt/` - MQTT client for device communication ([API docs](docs/MQTT_CLIENT_API.md))
 - `src/lib/langchain/` - LangChain integration with Ollama
 - `src/lib/langchain/tools/` - Device control and listing tools
 - `prisma/` - Database schema and migrations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Documentation
+
+- **[MQTT Client API](docs/MQTT_CLIENT_API.md)** - Complete reference for MQTT client usage
+    - Full support for all mqtt.js options (retain, QoS, MQTT 5.0 properties)
+    - Z-Wave device control helpers
+    - Examples and best practices
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically
+optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 
@@ -92,4 +102,5 @@ To learn more about Next.js, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions
+are welcome!

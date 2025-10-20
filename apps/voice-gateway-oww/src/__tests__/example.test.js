@@ -4,12 +4,12 @@
  */
 
 describe('Voice Gateway OWW Test Suite', () => {
-  it('should pass basic test', () => {
-    expect(true).toBe(true);
-  });
+    it('should pass basic test', () => {
+        expect(true).toBe(true);
+    });
 
-  it('should have Node environment', () => {
-    expect(process.env.NODE_ENV).toBeDefined();
-  });
+    it('should have Node environment', () => {
+        expect(process.env.NODE_ENV).toBeDefined();
+    });
 });
 

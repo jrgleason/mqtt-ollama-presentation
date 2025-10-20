@@ -2,7 +2,7 @@ import {createOllamaClient} from '../../../lib/ollama/client.js';
 import {createDeviceListTool} from '../../../lib/langchain/tools/device-list-tool.js';
 import {createDeviceControlTool} from '../../../lib/langchain/tools/device-control-tool.js';
 import {createCalculatorTool} from '../../../lib/langchain/tools/calculator-tool.js';
-import {SystemMessage, HumanMessage, AIMessage, ToolMessage} from '@langchain/core/messages';
+import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 
 export const runtime = 'nodejs';
 

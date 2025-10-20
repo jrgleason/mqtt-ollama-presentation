@@ -119,7 +119,7 @@ class MQTTClientSingleton {
         return new Promise((resolve, reject) => {
             // Preserve all caller-provided options (retain, dup, properties, etc.)
             // with qos:0 as default
-            this.client.publish(topic, payload, { qos: 0, ...options }, (error) => {
+            this.client.publish(topic, payload, {qos: 0, ...options}, (error) => {
                 if (error) {
                     console.error('[MQTT] Publish error:', error);
                     reject(error);

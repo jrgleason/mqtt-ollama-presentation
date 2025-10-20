@@ -24,6 +24,7 @@ npm run build
 ```
 
 **Verification:**
+
 ```bash
 # Should succeed:
 cd apps/zwave-mcp-server && npm run build
@@ -37,6 +38,7 @@ cd apps/voice-gateway && npm run build
 **Problem:** ALL dependencies use "*" - builds could break randomly
 
 **Current (apps/oracle/package.json):**
+
 ```json
 {
   "dependencies": {
@@ -49,6 +51,7 @@ cd apps/voice-gateway && npm run build
 ```
 
 **Fix:**
+
 ```bash
 cd /Users/jrg/code/CodeMash/mqtt-ollama-presentation/apps/oracle
 
@@ -60,6 +63,7 @@ npm ls --depth=0 --json > installed-versions.json
 ```
 
 **Script to fix versions:**
+
 ```javascript
 // fix-versions.js
 const fs = require('fs');
@@ -85,6 +89,7 @@ console.log('✅ Fixed wildcard versions');
 ```
 
 **Run:**
+
 ```bash
 cd apps/oracle
 node ../../fix-versions.js
@@ -99,6 +104,7 @@ npm install  # Verify no changes
 **Problem:** docker-compose.yml references apps/oracle/Dockerfile that doesn't exist
 
 **Create apps/oracle/Dockerfile:**
+
 ```dockerfile
 FROM node:20-alpine AS base
 
@@ -150,6 +156,7 @@ CMD ["node", "server.js"]
 ```
 
 **Also create apps/oracle/.dockerignore:**
+
 ```
 # Dependencies
 node_modules
@@ -191,6 +198,7 @@ dev.db
 ```
 
 **Update apps/oracle/next.config.ts:**
+
 ```typescript
 const nextConfig: NextConfig = {
   output: 'standalone', // Required for Docker
@@ -199,6 +207,7 @@ const nextConfig: NextConfig = {
 ```
 
 **Test:**
+
 ```bash
 cd /Users/jrg/code/CodeMash/mqtt-ollama-presentation
 docker-compose build oracle
@@ -211,6 +220,7 @@ docker-compose build oracle
 ### 4. Set Up npm Workspaces
 
 **Create root package.json:**
+
 ```bash
 cd /Users/jrg/code/CodeMash/mqtt-ollama-presentation
 
@@ -250,6 +260,7 @@ npm install
 ```
 
 **Verify:**
+
 ```bash
 npm run build:all
 npm run test:all
@@ -260,6 +271,7 @@ npm run test:all
 ### 5. Add Environment Validation
 
 **Create apps/oracle/src/lib/env.ts:**
+
 ```typescript
 import { z } from 'zod';
 
@@ -317,6 +329,7 @@ export const env = getEnv();
 ```
 
 **Use in code:**
+
 ```typescript
 // Before:
 const ollamaUrl = process.env.OLLAMA_BASE_URL;
@@ -338,6 +351,7 @@ cp apps/voice-gateway/src/logger.ts apps/oracle/src/lib/logger.ts
 ```
 
 **Update imports:**
+
 ```typescript
 // apps/oracle/src/lib/logger.ts
 import { env } from './env.js';
@@ -348,6 +362,7 @@ export const logger = new Logger(env.NODE_ENV === 'development' ? 'debug' : 'inf
 ```
 
 **Replace console.log throughout codebase:**
+
 ```typescript
 // Before:
 console.log('Device control command sent', { deviceId, action });
@@ -362,6 +377,7 @@ logger.info('Device control command sent', { deviceId, action });
 ### 7. Update Safe Dependencies
 
 **Oracle safe updates:**
+
 ```bash
 cd apps/oracle
 
@@ -385,6 +401,7 @@ npm test       # Verify tests pass
 **Fix Auth0 issue in docker-compose.yml:**
 
 **Option A: Make Auth0 optional**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -399,6 +416,7 @@ services:
 ```
 
 **Option B: Enable Auth0 in .env.example**
+
 ```env
 # apps/oracle/.env.example
 AUTH0_SECRET=generate_with_openssl_rand_base64_32
@@ -409,6 +427,7 @@ AUTH0_CLIENT_SECRET=your_client_secret
 ```
 
 **Test:**
+
 ```bash
 # Create root .env for docker-compose
 cp .env.example .env

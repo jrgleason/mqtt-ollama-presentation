@@ -9,6 +9,7 @@ This directory contains GitHub Actions workflows for continuous integration and 
 Automatically builds and tests all projects in the monorepo on every commit.
 
 **Triggers:**
+
 - Push to `main`, `master`, or `develop` branches
 - Pull requests targeting `main`, `master`, or `develop` branches
 
@@ -16,22 +17,22 @@ Automatically builds and tests all projects in the monorepo on every commit.
 
 1. **Multi-version testing**: Tests against Node.js 22.x and 24.x
 2. **Builds all projects:**
-   - Oracle (Next.js app)
-   - ZWave MCP Server
-   - Voice Gateway OWW
-   - Voice Gateway Common
+    - Oracle (Next.js app)
+    - ZWave MCP Server
+    - Voice Gateway OWW
+    - Voice Gateway Common
 3. **Runs tests** for projects that have test suites
 4. **Runs linters** to ensure code quality
 5. **Validates package structure** for MCP servers
 
 **Projects tested:**
 
-| Project | Build | Lint | Test | Notes |
-|---------|-------|------|------|-------|
-| oracle | ✅ | ✅ | ✅ | Next.js production build |
-| zwave-mcp-server | ✅ | - | - | Structure validation |
-| voice-gateway-oww | ✅ | ✅ | ✅ | Node.js app |
-| voice-gateway-common | ✅ | - | - | Shared library |
+| Project              | Build | Lint | Test | Notes                    |
+|----------------------|-------|------|------|--------------------------|
+| oracle               | ✅     | ✅    | ✅    | Next.js production build |
+| zwave-mcp-server     | ✅     | -    | -    | Structure validation     |
+| voice-gateway-oww    | ✅     | ✅    | ✅    | Node.js app              |
+| voice-gateway-common | ✅     | -    | -    | Shared library           |
 
 ## Viewing Build Status
 
@@ -82,6 +83,7 @@ node src/index.js --help  # Quick validation
 ### Build fails with "Cannot find module"
 
 **Solution:** Ensure all dependencies are in `package.json`:
+
 ```bash
 cd apps/oracle  # or the failing project
 npm install
@@ -90,6 +92,7 @@ npm install
 ### Lint errors blocking merge
 
 **Solution:** Fix lint errors locally:
+
 ```bash
 npm run lint           # See errors
 npm run lint -- --fix  # Auto-fix (if available)
@@ -98,11 +101,13 @@ npm run lint -- --fix  # Auto-fix (if available)
 ### Tests failing in CI but passing locally
 
 **Possible causes:**
+
 1. Different Node.js version (CI uses 22.x and 24.x)
 2. Missing environment variables
 3. Platform-specific issues (Linux in CI vs macOS/Windows locally)
 
 **Solution:** Test with the same Node.js version:
+
 ```bash
 nvm install 22
 nvm use 22

@@ -1,6 +1,7 @@
 # [Archived – Deprecated] Z-Wave JS UI MCP Server – Research Findings (Historical)
 
 We no longer plan to ship an MCP-based path for the demo. The app now publishes directly to MQTT. See:
+
 - docs/requirements.md (Condensed for Demo)
 - docs/zwave-integration-plan.md (Demo-Focused)
 
@@ -17,15 +18,18 @@ We no longer plan to ship an MCP-based path for the demo. The app now publishes 
 
 ### 1. ✅ MQTT MCP CAN Read Messages (EMQX Dashboard)
 
-**IMPORTANT DISCOVERY:** The MQTT MCP limitation is **NOT a protocol issue** - it's a limitation of the specific `ezhuk/mqtt-mcp` Python implementation we tested.
+**IMPORTANT DISCOVERY:** The MQTT MCP limitation is **NOT a protocol issue** - it's a limitation of the specific
+`ezhuk/mqtt-mcp` Python implementation we tested.
 
 **EMQX Documentation confirms MQTT brokers CAN:**
+
 - ✅ Monitor subscriptions and received messages
 - ✅ Track topic metrics and message flows
 - ✅ View retained messages
 - ✅ Access message history (via dashboard/API)
 
 **EMQX Monitoring Features:**
+
 - **Subscriptions panel:** View all active subscriptions and topics
 - **Retained Messages:** See current retained messages
 - **Topic Metrics:** Track performance and usage of specific topics
@@ -33,6 +37,7 @@ We no longer plan to ship an MCP-based path for the demo. The app now publishes 
 - **System Topics:** Access system-level message information
 
 **Implication:** We should either:
+
 1. Use the `@emqx-ai/mcp-mqtt-sdk` (TypeScript) which may have better message access
 2. Build custom MQTT monitoring into our Z-Wave MCP server
 3. Use HiveMQ Control Center (http://10.0.0.58:8080) for topic discovery during development
@@ -46,6 +51,7 @@ We no longer plan to ship an MCP-based path for the demo. The app now publishes 
 #### Key API Routes Found in `api/app.ts`:
 
 **Node & Device Management:**
+
 ```typescript
 // Get all settings (includes devices)
 GET /api/settings
@@ -61,6 +67,7 @@ POST /api/importConfig
 ```
 
 **WebSocket API (Socket.IO):**
+
 ```typescript
 // Initialize and get full state
 socket.emit('init', {}, (state) => {
@@ -77,6 +84,7 @@ socket.emit('zwave', {
 ```
 
 **Available Z-Wave APIs** (from `ZwaveClient.ts`):
+
 - `getNodes()` - Get all nodes
 - `getInfo()` - Get controller info
 - `getDriverStatistics()` - Get driver stats
@@ -87,6 +95,7 @@ socket.emit('zwave', {
 - And many more...
 
 **Node Data Structure:**
+
 ```typescript
 interface Node {
   id: number
@@ -106,12 +115,14 @@ interface Node {
 ### 3. Authentication
 
 **Z-Wave JS UI Authentication:**
+
 - Session-based (express-session + FileStore)
 - JWT tokens for API access
 - Header: `Authorization: Bearer <token>`
 - Session cookie: `zwave-js-ui-session`
 
 **Login Flow:**
+
 ```typescript
 POST /api/authenticate
 Body: { username, password }
@@ -119,6 +130,7 @@ Response: { success, user: { username, token } }
 ```
 
 **Protected Routes:**
+
 - All `/api/*` routes require authentication (via `isAuthenticated` middleware)
 - WebSocket requires token in query param: `?token=<jwt>`
 
@@ -129,12 +141,14 @@ Response: { success, user: { username, token } }
 From previous testing session findings:
 
 **Typical patterns:**
+
 ```
 zwave/<nodeId>/<commandClass>/<endpoint>/<property>/set    # Control
 zwave/<nodeId>/<commandClass>/<endpoint>/<property>        # State
 ```
 
 **Examples:**
+
 ```
 zwave/5/38/0/targetValue/set    # Binary/Multilevel Switch
 zwave/5/38/0/currentValue       # Switch state
@@ -143,6 +157,7 @@ zwave/3/64/0/setpoint/1/set     # Thermostat setpoint
 ```
 
 **Discovery needed:**
+
 - Must query Z-Wave JS UI to get nodeId → device name mapping
 - Must know command classes for each device type
 - MQTT topics are auto-published by Z-Wave JS UI based on Z-Wave capabilities
@@ -165,12 +180,14 @@ zwave/3/64/0/setpoint/1/set     # Thermostat setpoint
 ```
 
 **Benefits:**
+
 - ✅ Single integration point for Oracle
 - ✅ Friendly name → MQTT topic mapping
 - ✅ Device discovery + control in one place
 - ✅ TypeScript (same stack as Oracle)
 
 **Architecture Flow:**
+
 ```
 User: "Turn on office heater"
   ↓
@@ -188,20 +205,24 @@ HiveMQ → Z-Wave JS UI → Physical Device
 ### Option 2: Separate MCP Servers
 
 **Z-Wave JS UI MCP Server (Device Discovery):**
+
 - REST API client for Z-Wave JS UI
 - Tools: `list_devices()`, `get_device()`, `refresh_node()`
 - Resources: `zwave://devices`, `zwave://nodes/{id}`
 
 **MQTT MCP Server (Device Control):**
+
 - MQTT client with pub/sub
 - Tools: `publish_message()`, `subscribe_topic()`
 - Must use topics from Z-Wave MCP
 
 **Benefits:**
+
 - ✅ Separation of concerns
 - ✅ Can reuse MQTT MCP for other MQTT devices
 
 **Drawbacks:**
+
 - ❌ More complex integration
 - ❌ Oracle must orchestrate between two MCPs
 - ❌ Harder to map friendly names to topics
@@ -211,6 +232,7 @@ HiveMQ → Z-Wave JS UI → Physical Device
 ## Implementation Plan
 
 ### Phase 1: Z-Wave JS UI MCP Server (No Auth)
+
 ```typescript
 // File: mqtt-mcp-server/zwave-mcp.ts
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -250,6 +272,7 @@ await server.start()
 ```
 
 ### Phase 2: Add Authentication
+
 ```typescript
 // Add JWT token handling
 let authToken: string
@@ -269,6 +292,7 @@ headers: { 'Authorization': `Bearer ${authToken}` }
 ```
 
 ### Phase 3: WebSocket Support (Optional)
+
 ```typescript
 import { io } from 'socket.io-client'
 
@@ -286,6 +310,7 @@ socket.emit('init', {}, (state) => {
 ## Next Steps
 
 ### Immediate (Week 1):
+
 1. ✅ Create `mqtt-mcp-server/` directory structure
 2. ✅ Install dependencies: `@modelcontextprotocol/sdk`, `mqtt`, `node-fetch`
 3. ✅ Implement basic `list_devices()` tool (no auth)
@@ -293,12 +318,14 @@ socket.emit('init', {}, (state) => {
 5. ✅ Integrate with Oracle/LangChain
 
 ### Short-term (Week 2):
+
 1. Add `control_device()` tool with MQTT publishing
 2. Build device name → MQTT topic mapping
 3. Add authentication support
 4. Create device registry cache
 
 ### Long-term (Week 3-4):
+
 1. Add real-time state monitoring via WebSocket
 2. Implement topic discovery (monitor MQTT traffic)
 3. Add error handling and retry logic
@@ -310,25 +337,33 @@ socket.emit('init', {}, (state) => {
 ## Questions & Decisions
 
 ### Q1: Single MCP vs Separate MCPs?
+
 **Decision:** Start with **Option 1 (Combined MCP Server)**
+
 - Simpler for demo
 - Easier to explain in presentation
 - Can refactor to separate later if needed
 
 ### Q2: Which MQTT SDK to use?
+
 **Decision:** Use **mqtt.js** directly in Z-Wave MCP
+
 - More control over message handling
 - Can implement custom topic monitoring
 - Proven to work with HiveMQ
 
 ### Q3: How to handle device registry?
+
 **Decision:** **Query on-demand + in-memory cache**
+
 - Call `/api/settings` on first `list_devices()` request
 - Cache results for 5 minutes
 - Invalidate cache on demand via `refresh_devices()` tool
 
 ### Q4: Authentication for demo?
+
 **Decision:** **Start without auth, add later**
+
 - Z-Wave JS UI requires auth in production
 - For demo, disable auth or use default credentials
 - Add auth support as Phase 2 task
@@ -338,6 +373,7 @@ socket.emit('init', {}, (state) => {
 ## Code Examples
 
 ### Device Registry Builder
+
 ```typescript
 interface DeviceRegistry {
   [name: string]: {
@@ -377,6 +413,7 @@ async function buildDeviceRegistry(): Promise<DeviceRegistry> {
 ```
 
 ### MQTT Control Function
+
 ```typescript
 import mqtt from 'mqtt'
 
@@ -417,6 +454,7 @@ async function controlDevice(deviceName: string, action: 'on' | 'off' | 'dim', v
 ## Files to Create
 
 **Project Structure:**
+
 ```
 mqtt-ollama-presentation/
 ├── mqtt-mcp-server/
@@ -436,6 +474,7 @@ mqtt-ollama-presentation/
 ```
 
 **Dependencies needed:**
+
 ```json
 {
   "dependencies": {
@@ -455,9 +494,11 @@ mqtt-ollama-presentation/
 
 ## Conclusion
 
-**Main Discovery:** MQTT message monitoring IS possible - the limitation was specific to the Python MCP implementation we tested, not the MQTT protocol itself.
+**Main Discovery:** MQTT message monitoring IS possible - the limitation was specific to the Python MCP implementation
+we tested, not the MQTT protocol itself.
 
 **Recommended Path Forward:**
+
 1. Build a **combined Z-Wave + MQTT MCP server** in TypeScript
 2. Use Z-Wave JS UI REST API for device discovery
 3. Use MQTT.js for device control
@@ -465,6 +506,7 @@ mqtt-ollama-presentation/
 5. Start without auth, add authentication in Phase 2
 
 **This approach gives us:**
+
 - ✅ Device discovery (via Z-Wave JS UI API)
 - ✅ Friendly name mapping (via device registry)
 - ✅ Device control (via MQTT)

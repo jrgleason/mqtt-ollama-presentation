@@ -2,7 +2,8 @@
 
 ## Overview
 
-**Piper** is a fast, local neural text-to-speech (TTS) engine that runs entirely offline. It uses ONNX neural network models to generate natural-sounding speech without requiring any cloud services.
+**Piper** is a fast, local neural text-to-speech (TTS) engine that runs entirely offline. It uses ONNX neural network
+models to generate natural-sounding speech without requiring any cloud services.
 
 - **Repository:** https://github.com/OHF-Voice/piper1-gpl (actively maintained by Open Home Foundation)
 - **Original Repository:** https://github.com/rhasspy/piper (archived, development moved)
@@ -70,12 +71,12 @@ Piper uses `length_scale` to control speech speed:
 ### Speed Examples
 
 | Desired Speed | length_scale | Calculation |
-|--------------|--------------|-------------|
-| 2x faster    | 0.5          | 1.0 / 2.0   |
-| 1.5x faster  | 0.667        | 1.0 / 1.5   |
-| Normal       | 1.0          | 1.0 / 1.0   |
-| 1.5x slower  | 1.5          | 1.0 / 0.667 |
-| 2x slower    | 2.0          | 1.0 / 0.5   |
+|---------------|--------------|-------------|
+| 2x faster     | 0.5          | 1.0 / 2.0   |
+| 1.5x faster   | 0.667        | 1.0 / 1.5   |
+| Normal        | 1.0          | 1.0 / 1.0   |
+| 1.5x slower   | 1.5          | 1.0 / 0.667 |
+| 2x slower     | 2.0          | 1.0 / 0.5   |
 
 ### In Our Code
 
@@ -102,6 +103,7 @@ This translates to `length_scale=0.5`, making speech 2x faster.
 ### Current Voice
 
 **Voice:** `en_US-amy-medium`
+
 - **Quality:** Medium (22,050 Hz)
 - **Gender:** Female
 - **Accent:** American English
@@ -116,13 +118,13 @@ python3 -m piper.download_voices en_US-lessac-medium
 
 Popular English voices:
 
-| Voice | Gender | Quality | Accent | Notes |
-|-------|--------|---------|--------|-------|
-| en_US-lessac-medium | Female | Medium | American | Clear, professional |
-| en_US-ryan-high | Male | High | American | Natural, high quality |
-| en_US-amy-medium | Female | Medium | American | Simple, clear voice |
-| en_GB-alba-medium | Female | Medium | British | British accent |
-| en_US-libritts-high | Mixed | High | American | Multi-speaker |
+| Voice               | Gender | Quality | Accent   | Notes                 |
+|---------------------|--------|---------|----------|-----------------------|
+| en_US-lessac-medium | Female | Medium  | American | Clear, professional   |
+| en_US-ryan-high     | Male   | High    | American | Natural, high quality |
+| en_US-amy-medium    | Female | Medium  | American | Simple, clear voice   |
+| en_GB-alba-medium   | Female | Medium  | British  | British accent        |
+| en_US-libritts-high | Mixed  | High    | American | Multi-speaker         |
 
 **Browse all voices:** https://rhasspy.github.io/piper-samples/
 
@@ -149,6 +151,7 @@ Training a custom Piper voice allows you to create a unique voice model from you
 ### Requirements
 
 **Hardware:**
+
 - **Minimum:** 8GB GPU VRAM (e.g., RTX 3060, RX 7600)
 - **Recommended:** 24GB+ GPU VRAM (e.g., RTX 3090, RTX 4090, A6000)
 - **CPU:** Modern multi-core processor
@@ -156,6 +159,7 @@ Training a custom Piper voice allows you to create a unique voice model from you
 - **Storage:** 50GB+ for training data and models
 
 **Software:**
+
 - Linux (Ubuntu 20.04+ recommended)
 - Python 3.8+
 - CUDA 11+ (for GPU acceleration)
@@ -180,11 +184,13 @@ Training a custom Piper voice allows you to create a unique voice model from you
 ### Step 1: Recording Audio Dataset
 
 **Recommended Dataset Size:**
+
 - **Minimum:** 1 hour of clean audio
 - **Good:** 3-5 hours of audio
 - **Professional:** 10+ hours of audio
 
 **Recording Guidelines:**
+
 - **Environment:** Quiet room with minimal echo
 - **Microphone:** USB condenser microphone or better
 - **Format:** WAV, 22,050 Hz sample rate, mono
@@ -192,10 +198,11 @@ Training a custom Piper voice allows you to create a unique voice model from you
 - **Length:** Sentences 3-15 seconds each
 
 **Tools:**
+
 - **Piper Recording Studio:** https://github.com/rhasspy/piper-recording-studio
-  - Web-based interface for recording TTS datasets
-  - Presents sentences to read
-  - Handles audio format automatically
+    - Web-based interface for recording TTS datasets
+    - Presents sentences to read
+    - Handles audio format automatically
 
 ```bash
 # Install Piper Recording Studio
@@ -218,11 +225,13 @@ audio003.wav|And so on with more sentences.
 ```
 
 **Format:**
+
 - **Delimiter:** `|` (pipe character)
 - **Column 1:** Audio filename (must exist in audio directory)
 - **Column 2:** Exact text that was spoken
 
 **Directory Structure:**
+
 ```
 dataset/
 ├── metadata.csv
@@ -280,6 +289,7 @@ python3 -m piper.train fit \
 ```
 
 **Key Parameters:**
+
 - `data.voice_name`: Name for your voice (can be anything)
 - `data.csv_path`: Path to metadata CSV file
 - `data.audio_dir`: Directory containing audio files
@@ -291,6 +301,7 @@ python3 -m piper.train fit \
 - `ckpt_path`: Existing checkpoint to fine-tune from (recommended)
 
 **Training Time:**
+
 - **With checkpoint (fine-tuning):** 1,000-2,000 epochs (hours to 1-2 days)
 - **From scratch:** 5,000+ epochs (several days)
 
@@ -302,6 +313,7 @@ tensorboard --logdir /path/to/cache/lightning_logs
 ```
 
 Open browser to `http://localhost:6006` and watch:
+
 - `loss_disc_all` - Discriminator loss
 - `loss_gen_all` - Generator loss
 
@@ -354,6 +366,7 @@ Piper supports three quality levels:
 | High    | 22,050 Hz   | Large      | Slow          | Best    |
 
 **Use high quality:**
+
 ```bash
 python3 -m piper.train fit --quality high ...
 ```
@@ -392,53 +405,53 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### Recording Best Practices
 
 1. **Consistent Environment**
-   - Same room, microphone, and distance for all recordings
-   - Minimize background noise and echo
-   - Avoid air conditioning, fans, or traffic noise
+    - Same room, microphone, and distance for all recordings
+    - Minimize background noise and echo
+    - Avoid air conditioning, fans, or traffic noise
 
 2. **Consistent Performance**
-   - Maintain consistent tone and energy throughout
-   - Avoid vocal fry, mumbling, or excessive emotion
-   - Take breaks to prevent vocal fatigue
+    - Maintain consistent tone and energy throughout
+    - Avoid vocal fry, mumbling, or excessive emotion
+    - Take breaks to prevent vocal fatigue
 
 3. **Clear Pronunciation**
-   - Enunciate clearly without over-emphasizing
-   - Maintain natural speech pace
-   - Avoid stuttering, filler words ("um", "uh")
+    - Enunciate clearly without over-emphasizing
+    - Maintain natural speech pace
+    - Avoid stuttering, filler words ("um", "uh")
 
 ### Dataset Preparation
 
 1. **Text Variety**
-   - Include diverse sentence structures
-   - Cover common words and phonemes
-   - Mix questions, statements, and exclamations
+    - Include diverse sentence structures
+    - Cover common words and phonemes
+    - Mix questions, statements, and exclamations
 
 2. **Audio Quality**
-   - Remove silence at beginning and end
-   - Normalize volume levels
-   - Check for clipping or distortion
+    - Remove silence at beginning and end
+    - Normalize volume levels
+    - Check for clipping or distortion
 
 3. **Metadata Accuracy**
-   - Ensure text matches audio exactly
-   - Include punctuation
-   - Use consistent formatting
+    - Ensure text matches audio exactly
+    - Include punctuation
+    - Use consistent formatting
 
 ### Training Parameters
 
 1. **Batch Size**
-   - Start with 32 for 24GB VRAM
-   - Reduce to 16 or 8 for less VRAM
-   - Larger batches = faster training but more memory
+    - Start with 32 for 24GB VRAM
+    - Reduce to 16 or 8 for less VRAM
+    - Larger batches = faster training but more memory
 
 2. **Checkpoint Selection**
-   - Use same language if possible
-   - Medium quality checkpoints work for all quality levels
-   - Fine-tuning is 10x faster than training from scratch
+    - Use same language if possible
+    - Medium quality checkpoints work for all quality levels
+    - Fine-tuning is 10x faster than training from scratch
 
 3. **Training Duration**
-   - Fine-tuning: 1,000-2,000 epochs usually sufficient
-   - From scratch: 5,000+ epochs needed
-   - Stop when loss plateaus for ~200 epochs
+    - Fine-tuning: 1,000-2,000 epochs usually sufficient
+    - From scratch: 5,000+ epochs needed
+    - Stop when loss plateaus for ~200 epochs
 
 ---
 
@@ -447,6 +460,7 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### Voice Sounds Robotic
 
 **Solutions:**
+
 - Train for more epochs
 - Increase dataset size (need 3+ hours)
 - Use higher quality setting
@@ -455,6 +469,7 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### Training is Too Slow
 
 **Solutions:**
+
 - Use GPU acceleration (`--trainer.accelerator gpu`)
 - Fine-tune from checkpoint instead of training from scratch
 - Reduce batch size if running out of memory
@@ -463,6 +478,7 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### Out of Memory Errors
 
 **Solutions:**
+
 - Reduce batch size: `--data.batch_size 16` or `--data.batch_size 8`
 - Use medium or low quality instead of high
 - Close other applications
@@ -471,6 +487,7 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### Voice Sounds Wrong
 
 **Solutions:**
+
 - Verify metadata.csv text matches audio exactly
 - Check audio sample rate matches training configuration
 - Ensure consistent recording environment
@@ -507,16 +524,19 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### For Our Project
 
 **Current Setup:**
+
 - Voice: `en_US-amy-medium` (22,050 Hz)
 - Speed: `TTS_SPEED=2.0` (2x faster via `length_scale=0.5`)
 - Implementation: Python API via `piper-tts` package
 
 **To Change Speed:**
+
 - Edit `.env`: `TTS_SPEED=2.0` (or higher/lower)
 - Restart voice gateway
 - Speed is applied via `length_scale = 1.0 / TTS_SPEED`
 
 **To Change Voice:**
+
 - Download new voice: `python3 -m piper.download_voices <voice_name>`
 - Update `.env`: `TTS_MODEL_PATH=models/piper/<voice_name>.onnx`
 - Restart voice gateway
@@ -524,12 +544,14 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 ### For Training Custom Voice
 
 **Minimum Requirements:**
+
 - 1+ hours of clean audio recordings
 - 8GB+ GPU VRAM
 - Linux system with CUDA
 - 1-2 days of training time (with checkpoint)
 
 **Recommended Approach:**
+
 1. Record audio with Piper Recording Studio
 2. Prepare dataset (metadata.csv + WAV files)
 3. Fine-tune from existing medium-quality checkpoint
@@ -538,6 +560,7 @@ python3 -m piper.train fit --trainer.accelerator gpu ...
 6. Deploy to voice gateway
 
 **Expected Results:**
+
 - With 3+ hours of audio: Natural-sounding voice
 - With fine-tuning: Much faster than training from scratch
 - With high-quality recordings: Professional results

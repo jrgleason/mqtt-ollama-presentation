@@ -2,13 +2,15 @@
 
 ## Design Overview
 
-This document provides detailed design specifications, wiring diagrams, and assembly instructions for creating a portable, battery-powered Z-Wave light switch demonstration unit for the CodeMash 2026 presentation.
+This document provides detailed design specifications, wiring diagrams, and assembly instructions for creating a
+portable, battery-powered Z-Wave light switch demonstration unit for the CodeMash 2026 presentation.
 
 ## Design Philosophy
 
 **Keep It Simple, Make It Reliable**
 
 The design prioritizes:
+
 1. **Plug-and-Play**: No permanent wiring modifications
 2. **Safety First**: All connections meet electrical codes
 3. **Demo Reliability**: Works consistently in live presentations
@@ -73,48 +75,51 @@ This is the **simplest and most reliable** approach for presentations.
 ### Components List (Solution A)
 
 1. **Battery Power Station**: Jackery Explorer 240 (~$200)
-   - 240Wh capacity
-   - 200W pure sine wave inverter
-   - 2x 120V AC outlets
-   - USB charging ports
-   - Weight: 6.6 lbs
+    - 240Wh capacity
+    - 200W pure sine wave inverter
+    - 2x 120V AC outlets
+    - USB charging ports
+    - Weight: 6.6 lbs
 
 2. **Z-Wave Smart Switch**: GE Z-Wave Plus Plug-In Switch 14288 (~$40)
-   - Z-Wave Plus certified
-   - 1 grounded outlet
-   - Blue LED indicator
-   - 600W max load (incandescent)
-   - Dimensions: 2.5" x 2" x 3.5"
+    - Z-Wave Plus certified
+    - 1 grounded outlet
+    - Blue LED indicator
+    - 600W max load (incandescent)
+    - Dimensions: 2.5" x 2" x 3.5"
 
 3. **Lamp**: Basic desk lamp or ceramic socket (~$15)
-   - Standard E26 socket
-   - On/off switch locked to "on" position
-   - Stable base
-   - Power cord 6ft+
+    - Standard E26 socket
+    - On/off switch locked to "on" position
+    - Stable base
+    - Power cord 6ft+
 
 4. **LED Bulb**: Standard 60W equivalent (~$8)
-   - 9W actual draw
-   - 800 lumens
-   - E26 base
-   - Bright white (4000-5000K) for visibility
+    - 9W actual draw
+    - 800 lumens
+    - E26 base
+    - Bright white (4000-5000K) for visibility
 
 5. **Total Physical Setup**: <10 lbs, fits in medium backpack
 
 ### Assembly Instructions (Solution A)
 
 **Step 1: Prepare Components**
+
 1. Charge battery to 100%
 2. Unbox Z-Wave switch
 3. Ensure lamp switch is in "on" position
 4. Install LED bulb in lamp
 
 **Step 2: Physical Assembly**
+
 1. Place battery on table/demo surface
 2. Plug Z-Wave switch into battery AC outlet
 3. Plug lamp into Z-Wave switch pass-through outlet
 4. Verify LED on Z-Wave switch lights up (may be red/amber before pairing)
 
 **Step 3: Z-Wave Pairing**
+
 1. Ensure Raspberry Pi with Z-Stick is powered on
 2. Access zwave-js-ui interface (http://localhost:8091)
 3. Click "Add Node" / "Include Device"
@@ -123,10 +128,11 @@ This is the **simplest and most reliable** approach for presentations.
 6. Assign friendly name: "Demo Light"
 
 **Step 4: MQTT Configuration**
+
 1. In zwave-js-ui, enable MQTT integration
 2. Configure MQTT topics:
-   - Command topic: `zwave/demo_light/set`
-   - State topic: `zwave/demo_light/status`
+    - Command topic: `zwave/demo_light/set`
+    - State topic: `zwave/demo_light/status`
 3. Test with MQTT client:
    ```bash
    # Turn on
@@ -137,6 +143,7 @@ This is the **simplest and most reliable** approach for presentations.
    ```
 
 **Step 5: Verification**
+
 - [ ] Light responds to MQTT commands
 - [ ] Response time <1 second
 - [ ] No flickering or dropout
@@ -245,35 +252,35 @@ Wire Connections:
 1. **Battery Power Station**: Same as Solution A (~$200)
 
 2. **Z-Wave In-Wall Switch**: Eaton RF9601DRB (~$55-75)
-   - Z-Wave Plus certified
-   - 15A rating
-   - Neutral required
-   - Push-button rocker style
-   - Available in multiple finishes
+    - Z-Wave Plus certified
+    - 15A rating
+    - Neutral required
+    - Push-button rocker style
+    - Available in multiple finishes
 
 3. **Electrical Box**: Single-gang old-work box (~$2-5)
-   - PVC or metal
-   - 18-22 cubic inches
-   - Mounting ears for portable box
+    - PVC or metal
+    - 18-22 cubic inches
+    - Mounting ears for portable box
 
 4. **Wire**: 14 AWG Romex or THHN (~$10 for 25ft)
-   - Black (hot)
-   - White (neutral)
-   - Bare copper (ground)
-   - Recommended: Pre-made pigtails
+    - Black (hot)
+    - White (neutral)
+    - Bare copper (ground)
+    - Recommended: Pre-made pigtails
 
 5. **AC Cord**: Heavy-duty extension cord (cut) or appliance cord (~$8-12)
-   - 14 AWG, 3-wire
-   - NEMA 5-15P plug
-   - At least 6 feet
+    - 14 AWG, 3-wire
+    - NEMA 5-15P plug
+    - At least 6 feet
 
 6. **Lamp Cord**: Standard lamp cord or extension cord section (~$5)
-   - 16 or 18 AWG acceptable for low-watt LED
-   - 3-wire recommended
+    - 16 or 18 AWG acceptable for low-watt LED
+    - 3-wire recommended
 
 7. **Wire Nuts**: Assorted pack (~$5)
-   - Yellow (for 2x 14 AWG)
-   - Red (for 3+ 14 AWG)
+    - Yellow (for 2x 14 AWG)
+    - Red (for 3+ 14 AWG)
 
 8. **LED Bulb & Lamp**: Same as Solution A (~$23)
 
@@ -282,17 +289,20 @@ Wire Connections:
 ### Assembly Instructions (Solution B)
 
 **Step 1: Prepare Electrical Box**
+
 1. Mount electrical box to piece of plywood or sturdy base
 2. Ensure box is stable and won't tip over
 3. Knock out appropriate openings for wires
 
 **Step 2: Prepare Input Power Cord**
+
 1. Cut extension cord to desired length (6-10 feet)
 2. Strip outer jacket 6-8 inches from cut end
 3. Strip individual wires 3/4 inch
 4. Label: Black = Line Hot, White = Neutral, Green/Bare = Ground
 
 **Step 3: Prepare Output Lamp Cord**
+
 1. Cut lamp cord to desired length (3-6 feet)
 2. Strip outer jacket 6-8 inches from one end
 3. Strip individual wires 3/4 inch
@@ -304,29 +314,30 @@ Wire Connections:
 ⚠️ **SAFETY**: Ensure power cord is NOT plugged in during wiring!
 
 1. **Connect LINE (Input Hot)**:
-   - Input cord black wire → Switch LINE terminal (brass screw or marked)
-   - Tighten securely
+    - Input cord black wire → Switch LINE terminal (brass screw or marked)
+    - Tighten securely
 
 2. **Connect NEUTRAL**:
-   - Input cord white wire → Switch NEUTRAL terminal (silver screw)
-   - Use wire nut to also connect to output cord white wire
-   - May need pigtail (short wire to switch, wire nut joins all whites)
+    - Input cord white wire → Switch NEUTRAL terminal (silver screw)
+    - Use wire nut to also connect to output cord white wire
+    - May need pigtail (short wire to switch, wire nut joins all whites)
 
 3. **Connect GROUND**:
-   - Input cord green/bare wire → Switch GROUND (green screw)
-   - Use wire nut to also connect to output cord ground
-   - May need pigtail
+    - Input cord green/bare wire → Switch GROUND (green screw)
+    - Use wire nut to also connect to output cord ground
+    - May need pigtail
 
 4. **Connect LOAD (Output Hot)**:
-   - Output cord black wire → Switch LOAD terminal (brass screw, marked "LOAD")
-   - Tighten securely
+    - Output cord black wire → Switch LOAD terminal (brass screw, marked "LOAD")
+    - Tighten securely
 
 5. **Verify Connections**:
-   - Tug test each wire
-   - Ensure no bare copper visible outside wire nuts
-   - Ensure wires aren't crossing or touching
+    - Tug test each wire
+    - Ensure no bare copper visible outside wire nuts
+    - Ensure wires aren't crossing or touching
 
 **Step 5: Mount Switch in Box**
+
 1. Carefully fold wires into box
 2. Screw switch to box ears
 3. Install wall plate (decorator style)
@@ -335,6 +346,7 @@ Wire Connections:
 Same as Solution A, Step 3
 
 **Step 7: Testing**
+
 1. Plug input cord into battery
 2. Plug lamp into output cord
 3. Verify power at switch (LED indicator)
@@ -350,6 +362,7 @@ Same as Solution A, Step 3
 ### Load Analysis
 
 **Total Power Draw:**
+
 ```
 Component           | Voltage | Current | Power
 --------------------|---------|---------|-------
@@ -361,17 +374,20 @@ Total Draw          | 120V    | 0.10A   | 11-12W
 **Battery Life Estimation:**
 
 Jackery Explorer 240 (240Wh capacity):
+
 ```
 Runtime = Capacity / Load
 Runtime = 240Wh / 12W = 20 hours
 ```
 
 With inverter efficiency (~85%):
+
 ```
 Actual Runtime = 20h × 0.85 = 17 hours
 ```
 
 **Presentation Requirements:**
+
 - Typical presentation: 1-2 hours
 - Battery capacity used: ~12-24Wh
 - Remaining capacity: >90%
@@ -380,17 +396,19 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Inverter Considerations
 
 **Pure Sine Wave vs Modified Sine Wave:**
+
 - **Pure Sine Wave**: Recommended
-  - Clean power, compatible with all electronics
-  - Z-Wave switches work reliably
-  - More expensive
+    - Clean power, compatible with all electronics
+    - Z-Wave switches work reliably
+    - More expensive
 
 - **Modified Sine Wave**: Avoid
-  - Can cause issues with sensitive electronics
-  - May interfere with Z-Wave radio
-  - Cheaper but risky for demos
+    - Can cause issues with sensitive electronics
+    - May interfere with Z-Wave radio
+    - Cheaper but risky for demos
 
 **Inverter Sizing:**
+
 - Continuous power rating: 100W minimum, 200W recommended
 - Surge/peak rating: 300W+ for startup inrush
 - Output: 120V AC ± 5%, 60Hz ± 0.5Hz
@@ -431,6 +449,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Packing List for Travel
 
 **Hard Case Contents:**
+
 - [ ] Battery power station (charged to 100%)
 - [ ] Battery charging cable
 - [ ] Z-Wave smart switch
@@ -442,6 +461,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - [ ] Network cable (if not using WiFi)
 
 **Carry-On Backpack:**
+
 - [ ] Laptop for presentation
 - [ ] Presentation slides
 - [ ] Backup documentation
@@ -449,6 +469,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - [ ] Multi-tool (checked bag or buy on site)
 
 **Weight & Dimensions:**
+
 - Total weight: ~15-20 lbs
 - Fits in: Medium rolling case + backpack
 - TSA: Battery <100Wh may require removal/inspection
@@ -460,6 +481,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Pre-Presentation Testing (1 Week Before)
 
 **Day 1: Basic Functionality**
+
 - [ ] Battery charges to 100%
 - [ ] Inverter produces 120V AC
 - [ ] Z-Wave switch powers on
@@ -467,18 +489,21 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - [ ] Physical switch controls light
 
 **Day 2: Z-Wave Pairing**
+
 - [ ] Device pairs with controller
 - [ ] Pairing time <30 seconds
 - [ ] Device appears in zwave-js-ui
 - [ ] Friendly name assigned
 
 **Day 3: MQTT Control**
+
 - [ ] MQTT messages reach switch
 - [ ] Light responds to commands
 - [ ] Response time <1 second
 - [ ] 20 consecutive on/off cycles successful
 
 **Day 4: Presentation Simulation**
+
 - [ ] Full setup in <5 minutes
 - [ ] Demo script runs smoothly
 - [ ] All features work as expected
@@ -486,6 +511,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - [ ] Teardown in <3 minutes
 
 **Day 5: Backup Testing**
+
 - [ ] Test with spare battery (if available)
 - [ ] Test with AC power adapter
 - [ ] Document any failure modes
@@ -494,6 +520,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### On-Site Testing (Day of Presentation)
 
 **2 Hours Before:**
+
 - [ ] Battery at 100%
 - [ ] Complete setup from scratch
 - [ ] Full demo run-through
@@ -501,12 +528,14 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - [ ] Test backup scenarios
 
 **1 Hour Before:**
+
 - [ ] Equipment powered on and stable
 - [ ] Light responds to test commands
 - [ ] Presentation machine connected
 - [ ] Slides loaded and tested
 
 **15 Minutes Before:**
+
 - [ ] Final power check
 - [ ] Final connectivity check
 - [ ] Backup plan reviewed
@@ -520,11 +549,13 @@ Actual Runtime = 20h × 0.85 = 17 hours
 
 **Symptoms**: Device not discovered during inclusion
 **Possible Causes**:
+
 1. Too far from controller
 2. Already paired to another controller
 3. Device not in pairing mode
 
 **Solutions**:
+
 1. Move switch within 3 feet of Z-Stick
 2. Exclude/reset device first
 3. Press pairing button correctly (check manual)
@@ -534,12 +565,14 @@ Actual Runtime = 20h × 0.85 = 17 hours
 
 **Symptoms**: MQTT commands sent but no physical response
 **Possible Causes**:
+
 1. MQTT topic mismatch
 2. Z-Wave mesh routing issue
 3. Device sleeping/unreachable
 4. Wiring issue (Solution B)
 
 **Solutions**:
+
 1. Verify MQTT topic in zwave-js-ui
 2. Wake device (press physical button)
 3. Check zwave-js-ui logs for errors
@@ -550,12 +583,14 @@ Actual Runtime = 20h × 0.85 = 17 hours
 
 **Symptoms**: Sometimes works, sometimes doesn't
 **Possible Causes**:
+
 1. Weak Z-Wave signal
 2. Interference from other devices
 3. Power supply fluctuation
 4. Mesh routing instability
 
 **Solutions**:
+
 1. Move controller closer (eliminate distance as variable)
 2. Remove other wireless devices temporarily
 3. Check battery charge level
@@ -566,6 +601,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 
 **Symptoms**: Everything powers off
 **Solutions**:
+
 1. Have spare battery ready
 2. Switch to AC power adapter (if available)
 3. Use pre-recorded demo video as backup
@@ -576,6 +612,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 **Symptoms**: Switch clicks but doesn't stay on, erratic behavior
 **Cause**: LED bulb wattage too low for switch minimum
 **Solutions**:
+
 1. Use higher wattage bulb (20W+)
 2. Add resistive dummy load in parallel
 3. Choose different switch model (Zooz switches have low minimums)
@@ -586,26 +623,26 @@ Actual Runtime = 20h × 0.85 = 17 hours
 
 ### Solution A: Plug-In Switch (Recommended)
 
-| Item | Product | Quantity | Price (Est.) | Retailer | Link/Model |
-|------|---------|----------|--------------|----------|------------|
-| Battery | Jackery Explorer 240 | 1 | $200 | Amazon | B07D29QNMJ |
-| Z-Wave Switch | GE Plug-In Switch | 1 | $40 | Lowe's | 14288/ZW4103 |
-| Lamp | Basic Desk Lamp | 1 | $15 | Lowe's | Various |
-| Bulb | Philips 60W LED | 1 | $8 | Lowe's/HD | 479395 |
-| **Total** | | | **$263** | | |
+| Item          | Product              | Quantity | Price (Est.) | Retailer  | Link/Model   |
+|---------------|----------------------|----------|--------------|-----------|--------------|
+| Battery       | Jackery Explorer 240 | 1        | $200         | Amazon    | B07D29QNMJ   |
+| Z-Wave Switch | GE Plug-In Switch    | 1        | $40          | Lowe's    | 14288/ZW4103 |
+| Lamp          | Basic Desk Lamp      | 1        | $15          | Lowe's    | Various      |
+| Bulb          | Philips 60W LED      | 1        | $8           | Lowe's/HD | 479395       |
+| **Total**     |                      |          | **$263**     |           |              |
 
 ### Solution B: In-Wall Switch
 
-| Item | Product | Quantity | Price (Est.) | Retailer | Link/Model |
-|------|---------|----------|--------------|----------|------------|
-| Battery | Jackery Explorer 240 | 1 | $200 | Amazon | B07D29QNMJ |
-| Z-Wave Switch | Eaton RF9601DRB | 1 | $65 | Lowe's | 5005451989 |
-| Electrical Box | Single Gang Box | 1 | $3 | Lowe's | Various |
-| Wire | 14 AWG Romex 25ft | 1 | $10 | Lowe's/HD | Various |
-| AC Cord | Extension Cord | 1 | $10 | Lowe's/HD | Various |
-| Wire Nuts | Assorted Pack | 1 | $5 | Lowe's/HD | Various |
-| Lamp & Bulb | Same as Solution A | 1 | $23 | Lowe's | Various |
-| **Total** | | | **$316** | | |
+| Item           | Product              | Quantity | Price (Est.) | Retailer  | Link/Model |
+|----------------|----------------------|----------|--------------|-----------|------------|
+| Battery        | Jackery Explorer 240 | 1        | $200         | Amazon    | B07D29QNMJ |
+| Z-Wave Switch  | Eaton RF9601DRB      | 1        | $65          | Lowe's    | 5005451989 |
+| Electrical Box | Single Gang Box      | 1        | $3           | Lowe's    | Various    |
+| Wire           | 14 AWG Romex 25ft    | 1        | $10          | Lowe's/HD | Various    |
+| AC Cord        | Extension Cord       | 1        | $10          | Lowe's/HD | Various    |
+| Wire Nuts      | Assorted Pack        | 1        | $5           | Lowe's/HD | Various    |
+| Lamp & Bulb    | Same as Solution A   | 1        | $23          | Lowe's    | Various    |
+| **Total**      |                      |          | **$316**     |           |            |
 
 ### Already Owned (Not Included in Budget)
 
@@ -623,11 +660,13 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Electrical Safety Standards
 
 **NEC (National Electrical Code) Compliance:**
+
 - Article 400: Flexible Cords and Cables
 - Article 410: Luminaires and Lighting
 - Article 422: Appliances
 
 **Key Requirements:**
+
 - Proper wire gauge for amperage (14 AWG for 15A)
 - Secure connections (no exposed conductors)
 - Proper grounding throughout
@@ -637,12 +676,14 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Demonstration Safety
 
 **Before Presentation:**
+
 - Visual inspection of all cords and connections
 - No frayed wires or damaged insulation
 - All wire nuts secure
 - Proper load calculations confirmed
 
 **During Presentation:**
+
 - Battery on stable, level surface
 - Cords arranged to prevent tripping
 - No water or liquids near electrical components
@@ -650,6 +691,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - Fire extinguisher location known
 
 **After Presentation:**
+
 - Proper storage of battery (50-70% charge)
 - Coil cords properly (no kinks)
 - Inspect for damage from transport
@@ -662,6 +704,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Battery Maintenance
 
 **Regular Care:**
+
 - Charge to 80-90% for storage
 - Recharge every 3-6 months if unused
 - Avoid complete discharge
@@ -669,6 +712,7 @@ Actual Runtime = 20h × 0.85 = 17 hours
 - Check charge level 1 week before presentation
 
 **Lifespan:**
+
 - Expected cycles: 500-1000 (varies by model)
 - Capacity degradation: ~80% after 2-3 years
 - Signs of replacement: Won't hold charge, swelling, overheating
@@ -676,12 +720,14 @@ Actual Runtime = 20h × 0.85 = 17 hours
 ### Z-Wave Device Care
 
 **Maintenance:**
+
 - Occasional "heal" in zwave-js-ui (rebuilds routes)
 - Firmware updates as available
 - Re-pair if experiencing issues
 - Keep away from extreme temperatures
 
 **Long-term:**
+
 - Z-Wave devices last 5-10+ years typically
 - No moving parts to wear out
 - Firmware support may end eventually
@@ -718,18 +764,21 @@ Actual Runtime = 20h × 0.85 = 17 hours
 This design provides two viable solutions for creating a portable, battery-powered Z-Wave demonstration unit:
 
 **Solution A (Recommended)**: Plug-in switch approach
+
 - Simplest assembly
 - Most reliable for demos
 - Lowest technical complexity
 - Best for first-time builders
 
 **Solution B (Advanced)**: In-wall switch in custom box
+
 - More professional appearance
 - Demonstrates "real" switch installation
 - More educational value
 - Requires electrical knowledge
 
 Both solutions meet the project requirements:
+
 - ✅ Portable and self-contained
 - ✅ Battery-powered operation
 - ✅ Z-Wave communication
@@ -738,6 +787,7 @@ Both solutions meet the project requirements:
 - ✅ Safe and code-compliant
 
 **Recommended Path Forward:**
+
 1. Start with Solution A for initial testing
 2. Build Solution B if time permits and for enhanced demos
 3. Test thoroughly before presentation

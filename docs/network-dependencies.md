@@ -28,39 +28,39 @@ After pre-pulls, the demo runs fully local.
 ## Optional Cloud (Auth0)
 
 - Auth: Auth0 is recommended but optional and currently deferred for the live demo.
-  - If enabled: requires internet during auth flows (authorize, token exchange, JWKS). See quickstart for env.
-  - If disabled: run fully local/offline for demo; remove/skip auth middleware.
+    - If enabled: requires internet during auth flows (authorize, token exchange, JWKS). See quickstart for env.
+    - If disabled: run fully local/offline for demo; remove/skip auth middleware.
 
 ---
 
 ## Demo Environment Options
 
 - Primary plan (local-first):
-  - No internet required at runtime (auth disabled)
-  - MQTT, Ollama, Z-Wave, Voice all local
+    - No internet required at runtime (auth disabled)
+    - MQTT, Ollama, Z-Wave, Voice all local
 
 - If demonstrating Auth0 (optional):
-  - Internet required for login
-  - Keep a pre-authenticated session as backup; have hotspot ready
+    - Internet required for login
+    - Keep a pre-authenticated session as backup; have hotspot ready
 
 - Emergency offline:
-  - Disable auth entirely; proceed with full local stack
+    - Disable auth entirely; proceed with full local stack
 
 ---
 
 ## Summary Table
 
-| Service | Network Type | Required During Demo? | Notes |
-|---------|--------------|-----------------------|-------|
-| Auth0 (optional) | Internet | No (Deferred by default) | Required only if you choose to show login |
-| Ollama model pulls | Internet | No (pre-download) | Pre-pull models; cached locally |
-| npm install | Internet | No (pre-install) | Cached in node_modules |
-| OpenWakeWord model | Local file | No | Store ONNX under models/ |
-| MQTT Broker (HiveMQ) | Local | Yes | Local TCP/WebSocket |
-| Ollama API (runtime) | Local | Yes | Local HTTP |
-| zwave-js-ui | Local | Yes | Local UI + MQTT gateway |
-| Docker images | Internet | No (pre-pull) | Cached locally |
-| GitHub | Internet | No | Code cloned ahead of time |
+| Service              | Network Type | Required During Demo?    | Notes                                     |
+|----------------------|--------------|--------------------------|-------------------------------------------|
+| Auth0 (optional)     | Internet     | No (Deferred by default) | Required only if you choose to show login |
+| Ollama model pulls   | Internet     | No (pre-download)        | Pre-pull models; cached locally           |
+| npm install          | Internet     | No (pre-install)         | Cached in node_modules                    |
+| OpenWakeWord model   | Local file   | No                       | Store ONNX under models/                  |
+| MQTT Broker (HiveMQ) | Local        | Yes                      | Local TCP/WebSocket                       |
+| Ollama API (runtime) | Local        | Yes                      | Local HTTP                                |
+| zwave-js-ui          | Local        | Yes                      | Local UI + MQTT gateway                   |
+| Docker images        | Internet     | No (pre-pull)            | Cached locally                            |
+| GitHub               | Internet     | No                       | Code cloned ahead of time                 |
 
 ---
 

@@ -14,13 +14,16 @@ A Model Context Protocol (MCP) server that provides tools for interacting with Z
 ## Available Tools
 
 ### 1. `list_zwave_devices`
+
 Lists all Z-Wave devices reported by Z-Wave JS UI.
 
 **Parameters:**
+
 - `includeInactive` (boolean, optional): Include nodes that are not ready or unavailable
 - `filter` (string, optional): Case-insensitive substring to match against name or location
 
 **Example:**
+
 ```json
 {
   "includeInactive": false,
@@ -29,12 +32,15 @@ Lists all Z-Wave devices reported by Z-Wave JS UI.
 ```
 
 ### 2. `get_node_details`
+
 Get detailed information about a specific Z-Wave node including all values, command classes, and capabilities.
 
 **Parameters:**
+
 - `nodeId` (number, required): The Z-Wave node ID
 
 **Example:**
+
 ```json
 {
   "nodeId": 3
@@ -42,18 +48,24 @@ Get detailed information about a specific Z-Wave node including all values, comm
 ```
 
 ### 3. `refresh_node_values`
+
 Refresh all values for a specific Z-Wave node. Useful for getting updated sensor readings.
 
 **Parameters:**
+
 - `nodeId` (number, required): The Z-Wave node ID to refresh
 
 ### 4. `refresh_node_info`
-Re-interview a Z-Wave node to get updated device information and capabilities. Use when a device was recently added or changed.
+
+Re-interview a Z-Wave node to get updated device information and capabilities. Use when a device was recently added or
+changed.
 
 **Parameters:**
+
 - `nodeId` (number, required): The Z-Wave node ID to re-interview
 
 ### 5. `get_network_statistics`
+
 Get Z-Wave network statistics including message counts, errors, and overall network health.
 
 **Parameters:** None
@@ -65,11 +77,13 @@ Get Z-Wave network statistics including message counts, errors, and overall netw
 ### Topic Format
 
 **Control Topic (Set Values):**
+
 ```
 zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
 ```
 
 **State Topic (Read Values):**
+
 ```
 zwave/[Location/]Device_Name/command_class/endpoint_0/currentValue
 ```
@@ -77,6 +91,7 @@ zwave/[Location/]Device_Name/command_class/endpoint_0/currentValue
 ### Examples
 
 **Binary Switch (Command Class 37):**
+
 ```bash
 # Topic
 zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
@@ -89,6 +104,7 @@ zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
 ```
 
 **Dimmer/Multilevel Switch (Command Class 38):**
+
 ```bash
 # Topic
 zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set
@@ -100,6 +116,7 @@ zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set
 ```
 
 **Without Location:**
+
 ```bash
 # If device has no location set, it's omitted from the path
 zwave/Kitchen_Light/switch_binary/endpoint_0/targetValue/set
@@ -107,12 +124,12 @@ zwave/Kitchen_Light/switch_binary/endpoint_0/targetValue/set
 
 ### Command Class Mapping
 
-| Command Class ID | Topic Name | Device Type |
-|-----------------|------------|-------------|
-| 37 | `switch_binary` | On/Off Switch |
-| 38 | `switch_multilevel` | Dimmer |
-| 49 | `sensor_multilevel` | Sensor (temp, humidity, etc) |
-| 64 | `thermostat_mode` | Thermostat |
+| Command Class ID | Topic Name          | Device Type                  |
+|------------------|---------------------|------------------------------|
+| 37               | `switch_binary`     | On/Off Switch                |
+| 38               | `switch_multilevel` | Dimmer                       |
+| 49               | `sensor_multilevel` | Sensor (temp, humidity, etc) |
+| 64               | `thermostat_mode`   | Thermostat                   |
 
 ### Payload Format
 
@@ -120,7 +137,9 @@ All MQTT messages use JSON payloads with a `value` property:
 
 ```json
 {
-  "value": <boolean|number>
+  "value": <boolean
+  |
+  number>
 }
 ```
 
@@ -170,7 +189,8 @@ This topic structure requires Z-Wave JS UI to be configured with:
 }
 ```
 
-**DO NOT change to numeric nodeId format** - the human-readable format with device names and locations is tested and working.
+**DO NOT change to numeric nodeId format** - the human-readable format with device names and locations is tested and
+working.
 
 ## Setup
 
@@ -183,7 +203,8 @@ DEFAULT_USERNAME=admin
 DEFAULT_PASSWORD=your_secure_password
 ```
 
-**IMPORTANT**: Even though Z-Wave JS UI runs locally on the Pi, you **MUST** enable authentication to prevent unauthorized access to your Z-Wave network.
+**IMPORTANT**: Even though Z-Wave JS UI runs locally on the Pi, you **MUST** enable authentication to prevent
+unauthorized access to your Z-Wave network.
 
 ### 2. Configure MCP Server
 

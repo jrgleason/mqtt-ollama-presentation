@@ -57,17 +57,20 @@ Wake Word Detection: Score 0.0 - 1.0
 ## Key Temporal Relationships
 
 ### Stage 1: Audio → Mel Spectrogram
+
 - **Input:** 1280 samples (80ms @ 16kHz)
 - **Output:** 8 mel frames (with 10ms hop, 160 sample hop)
 - **Buffer:** Keep rolling buffer of ~100 frames (1 second)
 
 ### Stage 2: Mel Frames → Embedding
+
 - **Input:** 76 consecutive mel frames (from rolling buffer)
 - **Output:** 1 embedding vector (96 dimensions)
 - **Frequency:** Every 80ms (when new 8 frames arrive)
 - **Delay:** Need ≥76 frames before first embedding (760ms warmup)
 
 ### Stage 3: Embeddings → Wake Word Detection
+
 - **Input:** 16 consecutive embeddings (from rolling buffer)
 - **Output:** 1 detection score (0.0 - 1.0)
 - **Frequency:** Every 80ms (when new embedding arrives)
@@ -85,6 +88,7 @@ Time 1360ms+:   Continuous detection every 80ms
 ## Buffer Management
 
 ### Mel Buffer
+
 ```javascript
 const MEL_BUFFER_SIZE = 100;  // ~1 second
 let melBuffer = [];
@@ -104,6 +108,7 @@ function getEmbedding() {
 ```
 
 ### Embedding Buffer
+
 ```javascript
 const EMBEDDING_BUFFER_SIZE = 30;  // ~2.4 seconds
 let embeddingBuffer = [];
@@ -155,11 +160,13 @@ async function processAudioChunk(pcmSamples) {  // pcmSamples.length = 1280
 ## Why 16 Embeddings?
 
 The wake word model was trained to look at a **1.28 second temporal window**:
+
 - Too short → might miss the wake word
 - Too long → slower detection, more computation
 - 16 × 80ms = 1.28s is a sweet spot for 2-3 syllable wake words
 
 Each embedding captures 760ms of audio (76 frames × 10ms), but with:
+
 - 80ms stride between embeddings
 - Significant overlap between consecutive embeddings
 - This overlap gives the model temporal context
@@ -167,6 +174,7 @@ Each embedding captures 760ms of audio (76 frames × 10ms), but with:
 ## Comparison to Our Incorrect Approach
 
 ### ❌ What We Were Trying
+
 ```
 Accumulate 76 mel frames
 ↓
@@ -177,6 +185,7 @@ frames[8:84]   → ERROR: only have 76 frames total!
 ```
 
 ### ✅ Correct Approach
+
 ```
 Process chunk 1 (80ms) → 8 mel frames  → buffer has 8
 Process chunk 2 (80ms) → 8 mel frames  → buffer has 16

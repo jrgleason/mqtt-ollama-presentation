@@ -1,10 +1,12 @@
 # Technical Requirements (Condensed for Demo)
 
-Presentation: CodeMash 2026 • Title: MQTT + Ollama = Building Home Automation That Actually Works (And Doesn't Spy on You)
+Presentation: CodeMash 2026 • Title: MQTT + Ollama = Building Home Automation That Actually Works (And Doesn't Spy on
+You)
 
 ---
 
 ## Scope (What we will show)
+
 - Text and voice control of real devices via MQTT
 - Local-only AI pipeline: Ollama LLM + Whisper STT + Piper TTS
 - Z-Wave devices via zwave-js-ui MQTT gateway
@@ -16,13 +18,13 @@ Presentation: CodeMash 2026 • Title: MQTT + Ollama = Building Home Automation 
 
 - Natural language commands (text) processed locally with Ollama
 - Device listing and control via LangChain tools
-  - list_devices → Prisma DB
-  - control_device → MQTT publish to zwave-js-ui topics
+    - list_devices → Prisma DB
+    - control_device → MQTT publish to zwave-js-ui topics
 - Voice pipeline (offline): OpenWakeWord → record + VAD → Whisper (Ollama) → reply → Piper TTS
-  - Wake word disabled during record/transcribe/speak
-  - MQTT topics: voice/req, voice/res, voice/status
+    - Wake word disabled during record/transcribe/speak
+    - MQTT topics: voice/req, voice/res, voice/status
 - Basic device state reflect
-  - Optional: subscribe to zwave-js-ui currentValue topics and update DB state
+    - Optional: subscribe to zwave-js-ui currentValue topics and update DB state
 
 ---
 
@@ -81,6 +83,7 @@ Presentation: CodeMash 2026 • Title: MQTT + Ollama = Building Home Automation 
 ---
 
 ## References
+
 - zwave-js-ui docs (MQTT gateway)
 - HiveMQ CE broker (31883)
 - Piper + OpenWakeWord quickstart notes

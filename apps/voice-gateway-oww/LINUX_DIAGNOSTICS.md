@@ -2,7 +2,8 @@
 
 ## Current Issue
 
-The app initializes successfully on Raspberry Pi but produces NO audio chunks - only heartbeat messages every 100 detections.
+The app initializes successfully on Raspberry Pi but produces NO audio chunks - only heartbeat messages every 100
+detections.
 
 This indicates the microphone is not streaming data to the application.
 
@@ -11,6 +12,7 @@ This indicates the microphone is not streaming data to the application.
 With the latest code changes, you'll now see:
 
 ### If ALSA Device is Wrong:
+
 ```
 🔍 Checking ALSA device: hw:2,0
 ❌ ALSA device check failed with code 1
@@ -20,6 +22,7 @@ With the latest code changes, you'll now see:
 **Fix**: Find correct device with `arecord -l`
 
 ### If ALSA Device Works But Mic Library Fails:
+
 ```
 ✅ ALSA device check passed: hw:2,0
 ✅ OpenWakeWord initialized
@@ -31,6 +34,7 @@ With the latest code changes, you'll now see:
 **Fix**: Microphone library issue - may need different audio capture approach
 
 ### If Microphone Starts But Stops:
+
 ```
 ✅ First audio chunk received! { size: 8192, platform: 'linux', device: 'hw:2,0' }
 🎙️ Microphone still streaming { chunks: 100, bufferSize: 8192 }
@@ -41,6 +45,7 @@ With the latest code changes, you'll now see:
 **Fix**: Audio buffer overflow or mic library crash
 
 ### If Everything Works:
+
 ```
 ✅ ALSA device check passed: hw:2,0
 ✅ OpenWakeWord initialized
@@ -55,16 +60,19 @@ State changed { state: 'listening' }
 ## Diagnostic Commands to Run on Pi
 
 ### 1. Check Available Audio Devices
+
 ```bash
 arecord -l
 ```
 
 Expected output should show your USB mic:
+
 ```
 card 2: GSH23 [USB PnP Sound Device], device 0: USB Audio [USB Audio]
 ```
 
 ### 2. Test ALSA Device Directly
+
 ```bash
 arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 3 test.wav
 aplay test.wav
@@ -73,6 +81,7 @@ aplay test.wav
 Should record and play back 3 seconds of audio.
 
 ### 3. Check Microphone Permissions
+
 ```bash
 # Check if user is in audio group
 groups
@@ -85,6 +94,7 @@ sudo usermod -a -G audio $USER
 ```
 
 ### 4. Check ALSA Configuration
+
 ```bash
 cat /proc/asound/cards
 ```
@@ -92,6 +102,7 @@ cat /proc/asound/cards
 Should show your USB mic with a card number.
 
 ### 5. Test with arecord in Background
+
 ```bash
 # Start recording to file
 arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 test_stream.wav &
@@ -113,25 +124,31 @@ aplay test_stream.wav
 ## Common Linux/Pi Issues
 
 ### Issue 1: Wrong ALSA Device
+
 **Symptom**: `❌ ALSA device check failed with code 1`
 
 **Fix**:
+
 1. Run `arecord -l` to find correct device
 2. Update `.env` with correct device (e.g., `hw:1,0` instead of `hw:2,0`)
 
 ### Issue 2: Audio Group Permission
+
 **Symptom**: `❌ No audio chunks received after 3 seconds`
 
 **Fix**:
+
 ```bash
 sudo usermod -a -G audio $USER
 # Log out and back in
 ```
 
 ### Issue 3: ALSA Device Locked by Another Process
+
 **Symptom**: ALSA check passes but mic library fails
 
 **Fix**:
+
 ```bash
 # Check what's using audio
 lsof /dev/snd/*
@@ -140,9 +157,11 @@ lsof /dev/snd/*
 ```
 
 ### Issue 4: Mic Library Not Installing Correctly
+
 **Symptom**: Mic stream never fires 'data' events
 
 **Fix**:
+
 ```bash
 # Reinstall mic library
 npm uninstall mic
@@ -153,9 +172,11 @@ npm install node-record-lpcm16
 ```
 
 ### Issue 5: USB Microphone Power Issue
+
 **Symptom**: Mic works with arecord but not with Node.js
 
 **Fix**:
+
 - Try different USB port
 - Check if mic has external power
 - Check `dmesg | grep -i usb` for USB errors
