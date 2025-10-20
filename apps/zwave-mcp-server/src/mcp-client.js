@@ -196,13 +196,22 @@ export class MCPZWaveClient {
   /**
    * Send a notification to the MCP server (no response expected)
    * @param {Object} message
+   * @returns {Promise<void>} Resolves when notification is sent, rejects on error
    */
   sendNotification(message) {
-    try {
-      this._writeMessage(message);
-    } catch (err) {
-      console.error('[mcp] failed to send notification:', err);
-    }
+    return new Promise((resolve, reject) => {
+      if (!this.serverProcess) {
+        return reject(new Error('MCP server not running'));
+      }
+
+      try {
+        this._writeMessage(message);
+        resolve();
+      } catch (err) {
+        console.error('[mcp] failed to send notification:', err);
+        reject(err);
+      }
+    });
   }
 
   /**

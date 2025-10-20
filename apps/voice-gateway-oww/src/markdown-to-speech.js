@@ -29,7 +29,7 @@ function markdownToSpeech(markdown) {
         // For short code (1-2 lines), spell it out
         const lines = code.split('\n');
         if (lines.length <= 2 && code.length < 50) {
-            return ` code: ${code.replace(/[{}()[\];]/g, (char) => {
+            return ` code: ${code.replace(/[{}()\[\];]/g, (char) => {
                 const names = {
                     '{': 'open brace', '}': 'close brace',
                     '(': 'open paren', ')': 'close paren',
