@@ -150,6 +150,7 @@ class MQTTClientSingleton {
                     resolve();
                 }
             });
+        });
     }
 
     async unsubscribe(topic, callback) {
