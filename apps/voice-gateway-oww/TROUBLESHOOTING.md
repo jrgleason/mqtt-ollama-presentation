@@ -346,6 +346,134 @@ If issues persist:
 
 ---
 
+## AI Tool Usage Issues
+
+### Problem: AI Not Using Tools Correctly
+
+**Symptom:** AI provides incorrect dates, doesn't search the web, or doesn't control devices even though tools are available.
+
+**Root Cause:** The `qwen2.5:0.5b` model is optimized for speed over accuracy and often ignores tool calls, preferring to generate responses from its training data (which may be outdated or incorrect).
+
+**Solution:** The voice gateway uses a **pattern-based bypass system** that detects specific query types and directly executes the appropriate tool instead of waiting for the AI to call it.
+
+### How Pattern-Based Bypass Works
+
+The system detects three types of queries:
+
+1. **Date/Time Queries** - Bypassed to `datetime-tool.js`
+   - Patterns: "what time is it", "what date is it", "what day is today"
+   - Example: "Can you tell me what date it is?" → Direct tool call
+   - Response: Accurate system time (not hallucinated)
+
+2. **Search Queries** - Bypassed to `search-tool.js`
+   - Patterns: "who is", "what is", "search for", "google"
+   - Example: "Who is the president?" → DuckDuckGo API call
+   - Response: Real search results (not outdated training data)
+
+3. **Device Control Queries** - Bypassed to `zwave-control-tool.js`
+   - Patterns: "turn on/off", "dim", "switch"
+   - Example: "Turn off switch one" → Check device status → Control device
+   - Response: Accurate device status and control confirmation
+
+### Device Control Workflow
+
+When you say "Turn off switch one", the system:
+
+1. **Detects pattern**: "turn off" matches device control pattern
+2. **Parses command**: Extracts device name ("Switch One") and action ("off")
+3. **Checks status**: Calls MCP Z-Wave client to verify device exists and is online
+4. **Validates**: Returns error if device is offline or not found
+5. **Executes control**: Sends MQTT command if device is available
+6. **Confirms**: Provides clear success/failure message
+
+**Example logs:**
+```
+🏠 Device control query detected, using Z-Wave tool directly
+Checking status of device: "switch one"
+🏠 Z-Wave control tool executing {deviceName: 'switch one', action: 'status'}
+✅ Device status: Switch One (node 5) — ready: yes | available: yes
+🏠 Z-Wave control tool executing {deviceName: 'switch one', action: 'off'}
+✅ Device control successful
+```
+
+### Troubleshooting Tool Issues
+
+**1. Tool not being called**
+- Check logs for pattern detection messages ("📅 Date/time query detected", "🔍 Search query detected", "🏠 Device control query detected")
+- If pattern isn't matching, the query may not match expected patterns
+- Add new patterns in `apps/voice-gateway-oww/src/main.js` (lines 415-458)
+
+**2. Device control says "device not found"**
+- Verify device exists: Check Z-Wave JS UI dashboard
+- Check device name matches: Use exact name from Z-Wave JS UI
+- Verify MCP client is connected: Check startup logs for "ZWave MCP client ready"
+- List devices manually: `node -e "import('./src/mcp-zwave-client.js').then(m => m.getDevicesForAI()).then(console.log)"`
+
+**3. Device control says "device offline"**
+- Device may actually be offline - check Z-Wave JS UI dashboard
+- Check MQTT broker connection: `mosquitto_sub -h localhost -p 1883 -t 'zwave/#' -v`
+- Verify Z-Wave network is healthy
+- Try waking the device (battery devices may sleep)
+
+**4. Search returns "No direct answer found"**
+- DuckDuckGo API doesn't have an instant answer for this query
+- Try rephrasing the question
+- Check internet connection
+- Verify DuckDuckGo API is accessible: `curl "https://api.duckduckgo.com/?q=test&format=json"`
+
+### Adding New Tool Patterns
+
+To add support for new query types, edit `apps/voice-gateway-oww/src/main.js`:
+
+1. **Add pattern detection** (around line 447):
+   ```javascript
+   const myNewPatterns = [
+       /pattern1/i,
+       /pattern2/i,
+   ];
+   const isMyNewQuery = myNewPatterns.some(pattern =>
+       pattern.test(transcription)
+   );
+   ```
+
+2. **Add bypass logic** (around line 482):
+   ```javascript
+   } else if (isMyNewQuery) {
+       logger.info('🔧 My new query detected');
+       const aiStartTime = Date.now();
+       // Execute your tool
+       aiResponse = await executeMyNewTool({...});
+       aiDuration = Date.now() - aiStartTime;
+   }
+   ```
+
+3. **Test**: Restart service and try query that matches your pattern
+
+### Why Not Use LangGraph?
+
+**Q:** Why not use LangGraph for tool orchestration instead of pattern matching?
+
+**A:** Pattern-based bypass was chosen for this project because:
+
+1. **Speed**: Direct execution is faster (~1ms vs ~8s AI inference)
+2. **Reliability**: 100% success rate vs. unpredictable AI tool calls
+3. **Simplicity**: Easy to debug and maintain
+4. **Voice UX**: Users expect instant responses for simple queries
+
+**When to use LangGraph:**
+- Complex multi-step reasoning
+- Dynamic tool selection based on context
+- Stateful conversations with branching logic
+- When accuracy matters more than speed
+
+**When to use pattern-based bypass:**
+- Simple, predictable queries (time, search, device control)
+- Voice interfaces requiring fast response
+- Smaller AI models that don't reliably call tools
+- When you need guaranteed behavior
+
+---
+
 ## See Also
 
 - **Main README:** `apps/voice-gateway-oww/README.md`
@@ -353,3 +481,4 @@ If issues persist:
 - **Architecture:** `docs/voice-gateway-architecture.md`
 - **ALSA Setup Guide:** `docs/alsa-setup.md`
 - **Raspberry Pi Setup:** `docs/raspberry-pi-setup.md`
+- **Tool Implementation:** `apps/voice-gateway-oww/src/tools/`

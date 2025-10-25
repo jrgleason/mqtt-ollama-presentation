@@ -20,6 +20,7 @@ import {checkElevenLabsHealth, synthesizeSpeech} from './elevenlabs-tts.js';
 import {getDevicesForAI, initializeMCPClient, shutdownMCPClient} from './mcp-zwave-client.js';
 import {dateTimeTool, executeDateTimeTool} from './tools/datetime-tool.js';
 import {searchTool, executeSearchTool} from './tools/search-tool.js';
+import {zwaveControlTool, executeZWaveControlTool} from './tools/zwave-control-tool.js';
 import {playErrorSound} from './audio-feedback.js';
 
 // OpenWakeWord constants
@@ -391,7 +392,7 @@ async function backgroundTranscribe(audioSamples) {
                     }
 
                     // Define available tools
-                    const tools = [dateTimeTool, searchTool];
+                    const tools = [dateTimeTool, searchTool, zwaveControlTool];
 
                     // Tool executor function
                     const toolExecutor = async (toolName, toolArgs) => {
@@ -402,6 +403,8 @@ async function backgroundTranscribe(audioSamples) {
                                 return executeDateTimeTool(toolArgs);
                             case 'search_web':
                                 return await executeSearchTool(toolArgs);
+                            case 'control_zwave_device':
+                                return await executeZWaveControlTool(toolArgs);
                             default:
                                 logger.warn(`⚠️ Unknown tool requested: ${toolName}`);
                                 return `Error: Unknown tool ${toolName}`;
@@ -424,7 +427,37 @@ async function backgroundTranscribe(audioSamples) {
                         pattern.test(transcription)
                     );
 
-                    // If this is a date/time query, bypass the AI and directly return the tool result
+                    // Detect if this is a search query (fallback for when AI doesn't use tools)
+                    const searchPatterns = [
+                        /search (for|google|the web)/i,
+                        /google (for|search)/i,
+                        /look up/i,
+                        /find (information|out) (about|on)/i,
+                        /who is/i,
+                        /what is/i,
+                        /where is/i,
+                        /when (did|was|is)/i,
+                        /how (many|much|does)/i,
+                    ];
+
+                    const isSearchQuery = searchPatterns.some(pattern =>
+                        pattern.test(transcription)
+                    );
+
+                    // Detect if this is a device control command (fallback for when AI doesn't use tools)
+                    const deviceControlPatterns = [
+                        /turn (on|off)/i,
+                        /switch (on|off)/i,
+                        /dim/i,
+                        /brighten/i,
+                        /set .+ to \d+/i,
+                    ];
+
+                    const isDeviceControlQuery = deviceControlPatterns.some(pattern =>
+                        pattern.test(transcription)
+                    );
+
+                    // If this is a date/time, search, or device control query, bypass the AI and directly use the tool
                     // This is more reliable than hoping the small model uses tools correctly
                     let aiResponse;
                     let aiDuration;
@@ -435,6 +468,115 @@ async function backgroundTranscribe(audioSamples) {
                         aiResponse = executeDateTimeTool();
                         aiDuration = Date.now() - aiStartTime;
                         logger.debug('✅ Using direct datetime tool result (bypassing AI)');
+                    } else if (isSearchQuery) {
+                        logger.info('🔍 Search query detected, using search tool directly');
+                        const aiStartTime = Date.now();
+                        // Extract the query from the transcription
+                        const query = transcription
+                            .replace(/^(search for|google|look up|find information about|find out about|who is|what is|where is|when did|when was|when is|how many|how much|how does)\s*/i, '')
+                            .trim();
+                        const searchResult = await executeSearchTool({query});
+                        aiResponse = searchResult;
+                        aiDuration = Date.now() - aiStartTime;
+                        logger.debug('✅ Using direct search tool result (bypassing AI)', {query, result: searchResult.substring(0, 100)});
+                    } else if (isDeviceControlQuery) {
+                        logger.info('🏠 Device control query detected, using Z-Wave tool directly');
+                        const aiStartTime = Date.now();
+
+                        // Parse the device name and action from the transcription
+                        // Example: "turn off switch one" -> deviceName: "switch one", action: "off"
+                        let deviceName = null;
+                        let action = null;
+                        let level = null;
+
+                        // Simplified approach: Look for action words and extract device name
+                        // Remove polite prefixes first
+                        let cleanedTranscription = transcription
+                            .replace(/^(can you |please |could you |would you )?/i, '')
+                            .trim();
+
+                        // Detect action and extract device name in one pass
+                        // Match patterns like: "turn [device] off", "turn off [device]", "switch [device] on", etc.
+                        if (/\boff\b/i.test(cleanedTranscription)) {
+                            action = 'off';
+                            // Try "turn X off" pattern
+                            deviceName = cleanedTranscription.replace(/^(turn|switch)\s+(.+?)\s+off.*$/i, '$2').trim();
+                            // If no match, try "turn off X" pattern
+                            if (deviceName === cleanedTranscription) {
+                                deviceName = cleanedTranscription.replace(/^(turn|switch)\s+off\s+(.+)$/i, '$2').trim();
+                            }
+                        } else if (/\bon\b/i.test(cleanedTranscription)) {
+                            action = 'on';
+                            // Try "turn X on" pattern
+                            deviceName = cleanedTranscription.replace(/^(turn|switch)\s+(.+?)\s+on.*$/i, '$2').trim();
+                            // If no match, try "turn on X" pattern
+                            if (deviceName === cleanedTranscription) {
+                                deviceName = cleanedTranscription.replace(/^(turn|switch)\s+on\s+(.+)$/i, '$2').trim();
+                            }
+                        } else if (/\bdim\b/i.test(cleanedTranscription)) {
+                            action = 'dim';
+                            deviceName = cleanedTranscription.replace(/^dim\s+(.+?)(\s+to\s+\d+.*)?$/i, '$1').trim();
+                            // Try to extract level (e.g., "dim to 50")
+                            const levelMatch = cleanedTranscription.match(/\bto\s+(\d+)\s*%?/i);
+                            if (levelMatch) {
+                                level = parseInt(levelMatch[1], 10);
+                            }
+                        }
+
+                        // Remove trailing punctuation
+                        if (deviceName) {
+                            deviceName = deviceName.replace(/[?!.]+$/, '').trim();
+                        }
+
+                        // First, check device status
+                        logger.debug(`Checking status of device: "${deviceName}"`);
+                        const statusResult = await executeZWaveControlTool({
+                            deviceName,
+                            action: 'status'
+                        });
+
+                        // Parse the status result to check if device exists and is online
+                        // The result is formatted like: "Switch One (node 5 · Demo) — ready: yes | available: no | status: Asleep"
+                        const deviceNameLower = deviceName.toLowerCase();
+                        const statusLines = statusResult.split('\n');
+                        let deviceFound = false;
+                        let deviceOnline = false;
+
+                        for (const line of statusLines) {
+                            const lineLower = line.toLowerCase();
+                            if (lineLower.includes(deviceNameLower)) {
+                                deviceFound = true;
+                                // Check if device is available (not offline)
+                                // Look for "status: online" or "available: yes"
+                                if (lineLower.includes('status: online') ||
+                                    (lineLower.includes('ready: yes') && lineLower.includes('available: yes'))) {
+                                    deviceOnline = true;
+                                }
+                                break;
+                            }
+                        }
+
+                        // Provide appropriate response based on device status
+                        if (!deviceFound) {
+                            aiResponse = `I couldn't find a device called "${deviceName}". Please check the device name and try again.`;
+                        } else if (!deviceOnline) {
+                            aiResponse = `The device "${deviceName}" is currently offline or unavailable. Please wait until it comes back online.`;
+                        } else {
+                            // Device exists and is online, proceed with control
+                            if (action) {
+                                const controlResult = await executeZWaveControlTool({
+                                    deviceName,
+                                    action,
+                                    level
+                                });
+                                aiResponse = controlResult;
+                            } else {
+                                aiResponse = `I'm not sure what you want me to do with ${deviceName}. Try "turn on" or "turn off".`;
+                            }
+                        }
+
+                        aiDuration = Date.now() - aiStartTime;
+                        logger.debug('✅ Using direct Z-Wave control tool result (bypassing AI)', {deviceName, action, result: aiResponse.substring(0, 100)});
                     } else {
                         // Performance timing: AI inference
                         const aiStartTime = Date.now();

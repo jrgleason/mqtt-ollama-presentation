@@ -74,7 +74,7 @@ export const searchTool = {
     type: 'function',
     function: {
         name: 'search_web',
-        description: 'Search the web for factual information, current events, or answers to questions you don\'t know. Use this when you need up-to-date information or facts you\'re uncertain about.',
+        description: 'REQUIRED: Search the web for factual information, current events, or answers to questions. You MUST call this function whenever the user asks "who is", "what is", "where is", "when did", "how many", or requests to search/google/look up information. DO NOT guess or make up facts - always call this function to get accurate information.',
         parameters: {
             type: 'object',
             properties: {
@@ -99,5 +99,8 @@ export async function executeSearchTool(args) {
         return 'Error: No search query provided';
     }
 
-    return await searchGoogle(args.query);
+    logger.info(`🔍 Search tool executing for: "${args.query}"`);
+    const result = await searchGoogle(args.query);
+    logger.debug(`✅ Search result: ${result.substring(0, 100)}...`);
+    return result;
 }
