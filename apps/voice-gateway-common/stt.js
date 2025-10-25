@@ -62,10 +62,26 @@ export async function transcribeWithWhisper(modelRel, wavPath, opts = {}) {
                 return null;
             }
 
+            // Debug: log all candidate paths that were tried
+            console.info(`[stt] Model path resolution:`);
+            console.info(`[stt]   - Provided model path: ${modelRel}`);
+            console.info(`[stt]   - Current working directory: ${process.cwd()}`);
+            console.info(`[stt]   - Candidate paths tried:`);
+            candidates.forEach((c, i) => console.info(`[stt]     [${i}] ${c} (exists: ${fs.existsSync(c)})`));
+            console.info(`[stt]   - Resolved absolute path: ${whisperModelAbs}`);
+            console.info(`[stt]   - Model file exists: ${fs.existsSync(whisperModelAbs)}`);
+            if (fs.existsSync(whisperModelAbs)) {
+                const stats = fs.statSync(whisperModelAbs);
+                console.info(`[stt]   - Model file size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+            }
+
             console.info(`[stt] starting whisper-cli model=${whisperModelAbs} wav=${wavPath} timeoutMs=${timeoutMs}`);
 
             const whisperCmd = resolveWhisperPath();
             const whisperArgs = ['-m', whisperModelAbs, '-f', wavPath, '-nt'];
+
+            // Debug: log whisper-cli path and full command
+            console.info(`[stt] whisper-cli command: ${whisperCmd || 'whisper-cli (via shell)'} ${whisperArgs.join(' ')}`);
             let whisper;
 
             if (whisperCmd) {

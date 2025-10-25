@@ -10,19 +10,32 @@ import {config} from './config.js';
 
 let client = null;
 let isConnected = false;
+let connectionFailed = false;
+let lastConnectionAttempt = 0;
+const RECONNECT_INTERVAL = 60000; // Try to reconnect once per minute
 
 /**
  * Connect to MQTT broker
  *
- * @returns {Promise<mqtt.MqttClient>} Connected MQTT client
+ * @returns {Promise<mqtt.MqttClient|null>} Connected MQTT client or null if connection failed
  */
 async function connectMQTT() {
     if (client && isConnected) {
         return client;
     }
 
+    // Don't spam connection attempts if we know it's failing
+    if (connectionFailed) {
+        const now = Date.now();
+        if (now - lastConnectionAttempt < RECONNECT_INTERVAL) {
+            return null;
+        }
+        lastConnectionAttempt = now;
+    }
+
     const options = {
         clientId: config.mqtt.clientId,
+        reconnectPeriod: 0, // Disable automatic reconnection to prevent spam
     };
 
     if (config.mqtt.username) {
@@ -30,12 +43,23 @@ async function connectMQTT() {
         options.password = config.mqtt.password;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         client = mqtt.connect(config.mqtt.brokerUrl, options);
 
+        const timeout = setTimeout(() => {
+            connectionFailed = true;
+            if (!isConnected) {
+                logger.warn('⚠️ MQTT broker not available - continuing without MQTT support');
+                client?.end(true);
+                resolve(null);
+            }
+        }, 5000);
+
         client.on('connect', () => {
+            clearTimeout(timeout);
             isConnected = true;
-            logger.debug('✅ Connected to MQTT broker', {
+            connectionFailed = false;
+            logger.info('✅ Connected to MQTT broker', {
                 broker: config.mqtt.brokerUrl,
                 clientId: config.mqtt.clientId,
             });
@@ -43,17 +67,17 @@ async function connectMQTT() {
         });
 
         client.on('error', (error) => {
-            logger.error('❌ MQTT connection error', {error: error.message});
-            reject(error);
+            // Only log first error, then be silent
+            if (!connectionFailed) {
+                logger.warn('⚠️ MQTT connection failed - continuing without MQTT support', {
+                    error: error.message
+                });
+                connectionFailed = true;
+            }
         });
 
         client.on('close', () => {
             isConnected = false;
-            logger.debug('⚠️ MQTT connection closed');
-        });
-
-        client.on('reconnect', () => {
-            logger.debug('🔄 Reconnecting to MQTT broker...');
         });
     });
 }
@@ -67,6 +91,11 @@ async function connectMQTT() {
 async function publishTranscription(text, metadata = {}) {
     try {
         const mqttClient = await connectMQTT();
+
+        if (!mqttClient) {
+            // MQTT not available, skip silently
+            return;
+        }
 
         const payload = {
             text,
@@ -99,6 +128,11 @@ async function publishTranscription(text, metadata = {}) {
 async function publishAIResponse(question, answer, metadata = {}) {
     try {
         const mqttClient = await connectMQTT();
+
+        if (!mqttClient) {
+            // MQTT not available, skip silently
+            return;
+        }
 
         const payload = {
             question,

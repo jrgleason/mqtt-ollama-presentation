@@ -53,9 +53,17 @@ const config = {
     },
     tts: {
         enabled: process.env.TTS_ENABLED !== 'false', // Default to enabled
-        modelPath: process.env.TTS_MODEL_PATH || 'models/piper/en_US-amy-medium.onnx',
         volume: process.env.TTS_VOLUME ? Number(process.env.TTS_VOLUME) : 1.0,
         speed: process.env.TTS_SPEED ? Number(process.env.TTS_SPEED) : 1.0,
+    },
+    elevenlabs: {
+        apiKey: process.env.ELEVENLABS_API_KEY,
+        voiceId: process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb', // Default: George (deep, authoritative male)
+        modelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
+        stability: process.env.ELEVENLABS_STABILITY ? Number(process.env.ELEVENLABS_STABILITY) : 0.5,
+        similarityBoost: process.env.ELEVENLABS_SIMILARITY_BOOST ? Number(process.env.ELEVENLABS_SIMILARITY_BOOST) : 0.75,
+        style: process.env.ELEVENLABS_STYLE ? Number(process.env.ELEVENLABS_STYLE) : 0.0,
+        useSpeakerBoost: process.env.ELEVENLABS_USE_SPEAKER_BOOST !== 'false',
     },
 };
 
@@ -75,6 +83,17 @@ console.log('🔊 TTS Configuration:', {
     enabled: config.tts.enabled,
     speed: config.tts.speed,
     volume: config.tts.volume,
-    modelPath: config.tts.modelPath,
-    lengthScale: (1.0 / config.tts.speed).toFixed(3),
+    provider: 'ElevenLabs',
+});
+
+console.log('🌐 ElevenLabs Configuration:', {
+    hasApiKey: !!config.elevenlabs.apiKey,
+    apiKeyLength: config.elevenlabs.apiKey?.length || 0,
+    apiKeyPreview: config.elevenlabs.apiKey ? `${config.elevenlabs.apiKey.substring(0, 8)}...` : 'NOT_SET',
+    voiceId: config.elevenlabs.voiceId,
+    modelId: config.elevenlabs.modelId,
+    stability: config.elevenlabs.stability,
+    similarityBoost: config.elevenlabs.similarityBoost,
+    style: config.elevenlabs.style,
+    useSpeakerBoost: config.elevenlabs.useSpeakerBoost,
 });

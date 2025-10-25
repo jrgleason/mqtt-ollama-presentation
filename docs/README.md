@@ -1,57 +1,194 @@
 # Documentation Index
 
-Use this map to find the right level of detail. Each entry links to the original deep-dive so you can keep the main flow
-lightweight.
+**Last Updated:** 2025-10-23
 
-## Start Here
+Use this guide to navigate project documentation. Each section links to detailed guides organized by topic.
 
-- [GETTING-STARTED.md](GETTING-STARTED.md) – Checklist that walks you from blank machine to working demo
-- [raspberry-pi-setup.md](raspberry-pi-setup.md) – Hardware prep, NVM/Node symlink pattern, and Pi-specific tuning
-- [mqtt-setup.md](mqtt-setup.md) & [zwave-js-ui-deploy.md](zwave-js-ui-deploy.md) – Broker configuration plus Z-Wave
-  controller bring-up
+---
 
-## Services & Apps
+## 🚀 Quick Start
 
-- [voice-gateway-architecture.md](voice-gateway-architecture.md) – How wake-word detection, Whisper transcription, MQTT
-  intents, and TTS cooperate
-- [oracle-systemd-setup.md](oracle-systemd-setup.md) – Run the Oracle Next.js app as a managed service on Raspberry Pi
-- [mqtt-mcp-setup.md](mqtt-mcp-setup.md) & [mqtt-mcp-testing-session.md](mqtt-mcp-testing-session.md) – MCP bridge notes
-  and validation logs
-- [zwave-mcp-findings.md](zwave-mcp-findings.md) – Observations from integrating the MCP bridge with zwave-js-ui
+**New to the project? Start here:**
 
-## Voice, Audio & Models
+1. **[GETTING-STARTED.md](GETTING-STARTED.md)** - Step-by-step setup from blank machine to working demo
+2. **[SETUP.md](SETUP.md)** - Comprehensive setup guide for all services (Raspberry Pi, MQTT, Z-Wave, Oracle, Voice Gateway)
+3. **[requirements.md](requirements.md)** - Project requirements and specifications
+4. **[tasks.md](tasks.md)** - Current implementation status and task tracking
 
-- [openwakeword-embedding-extraction.md](openwakeword-embedding-extraction.md) – Custom wake-word training workflow
-- [piper-tts-guide.md](piper-tts-guide.md), [piper-voice-options.md](piper-voice-options.md), [piper-glados-voice.md](piper-glados-voice.md) –
-  TTS model selection, tuning, and fun extras
-- [piper-tts-streaming-analysis.md](piper-tts-streaming-analysis.md) – Streaming constraints and audio latency notes
-- [alsa-setup.md](alsa-setup.md) – ALSA configuration examples for USB microphones and speakers
+---
 
-## Architecture & Planning
+## 📚 Core Documentation
 
-- [architecture-decision-nextjs-vs-react-native.md](architecture-decision-nextjs-vs-react-native.md) – Rationale for
-  choosing Next.js
-- [project-architecture-clarification.md](project-architecture-clarification.md) – System boundaries and messaging flows
-  spelled out
-- [performance-optimization.md](performance-optimization.md) – Headroom analysis and tuning ideas for the Pi build
-- [network-dependencies.md](network-dependencies.md) – Which pieces require outbound internet and how to mitigate it
+### Project Guidelines
+- **[/CLAUDE.md](/CLAUDE.md)** - Complete project guidelines (in root directory)
+- **[repository-guidelines.md](repository-guidelines.md)** - Coding standards and conventions
+- **[requirements.md](requirements.md)** - Project requirements and specifications
+- **[network-dependencies.md](network-dependencies.md)** - Network dependencies and local-first architecture
 
-## Operational Notes & History
+### Architecture
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture: components, MQTT, AI, data flow
+- **[mcp-architecture.md](mcp-architecture.md)** - Model Context Protocol integration details
+- **[performance-optimization.md](performance-optimization.md)** - Performance tuning for Raspberry Pi
 
-- [critical-actions-summary.md](critical-actions-summary.md) & [critical-fixes-implementation-summary.md](critical-fixes-implementation-summary.md) –
-  What was fixed urgently and how
-- [delivered.md](delivered.md) – Finished features with dates
-- [requirements.md](requirements.md) – Comprehensive functional and non-functional requirements
-- [tasks.md](tasks.md) & [tasks-active.md](tasks-active.md) – Planning snapshots (helpful if you need backlog context)
-- [notes.md](notes.md) & [questions.md](questions.md) – Raw research dumps and open questions worth revisiting
+### Complete Setup Guide
+- **[SETUP.md](SETUP.md)** - 🆕 Comprehensive setup guide covering:
+  - Raspberry Pi 5 hardware setup
+  - MQTT broker (HiveMQ/Mosquitto)
+  - Z-Wave JS UI quick setup (see zwave-setup-guide.md for details)
+  - ALSA audio setup
+  - Oracle app with systemd
+  - Voice Gateway with systemd
+  - Z-Wave MCP server
+  - Testing and validation
+  - Troubleshooting
+  - Production security
 
-## Supporting Materials
+---
 
-- `hardware/` – Wiring diagrams and component photos used during the build
-- `prompts/` – Prompt engineering experiments captured during the presentation prep
-- [mcp-web-access-recommendation.md](mcp-web-access-recommendation.md) & [mqtt-mcp-research.md](mqtt-mcp-research.md) –
-  Long-form investigations into MCP integrations
-- [outline.md](outline.md) – Slide/presentation structure from the talk
+## 🔧 Service-Specific Docs
 
-> Looking for something not listed? Run `rg --files docs` to see every note, or skim the Git history for richer
-> narrative context.
+### Oracle (Next.js + LangChain)
+- **[/apps/oracle/README.md](/apps/oracle/README.md)** - Main Oracle app documentation
+
+### Voice Gateway OWW
+- **[/apps/voice-gateway-oww/README.md](/apps/voice-gateway-oww/README.md)** - Main voice gateway documentation
+- **[/apps/voice-gateway-oww/QUICKSTART.md](/apps/voice-gateway-oww/QUICKSTART.md)** - Quick setup guide
+- **[/apps/voice-gateway-oww/TROUBLESHOOTING.md](/apps/voice-gateway-oww/TROUBLESHOOTING.md)** - Platform-specific diagnostics
+
+### Z-Wave MCP Server
+- **[/apps/zwave-mcp-server/README.md](/apps/zwave-mcp-server/README.md)** - MCP server documentation
+
+---
+
+## 📖 Reference & Research
+
+### Voice & Audio
+- **[openwakeword-guide.md](openwakeword-guide.md)** - OpenWakeWord integration, setup, and custom training
+
+### Z-Wave Setup
+- **[zwave-setup-guide.md](zwave-setup-guide.md)** - Complete Z-Wave setup: zwave-js-ui, devices, MQTT
+
+### MCP Integration
+- **[mcp-architecture.md](mcp-architecture.md)** - MCP integration architecture
+
+---
+
+## 📋 Planning & Research
+
+- **[tasks.md](tasks.md)** - Current task tracking and sprint planning
+- **[questions.md](questions.md)** - Open questions and decisions
+- **[notes.md](notes.md)** - Research notes, model selection, benchmarks, Z-Wave MCP findings (comprehensive, kept as single file)
+- **[outline.md](outline.md)** - Presentation structure and slides
+
+---
+
+## 🛠️ Troubleshooting
+
+For troubleshooting help, see:
+- **[/apps/voice-gateway-oww/TROUBLESHOOTING.md](/apps/voice-gateway-oww/TROUBLESHOOTING.md)** - Voice gateway diagnostics (macOS & Linux)
+- **[SETUP.md](SETUP.md)** - Comprehensive troubleshooting section covering all services
+
+---
+
+## 📦 Supporting Materials
+
+### Hardware
+- **[hardware/design.md](hardware/design.md)** - Hardware design and wiring
+- **[hardware/requirements.md](hardware/requirements.md)** - Component requirements
+
+### Prompts & Experiments
+- **[prompts/](prompts/)** - Prompt engineering experiments for presentation
+
+---
+
+## 🗄️ Archived Documentation
+
+**Historical documentation** has been moved to **[archive/](archive/)** for reference:
+- Old implementation summaries
+- Superseded setup guides
+- CI/build fix reports
+- Technology comparison docs (for decisions already made)
+
+See **[archive/README.md](archive/README.md)** for complete index.
+
+---
+
+## 📂 Directory Structure
+
+```
+docs/
+├── README.md                       # This file - navigation index
+├── GETTING-STARTED.md              # Quick start guide
+│
+├── ARCHITECTURE.md                 # Complete system architecture
+├── SETUP.md                        # 🆕 Comprehensive setup guide (all services)
+├── mcp-architecture.md             # MCP integration details
+├── performance-optimization.md     # Pi 5 performance tuning
+│
+├── tasks.md                        # Current sprint and task tracking
+├── requirements.md                 # Project specifications
+├── repository-guidelines.md        # Coding standards
+├── network-dependencies.md         # Local-first architecture
+│
+├── zwave-setup-guide.md            # Complete Z-Wave guide
+├── openwakeword-guide.md           # OpenWakeWord consolidated
+│
+├── notes.md                        # Research & Z-Wave MCP findings (comprehensive)
+├── questions.md                    # Open decisions
+├── outline.md                      # Presentation slides
+│
+├── hardware/                       # Hardware docs
+├── prompts/                        # Prompt experiments
+└── archive/
+    └── README.md                   # Comprehensive historical summary
+```
+
+**Recent Consolidations:**
+- ✅ 5 setup guides → 1 `SETUP.md` (Pi, MQTT, ALSA, Oracle, Voice Gateway)
+  - `zwave-setup-guide.md` kept separate due to complexity (453 lines)
+  - SETUP.md references zwave-setup-guide.md for detailed Z-Wave instructions
+- ✅ 3 architecture docs → 1 `ARCHITECTURE.md`
+- ✅ 2 OpenWakeWord docs → 1 `openwakeword-guide.md`
+- ✅ 3 Z-Wave docs → 1 `zwave-setup-guide.md` (device pairing, MQTT config, troubleshooting)
+- ✅ Voice diagnostics → `/apps/voice-gateway-oww/TROUBLESHOOTING.md`
+- ✅ Z-Wave MCP findings → added to `notes.md`
+- ✅ Archive → single comprehensive `README.md`
+- ✅ Removed: delivered.md, fix summaries, old analysis docs
+
+---
+
+## 🔍 Finding What You Need
+
+**For setup and configuration:**
+- Start with `GETTING-STARTED.md`
+- Then service-specific READMEs in `/apps/`
+
+**For understanding architecture:**
+- Start with `ARCHITECTURE.md` (complete system overview)
+- Then `mcp-architecture.md` for MCP details
+- Check `performance-optimization.md` for Pi tuning
+
+**For development:**
+- Follow `repository-guidelines.md`
+- Check `tasks.md` for current work
+- Review `/CLAUDE.md` for complete guidelines
+
+**For troubleshooting:**
+- Check `/apps/voice-gateway-oww/TROUBLESHOOTING.md` for voice issues
+- Review `alsa-setup.md` for audio problems
+- Search `notes.md` for research and solutions
+- Check `archive/README.md` for historical bug fixes
+
+**Can't find it?**
+```bash
+# Search all docs
+rg --files docs | grep -i keyword
+
+# Search content
+rg "search term" docs/
+```
+
+---
+
+**Presentation Date:** January 12, 2026
+**Project:** MQTT + Ollama Home Automation Demo

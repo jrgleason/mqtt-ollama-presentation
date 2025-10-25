@@ -27,24 +27,32 @@ export class MCPZWaveClient {
      */
     async start() {
         if (this.serverProcess) {
-            console.debug('MCP server already running');
             return;
         }
 
         // Path to zwave-mcp-server index.js (same directory as this file)
         const serverPath = path.resolve(__dirname, 'index.js');
 
-        console.log('🚀 Starting ZWave MCP server', {serverPath});
-
         this.serverProcess = spawn(process.execPath, [serverPath], {
-            stdio: ['pipe', 'pipe', 'pipe'],
+            stdio: ['pipe', 'pipe', 'pipe'],  // stdin, stdout, stderr
             env: {
                 ...process.env,
+                NODE_ENV: 'production',  // Disable debug output
             }
         });
 
-        this.serverProcess.stdout.on('data', (data) => this._onStdoutData(data));
-        this.serverProcess.stderr.on('data', (data) => console.error('[mcp-server]', data.toString().trim()));
+        this.serverProcess.stdout.on('data', (data) => {
+            this._onStdoutData(data);
+        });
+
+        // Only log stderr if there are actual errors (not info messages)
+        this.serverProcess.stderr.on('data', (data) => {
+            const message = data.toString().trim();
+            // Only log actual errors, not informational messages
+            if (message.includes('Error:') || message.includes('error:')) {
+                console.error('[mcp-server]', message);
+            }
+        });
 
         this.serverProcess.on('exit', (code, signal) => {
             console.warn('[mcp] server exited', {code, signal});
@@ -60,49 +68,43 @@ export class MCPZWaveClient {
             this.pendingRequests.clear();
         });
 
+        // Give the server a moment to fully initialize its stdio transport
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Wait for server to be ready
         await this.initialize();
     }
 
-    // Write a framed JSON message with Content-Length header
+    // Write a newline-delimited JSON message (MCP SDK protocol)
     _writeMessage(obj) {
         if (!this.serverProcess || !this.serverProcess.stdin.writable) {
             throw new Error('MCP server stdin is not writable');
         }
         const body = JSON.stringify(obj);
-        const header = `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n`;
-        this.serverProcess.stdin.write(header + body, 'utf8');
+        this.serverProcess.stdin.write(body + '\n', 'utf8');
     }
 
-    // Handle incoming stdout data using Content-Length framing
+    // Handle incoming stdout data using newline-delimited JSON (MCP SDK protocol)
     _onStdoutData(chunk) {
         this._recvBuffer = Buffer.concat([this._recvBuffer, chunk]);
 
         while (true) {
-            const hdrEnd = this._recvBuffer.indexOf('\r\n\r\n');
-            if (hdrEnd === -1) break;
+            // Look for newline-delimited messages
+            const newlineIndex = this._recvBuffer.indexOf('\n');
+            if (newlineIndex === -1) break; // No complete message yet
 
-            const header = this._recvBuffer.slice(0, hdrEnd).toString('ascii');
-            const m = header.match(/Content-Length:\s*(\d+)/i);
-            if (!m) {
-                // Malformed header: drop until after hdrEnd
-                console.error('[mcp] Missing Content-Length header, dropping malformed data');
-                this._recvBuffer = this._recvBuffer.slice(hdrEnd + 4);
-                continue;
-            }
+            // Extract the line (remove trailing \r if present)
+            const line = this._recvBuffer.slice(0, newlineIndex).toString('utf8').replace(/\r$/, '');
+            this._recvBuffer = this._recvBuffer.slice(newlineIndex + 1);
 
-            const len = parseInt(m[1], 10);
-            const totalNeeded = hdrEnd + 4 + len;
-            if (this._recvBuffer.length < totalNeeded) break; // wait for more data
-
-            const bodyBuf = this._recvBuffer.slice(hdrEnd + 4, totalNeeded);
-            this._recvBuffer = this._recvBuffer.slice(totalNeeded);
+            // Skip empty lines
+            if (line.trim().length === 0) continue;
 
             try {
-                const message = JSON.parse(bodyBuf.toString('utf8'));
+                const message = JSON.parse(line);
                 this._handleMessage(message);
             } catch (err) {
-                console.error('[mcp] Failed to parse JSON message:', err);
+                console.error('[mcp] Failed to parse JSON message:', err, 'Line:', line.slice(0, 100));
             }
         }
     }
@@ -120,11 +122,7 @@ export class MCPZWaveClient {
             return;
         }
 
-        // Handle notifications or other messages
-        if (message.method) {
-            // Emit or handle notifications as needed (application-specific)
-            console.debug('[mcp] notification:', message.method, message.params);
-        }
+        // Handle notifications or other messages (silently ignore)
     }
 
     /**
@@ -147,16 +145,15 @@ export class MCPZWaveClient {
         };
 
         try {
-            await this.sendRequest(initMessage);
+            await this.sendRequest(initMessage, 30000);
 
             // Send initialized notification
-            this.sendNotification({
+            await this.sendNotification({
                 jsonrpc: '2.0',
                 method: 'notifications/initialized'
             });
 
             this.isReady = true;
-            console.log('✅ MCP server initialized');
         } catch (error) {
             console.error('❌ Failed to initialize MCP server:', error.message);
             throw error;
@@ -253,20 +250,16 @@ export class MCPZWaveClient {
         };
 
         try {
-            console.debug('📡 Requesting device list from MCP server');
             const result = await this.sendRequest(message);
 
-            // Parse the result content
+            // The MCP server now returns human-readable text, not JSON
+            // Just return the text content for the AI to use
             const content = result.content?.[0]?.text;
             if (!content) {
-                console.warn('No content in MCP response');
-                return [];
+                return 'No devices found.';
             }
 
-            const devices = JSON.parse(content);
-            console.debug(`✅ Received ${devices.length} devices from MCP server`);
-
-            return devices;
+            return content;  // Return the formatted text directly
         } catch (error) {
             console.error('❌ Failed to list devices:', error.message);
             throw error;
@@ -300,7 +293,6 @@ export class MCPZWaveClient {
             }
         };
 
-        console.debug('📡 Sending device control command', {deviceName, action, level});
         const result = await this.sendRequest(message);
 
         const content = result.content?.[0]?.text;
@@ -308,7 +300,6 @@ export class MCPZWaveClient {
             throw new Error('No content in MCP response');
         }
 
-        console.debug('✅ Device control successful');
         return content;
     }
 
@@ -317,18 +308,14 @@ export class MCPZWaveClient {
      * @returns {Promise<string>}
      */
     async getDevicesForAI() {
-        const devices = await this.listDevices();
-
-        if (devices.length === 0) {
-            return 'No Z-Wave devices found.';
+        try {
+            // listDevices() now returns human-readable text directly from the MCP server
+            const deviceText = await this.listDevices();
+            return deviceText;
+        } catch (error) {
+            console.error('[getDevicesForAI] Error:', error.message);
+            throw error;
         }
-
-        return `Available Z-Wave devices:\n${devices
-            .map(
-                (d) =>
-                    `- ${d.name}${d.location ? ` (${d.location})` : ''}: ${d.available ? 'online' : 'offline'} - ${d.ready ? 'ready' : 'not ready'}`
-            )
-            .join('\n')}`;
     }
 
     /**
@@ -336,7 +323,6 @@ export class MCPZWaveClient {
      */
     async stop() {
         if (this.serverProcess) {
-            console.log('🛑 Stopping MCP server');
             this.serverProcess.kill('SIGTERM');
             this.serverProcess = null;
             this.isReady = false;

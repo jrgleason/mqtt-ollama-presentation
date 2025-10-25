@@ -130,7 +130,6 @@ export class ZWaveUIClient {
             return await this.fetchNodesViaSocket();
         } catch (error) {
             if (this.config.authEnabled) {
-                console.warn('[ZWave UI] Live node fetch failed, retrying after re-authentication');
                 await this.ensureAuthenticated(true);
                 return await this.fetchNodesViaSocket();
             }

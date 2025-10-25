@@ -1062,11 +1062,11 @@ See README.md for Docker Compose and Kubernetes/Helm deployment options.
 
 **For Voice Gateway OWW:**
 
-- [ ] Verify Python virtual environment exists at `/apps/voice-gateway-oww/.venv`
-- [ ] Install Piper TTS in venv: `pip install piper-tts`
 - [ ] Download Whisper model (e.g., `ggml-tiny.bin` or `ggml-base.bin`)
 - [ ] Download OpenWakeWord models (melspectrogram, embedding, wake word model)
-- [ ] Download Piper voice model (e.g., `en_US-amy-medium.onnx`)
+- [ ] **Configure ElevenLabs API key** in `.env` file
+- [ ] **Install ffmpeg:** `brew install ffmpeg` (macOS) or `apt-get install ffmpeg` (Linux)
+- [ ] **Verify internet connection** (required for ElevenLabs TTS)
 - [ ] Test audio devices: `arecord -l` and `aplay -l`
 - [ ] Verify ALSA device names in `.env` file
 - [ ] Test MQTT connection to broker
@@ -1126,11 +1126,13 @@ Environment="HEALTHCHECK_PORT=3002"
 Environment="OLLAMA_BASE_URL=http://localhost:11434"
 Environment="OLLAMA_MODEL=qwen2.5:0.5b"
 
-# Text-to-Speech (Piper TTS)
+# Text-to-Speech (ElevenLabs)
 Environment="TTS_ENABLED=true"
-Environment="TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx"
 Environment="TTS_VOLUME=1.0"
-Environment="TTS_SPEED=3.0"
+Environment="TTS_SPEED=1.0"
+Environment="ELEVENLABS_API_KEY=your_api_key_here"
+Environment="ELEVENLABS_VOICE_ID=JBFqnCBsd6RMkjVDRZzb"
+Environment="ELEVENLABS_MODEL_ID=eleven_multilingual_v2"
 
 ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
 Restart=on-failure
@@ -1148,12 +1150,14 @@ WantedBy=multi-user.target
 
 **Key points:**
 
-- ✅ **CRITICAL:** Set `VIRTUAL_ENV` and prepend `.venv/bin` to `PATH` for Piper TTS to work
+- ✅ **CRITICAL:** Set `ELEVENLABS_API_KEY` environment variable with your API key
+- ✅ **CRITICAL:** Internet connection required for TTS (fallback: disable with `TTS_ENABLED=false`)
 - ✅ `WorkingDirectory` must point to `/apps/voice-gateway-oww`
 - ✅ `ExecStart` must use absolute path to Node.js binary
 - ✅ All audio device names must match your hardware (use `arecord -l` to find)
 - ✅ Service should depend on network and ollama being ready
 - ✅ Adjust `OWW_THRESHOLD` based on your environment (0.01-0.5)
+- ✅ Ensure `ffmpeg` is installed for audio format conversion
 
 ### Installation Steps
 
@@ -1217,7 +1221,7 @@ journalctl -u voice-gateway-oww.service -p err
 # Search for specific keywords
 journalctl -u voice-gateway-oww.service --no-pager | grep "wake word"
 journalctl -u voice-gateway-oww.service --no-pager | grep "TTS"
-journalctl -u voice-gateway-oww.service --no-pager | grep "Piper"
+journalctl -u voice-gateway-oww.service --no-pager | grep "ElevenLabs"
 
 # Show logs with context (before/after)
 journalctl -u voice-gateway-oww.service --no-pager | grep -C 5 "error"
@@ -1261,10 +1265,11 @@ sudo systemctl restart voice-gateway-oww.service
 
 ### Common Deployment Issues
 
-1. **"ModuleNotFoundError: No module named 'piper'"**
-    - **Cause:** Python virtual environment not activated in systemd service
-    - **Fix:** Ensure `VIRTUAL_ENV` and `PATH` with `.venv/bin` are set in service file
-    - **Verify:** Check that piper-tts is installed: `source .venv/bin/activate && pip list | grep piper`
+1. **"ElevenLabs TTS not ready" or API key errors**
+    - **Cause:** Missing or invalid ElevenLabs API key
+    - **Fix:** Set `ELEVENLABS_API_KEY` in `.env` or systemd service file
+    - **Get API key:** https://elevenlabs.io/app/settings/api-keys
+    - **Verify:** Check logs for "✅ ElevenLabs TTS health check passed"
 
 2. **"arecord: device not found" or microphone errors**
     - **Cause:** Incorrect ALSA device name
@@ -1288,7 +1293,9 @@ sudo systemctl restart voice-gateway-oww.service
 5. **Service fails silently or restarts continuously**
     - **Check logs:** `journalctl -u voice-gateway-oww.service -n 100 --no-pager`
     - **Common causes:**
-        - Missing models (whisper, OpenWakeWord, Piper)
+        - Missing models (whisper, OpenWakeWord)
+        - Missing ElevenLabs API key
+        - No internet connection (for TTS)
         - MQTT broker unreachable
         - Ollama not running
         - Audio device permissions
@@ -1296,10 +1303,12 @@ sudo systemctl restart voice-gateway-oww.service
       `cd /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww && node src/main.js`
 
 6. **TTS not working (no spoken responses)**
-    - **Cause:** Piper TTS not installed or venv not activated
-    - **Fix:** Install piper-tts in venv and verify `VIRTUAL_ENV` is set
+    - **Cause:** Missing ElevenLabs API key, no internet, or ffmpeg not installed
+    - **Fix:** Set `ELEVENLABS_API_KEY`, verify internet connection, install ffmpeg
+    - **Install ffmpeg:** `brew install ffmpeg` (macOS) or `apt-get install ffmpeg` (Linux)
     - **Verify:** Check logs for "✅ Welcome message spoken" on startup
-    - **Test:** `source .venv/bin/activate && python -c "from piper import PiperVoice"`
+    - **Test:** `curl -I https://api.elevenlabs.io` (should return HTTP 200)
+    - **Fallback:** Set `TTS_ENABLED=false` to disable voice output
 
 7. **High CPU usage or slow responses**
     - **Cause:** Using large Ollama model or Whisper model
@@ -1329,9 +1338,10 @@ journalctl -u voice-gateway-oww.service -n 100 --no-pager
 #
 # ❌ Look for these error indicators:
 # ❌ "spawn whisper-cli ENOENT" - whisper-cli not in PATH
-# ❌ "ModuleNotFoundError: No module named 'piper'" - Piper not installed
+# ❌ "ElevenLabs TTS not ready" - API key missing or internet down
 # ❌ "ALSA device check failed" - audio device issues
 # ❌ "Failed to connect to MQTT broker" - MQTT connection issues
+# ❌ "ffmpeg conversion failed" - ffmpeg not installed
 
 # 4. Follow logs in real-time for testing
 journalctl -u voice-gateway-oww.service -f

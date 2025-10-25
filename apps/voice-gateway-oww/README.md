@@ -8,11 +8,11 @@ Offline voice command gateway for MQTT + Ollama home automation using OpenWakeWo
 - **Voice Activity Detection:** WebRTC VAD with trailing silence detection
 - **Speech-to-Text:** Local Whisper.cpp (tiny model, 1.5s transcription)
 - **AI Response:** Ollama with qwen2.5:0.5b (~1s response time, optimized for Pi 5) or llama3.2:1b for better tool support (not suitable for lower-resource devices)
-- **Text-to-Speech:** Piper TTS with local voice models (1.7s synthesis)
+- **Text-to-Speech:** ElevenLabs API with streaming (high-quality voice synthesis)
 - **MQTT Integration:** Communicates with Oracle chatbot
-- **Offline Operation:** All processing happens locally
-- **No Cloud Dependencies:** Completely free and open-source
-- **Fast Response Time:** ~7 seconds end-to-end (wake word to audio playback)
+- **Local-First Processing:** Wake word, STT, and AI processing happen locally
+- **Cloud TTS:** High-quality voice output via ElevenLabs (requires internet)
+- **Fast Response Time:** ~7-10 seconds end-to-end (wake word to audio playback)
 
 ## Why OpenWakeWord?
 
@@ -28,17 +28,36 @@ Unlike Picovoice Porcupine which requires an API key, OpenWakeWord is:
 
 - **Raspberry Pi 5** (16GB RAM recommended, 8GB minimum)
 - **USB Microphone:** LANDIBO GSH23 (or compatible, 16kHz capable)
-- **USB Speaker/DAC:** (Optional, for future TTS)
+- **USB Speaker/DAC:** For audio playback (TTS)
+- **Internet Connection:** Required for ElevenLabs TTS (can disable with `TTS_ENABLED=false`)
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Install System Dependencies
+
+**CRITICAL: Install ffmpeg first** (required for ElevenLabs TTS):
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Linux (Raspberry Pi)
+sudo apt-get update
+sudo apt-get install ffmpeg
+```
+
+Verify installation:
+```bash
+ffmpeg -version
+```
+
+### 2. Install Node Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Download Models & Setup
+### 3. Download Models & Setup
 
 ```bash
 ./setup.sh
@@ -46,8 +65,6 @@ npm install
 
 This will:
 
-- Install Python dependencies (Piper TTS)
-- Download Piper voice models (interactive menu)
 - Download OpenWakeWord core models (melspectrogram, embedding)
 - Download wake word models (hey_jarvis)
 - Download Whisper tiny model (~75MB, optimized for speed)
@@ -59,15 +76,27 @@ This will:
 npm run setup   # Calls ./setup.sh
 ```
 
-### 3. Configure Environment
+### 4. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` if needed (works with defaults):
+**IMPORTANT: Set your ElevenLabs API key:**
+
+```bash
+# Get your API key from: https://elevenlabs.io/app/settings/api-keys
+export ELEVENLABS_API_KEY=your_api_key_here
+```
+
+Or edit `.env` directly:
 
 ```env
+# ElevenLabs API Configuration (REQUIRED for TTS)
+ELEVENLABS_API_KEY=your_api_key_here
+ELEVENLABS_VOICE_ID=JBFqnCBsd6RMkjVDRZzb  # George (deep male voice)
+ELEVENLABS_MODEL_ID=eleven_multilingual_v2
+
 # OpenWakeWord settings
 OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx
 OWW_THRESHOLD=0.5
@@ -78,9 +107,12 @@ AUDIO_SAMPLE_RATE=16000
 
 # MQTT settings
 MQTT_BROKER_URL=mqtt://localhost:1883
+
+# TTS settings
+TTS_ENABLED=true  # Set to false to disable voice output
 ```
 
-### 4. Test Audio
+### 5. Test Audio
 
 ```bash
 # List audio devices
@@ -91,7 +123,7 @@ arecord -D hw:2,0 -f S16_LE -r 16000 -c 1 -d 3 test.wav
 aplay test.wav
 ```
 
-### 5. Run Voice Gateway
+### 6. Run Voice Gateway
 
 **Development:**
 
@@ -203,12 +235,15 @@ See `.env.example` for all available options.
 - `OLLAMA_MODEL` - Model to use (default: qwen2.5:0.5b - optimized for speed)
     - Use `qwen2.5:1.5b` for better accuracy (~4x slower)
 
-**Text-to-Speech:**
+**Text-to-Speech (ElevenLabs):**
 
 - `TTS_ENABLED` - Enable/disable TTS (default: true)
-- `TTS_MODEL_PATH` - Piper voice model (default: models/piper/en_US-amy-medium.onnx)
-- `TTS_SPEED` - Speed multiplier (default: 3.0 for faster speech)
 - `TTS_VOLUME` - Volume 0.0-1.0 (default: 1.0)
+- `ELEVENLABS_API_KEY` - **REQUIRED** ElevenLabs API key
+- `ELEVENLABS_VOICE_ID` - Voice to use (default: JBFqnCBsd6RMkjVDRZzb - George)
+- `ELEVENLABS_MODEL_ID` - Model to use (default: eleven_multilingual_v2)
+- `ELEVENLABS_STABILITY` - Voice stability 0.0-1.0 (default: 0.5)
+- `ELEVENLABS_SIMILARITY_BOOST` - Similarity boost 0.0-1.0 (default: 0.75)
 
 **MQTT:**
 
@@ -220,6 +255,60 @@ See `.env.example` for all available options.
 - `VAD_MAX_UTTERANCE_MS` - Max recording time (default: 10000ms)
 
 ## Troubleshooting
+
+### TTS not working (no spoken responses)
+
+**Error: `spawn ffmpeg ENOENT`**
+
+This means `ffmpeg` is not installed or not in PATH.
+
+**Fix:**
+```bash
+# macOS
+brew install ffmpeg
+
+# Linux (Raspberry Pi)
+sudo apt-get update
+sudo apt-get install ffmpeg
+
+# Verify installation
+ffmpeg -version
+```
+
+**Error: `ElevenLabs TTS not ready` or `ElevenLabs API key not configured`**
+
+**Fix:**
+1. Get your API key from https://elevenlabs.io/app/settings/api-keys
+2. Add to `.env` file:
+   ```bash
+   ELEVENLABS_API_KEY=your_api_key_here
+   ```
+3. Restart the voice gateway
+
+**Error: `ElevenLabs TTS failed` with network errors**
+
+**Fix:**
+1. Check internet connection: `curl -I https://api.elevenlabs.io`
+2. Verify API key is valid
+3. Check firewall/proxy settings
+4. **Fallback:** Disable TTS with `TTS_ENABLED=false` in `.env`
+
+**Debugging TTS issues:**
+
+Check the logs for detailed debugging information:
+```bash
+# Look for TTS configuration on startup
+grep "ElevenLabs Configuration" logs
+
+# Check health check results
+grep "health check" logs
+
+# Monitor TTS synthesis
+grep "Synthesizing speech\|ElevenLabs" logs
+
+# View any errors
+grep "ERROR\|❌" logs
+```
 
 ### Wake word not detecting
 

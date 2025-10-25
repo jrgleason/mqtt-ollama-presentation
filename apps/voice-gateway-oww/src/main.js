@@ -16,8 +16,11 @@ import {fillMelBufferWithZeros, newDetectorState, transcribeWithWhisper} from '@
 import {checkOllamaHealth, queryOllama} from './ollama-client.js';
 import {connectMQTT, publishAIResponse, publishTranscription} from './mqtt-client.js';
 import {conversationManager} from './conversation-manager.js';
-import {checkPiperHealth, synthesizeSpeech} from './piper-tts.js';
+import {checkElevenLabsHealth, synthesizeSpeech} from './elevenlabs-tts.js';
 import {getDevicesForAI, initializeMCPClient, shutdownMCPClient} from './mcp-zwave-client.js';
+import {dateTimeTool, executeDateTimeTool} from './tools/datetime-tool.js';
+import {searchTool, executeSearchTool} from './tools/search-tool.js';
+import {playErrorSound} from './audio-feedback.js';
 
 // OpenWakeWord constants
 const SAMPLE_RATE = 16000;
@@ -342,7 +345,10 @@ async function backgroundTranscribe(audioSamples) {
 
             if (transcription && transcription.length) {
                 logger.info(`📝 You said: "${transcription}"`);
-                await publishTranscription(transcription, {duration: audioSamples.length / SAMPLE_RATE});
+
+                // Publish to MQTT in background (don't await)
+                publishTranscription(transcription, {duration: audioSamples.length / SAMPLE_RATE})
+                    .catch(err => logger.debug('MQTT publish failed', {error: err.message}));
 
                 try {
                     conversationManager.addUserMessage(transcription);
@@ -359,7 +365,7 @@ async function backgroundTranscribe(audioSamples) {
                         pattern.test(transcription)
                     );
 
-                    let systemPrompt = 'You are a helpful home automation assistant. Provide concise, friendly responses in English only. Keep answers under 2 sentences. Do not include <think> tags or explain your reasoning. Just provide the direct answer. Do not include non-English text in your responses.';
+                    let systemPrompt = 'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only. No <think> tags. IMPORTANT: When the user asks about the current date, time, day, or any temporal information, you MUST use the get_current_datetime tool. When the user asks you to search for information, you MUST use the search_web tool. Always use the appropriate tool when available.';
 
                     // Add device information to context if asking about devices
                     if (isDeviceQuery) {
@@ -384,10 +390,61 @@ async function backgroundTranscribe(audioSamples) {
                         logger.debug('⚠️ Failed to play processing beep', {error: beepError instanceof Error ? beepError.message : String(beepError)});
                     }
 
-                    const aiResponse = await queryOllama(null, {messages});
+                    // Define available tools
+                    const tools = [dateTimeTool, searchTool];
+
+                    // Tool executor function
+                    const toolExecutor = async (toolName, toolArgs) => {
+                        logger.debug(`🔧 Executing tool: ${toolName}`, toolArgs);
+
+                        switch (toolName) {
+                            case 'get_current_datetime':
+                                return executeDateTimeTool(toolArgs);
+                            case 'search_web':
+                                return await executeSearchTool(toolArgs);
+                            default:
+                                logger.warn(`⚠️ Unknown tool requested: ${toolName}`);
+                                return `Error: Unknown tool ${toolName}`;
+                        }
+                    };
+
+                    // Detect if this is a date/time question (fallback for when AI doesn't use tools)
+                    const dateTimePatterns = [
+                        /what (time|date) is it/i,
+                        /what'?s the (time|date)/i,
+                        /what day is (it|today)/i,
+                        /what'?s today'?s date/i,
+                        /tell me the (time|date)/i,
+                        /current (time|date)/i,
+                        /what year is (it|this)/i,
+                        /can you tell me (what|the) (time|date)/i,
+                    ];
+
+                    const isDateTimeQuery = dateTimePatterns.some(pattern =>
+                        pattern.test(transcription)
+                    );
+
+                    // If this is a date/time query, bypass the AI and directly return the tool result
+                    // This is more reliable than hoping the small model uses tools correctly
+                    let aiResponse;
+                    let aiDuration;
+
+                    if (isDateTimeQuery) {
+                        logger.info('📅 Date/time query detected, using datetime tool directly');
+                        const aiStartTime = Date.now();
+                        aiResponse = executeDateTimeTool();
+                        aiDuration = Date.now() - aiStartTime;
+                        logger.debug('✅ Using direct datetime tool result (bypassing AI)');
+                    } else {
+                        // Performance timing: AI inference
+                        const aiStartTime = Date.now();
+                        aiResponse = await queryOllama(null, {messages, tools, toolExecutor});
+                        aiDuration = Date.now() - aiStartTime;
+                    }
+
                     conversationManager.addAssistantMessage(aiResponse);
 
-                    logger.info(`🤖 AI Response: "${aiResponse}"`);
+                    logger.info(`🤖 AI Response: "${aiResponse}" (${aiDuration}ms)`);
 
                     // Play response received beep (dual-tone ascending)
                     try {
@@ -396,10 +453,11 @@ async function backgroundTranscribe(audioSamples) {
                         logger.debug('⚠️ Failed to play response beep', {error: beepError instanceof Error ? beepError.message : String(beepError)});
                     }
 
-                    await publishAIResponse(transcription, aiResponse, {
+                    // Publish to MQTT in background (don't await)
+                    publishAIResponse(transcription, aiResponse, {
                         model: config.ollama.model,
                         conversationTurns: Math.floor(convSummary.totalMessages / 2)
-                    });
+                    }).catch(err => logger.debug('MQTT publish failed', {error: err.message}));
 
                     // Text-to-Speech
                     if (config.tts.enabled) {
@@ -432,6 +490,12 @@ async function backgroundTranscribe(audioSamples) {
             }
         } catch (err) {
             logger.error('backgroundTranscribe: transcription failed', {error: err && err.message ? err.message : String(err)});
+            // Play error sound
+            try {
+                await playErrorSound();
+            } catch (soundErr) {
+                // Silently fail if audio playback isn't available
+            }
         } finally {
             try {
                 fs.unlinkSync(wavPath);
@@ -466,17 +530,17 @@ async function main() {
         logger.warn('⚠️ Continuing without Ollama - transcriptions will work but no AI responses');
     }
 
-    // Piper TTS
+    // ElevenLabs TTS
     if (config.tts.enabled) {
         try {
-            const piperReady = await checkPiperHealth();
-            if (!piperReady) {
-                logger.warn('⚠️ Piper TTS not ready - AI responses will not be spoken');
-                logger.warn('⚠️ Install with: pip install piper-tts');
-                logger.warn('⚠️ Download voice with: python3 -m piper.download_voices en_US-amy-medium');
+            const elevenLabsReady = await checkElevenLabsHealth();
+            if (!elevenLabsReady) {
+                logger.warn('⚠️ ElevenLabs TTS not ready - AI responses will not be spoken');
+                logger.warn('⚠️ Check ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID environment variables');
+                logger.warn('⚠️ Ensure ffmpeg is installed: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)');
             }
         } catch (err) {
-            logger.error('❌ Piper TTS health check failed', {error: err.message});
+            logger.error('❌ ElevenLabs TTS health check failed', {error: err.message});
             logger.warn('⚠️ Continuing without TTS - AI responses will be text only');
         }
     }
@@ -496,6 +560,12 @@ async function main() {
         logger.info('🔌 Initializing ZWave MCP client...');
         await initializeMCPClient();
         logger.info('✅ ZWave MCP client ready');
+
+        // Test Z-Wave connection by fetching device list
+        logger.info('🔍 Testing Z-Wave connection...');
+        const deviceInfo = await getDevicesForAI();
+        logger.info('✅ Z-Wave connection successful!');
+        logger.debug('📋 Devices:', deviceInfo);
     } catch (err) {
         logger.error('❌ ZWave MCP client initialization failed', {error: err.message});
         logger.warn('⚠️ Continuing without device information - device queries will not work');
@@ -678,7 +748,12 @@ async function main() {
                 try {
                     const score = await detector.detect(chunk);
                     detectionCount++;
-                    if (detectionCount % 100 === 0) logger.debug('👂 Still listening...', {detections: detectionCount});
+                    if (detectionCount % 100 === 0) logger.debug('👂 Still listening...', {detections: detectionCount, lastScore: score.toFixed(3)});
+
+                    // Log scores above 0.1 to help diagnose threshold issues
+                    if (score > 0.1) {
+                        logger.debug('🎯 Detection score elevated', {score: score.toFixed(3), threshold: config.openWakeWord.threshold});
+                    }
 
                     const snapshot2 = getServiceSnapshot(voiceService);
                     if (score > config.openWakeWord.threshold && snapshot2 && typeof snapshot2.matches === 'function' && snapshot2.matches('listening')) {

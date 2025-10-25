@@ -152,6 +152,9 @@ const server = new Server(
     },
 );
 
+// Error handler - only log actual errors
+server.onerror = (error) => console.error('[server] Error:', error);
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
         {
@@ -215,7 +218,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         try {
             const liveNodes = await zwaveClient.getLiveNodes();
-            console.error('[MCP DEBUG] Raw nodes from ZWave-JS-UI:', JSON.stringify(liveNodes.slice(0, 2), null, 2));
             const registry = registryBuilder.build(toRegistry(liveNodes));
 
             const filteredSummaries = liveNodes
@@ -244,12 +246,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 })
                 .sort((a, b) => a.name.localeCompare(b.name));
 
-            // Return JSON for programmatic use
+            // Build a clear, formatted response for the AI
+            let responseText;
+            if (filteredSummaries.length === 0) {
+                responseText = 'No Z-Wave devices are currently available.';
+            } else {
+                const deviceList = filteredSummaries
+                    .map(d => {
+                        const location = d.location ? ` in ${d.location}` : '';
+                        return `- "${d.name}"${location} is ${d.status}`;
+                    })
+                    .join('\n');
+
+                responseText = `Available Z-Wave devices (${filteredSummaries.length} total):\n${deviceList}`;
+            }
+
             return {
                 content: [
                     {
                         type: 'text',
-                        text: JSON.stringify(filteredSummaries),
+                        text: responseText,
                     },
                 ],
             };
@@ -395,7 +411,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('Z-Wave MCP server ready on stdio');
 }
 
 main().catch((error) => {

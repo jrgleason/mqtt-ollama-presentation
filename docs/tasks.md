@@ -1,20 +1,33 @@
-# Implementation Tasks (Lean)
+# Implementation Tasks
 
-Last Updated: 2025-10-19
-
----
-
-## Demo-Critical Focus
-
-- LangChain tools → Prisma + MQTT publish (device control)
-- MQTT client reliability (singleton, reconnect, QoS 1)
-- Voice Gateway stability (OWW → Whisper via Ollama → Piper TTS)
-- Z-Wave pairing + zwave-js-ui MQTT gateway verification
+**Last Updated:** 2025-10-22
+**Presentation Date:** January 12, 2026
 
 ---
 
-## Immediate Next Steps
+## Quick Reference
 
+**Status Legend:**
+- ⏳ Not Started
+- 🔄 In Progress
+- ✅ Completed
+- 🔴 DEMO CRITICAL
+- 🎯 Stretch Goal
+- ❌ Blocked
+
+---
+
+## Current Sprint Focus
+
+**Goal:** Ship end-to-end device control via LangChain tools + MQTT, and stabilize Voice Gateway.
+
+**Demo-Critical Items:**
+1. LangChain tools → Prisma + MQTT publish (device control)
+2. MQTT client reliability (singleton, reconnect, QoS 1)
+3. Voice Gateway stability (OWW → Whisper via Ollama → Piper TTS)
+4. Z-Wave pairing + zwave-js-ui MQTT gateway verification
+
+**Immediate Next Steps:**
 1. Swap mock tools for Prisma queries + MQTT publishes
 2. Add MQTT client (reconnect + QoS 1) and topic helpers
 3. Voice Gateway: STT timeout + always re-enable wake word; Piper playback
@@ -22,197 +35,245 @@ Last Updated: 2025-10-19
 
 ---
 
+## Phase 2: AI Chatbot Implementation
+
+### 2.1 Core Chat Functionality
+- ✅ Next.js API route with streaming
+- ✅ LangChain integration with Ollama
+- ✅ Chat UI with message history
+- 🔄 Re-enable tools with selective calling (ensure normal chat avoids tools)
+
+### 2.2 Device Control Tools
+- 🔴 🔄 Device list tool → switch from mocks to Prisma
+- 🔴 🔄 Device control tool → switch from mocks to Prisma + MQTT publish
+- ⏳ Device status query tool
+- ⏳ Tool parameter validation (Zod schemas)
+- ⏳ Error handling for unavailable devices
+
+### 2.3 Database Integration
+- ✅ Prisma with SQLite
+- ✅ Device schema and seed data
+- ✅ Prisma client singleton
+- 🔄 Device lookup service
+- ⏳ Conversation history storage
+
+---
+
+## Phase 3: MQTT Integration
+
+### 3.1 MQTT Client Setup
+- 🔴 🔄 Connect to HiveMQ at `mqtt://localhost:1883`
+- 🔴 🔄 MQTT client singleton with reconnect + QoS 1
+- 🔴 🔄 Topic utilities and publish helpers
+- ⏳ Subscribe to device state topics and update DB (optional for demo)
+
+### 3.2 Device Communication
+- ⏳ Publish device commands to `zwave/+/set` topics
+- ⏳ Subscribe to device state updates on `zwave/+/status`
+- ⏳ Device state synchronization with database
+- ⏳ Error handling and retry logic
+
+---
+
+## Phase 4: Z-Wave Integration
+
+### 4.1 zwave-js-ui Setup
+- ⏳ Install zwave-js-ui on Raspberry Pi
+- ⏳ Configure MQTT gateway (human-readable topics)
+- ⏳ Pair test devices (switches, dimmers)
+- ⏳ Verify MQTT topics and control loop
+
+### 4.2 Device Registry
+- ⏳ Document MQTT topic structure
+- ⏳ Map Z-Wave command classes to topics
+- ⏳ Test device control end-to-end
+
+---
+
+## Phase 5: Voice Integration
+
+**Architecture:** Separate `voice-gateway-oww` service using offline stack:
+- **Wake Word:** OpenWakeWord
+- **STT:** Whisper via Ollama
+- **TTS:** Piper
+
+### 5.1 Voice Gateway Stability 🔴
+- 🔄 Fix "stuck on transcribing" edge case:
+  - Ensure transcription promise resolves/rejects with timeout (10s)
+  - On failure: publish `{state: "idle"}`, re-enable wake word
+- 🔄 Ensure wake word is re-enabled after transcribing and after speaking
+- 🔄 Add state guard to ignore duplicate transitions
+- 🔄 Log all state changes for debugging
+
+### 5.2 Recording + Voice Activity Detection
+- 🔄 RMS VAD thresholds: `SILENCE_THRESHOLD`, `SILENCE_DURATION_MS`
+- ⏳ Cap max utterance duration (safety)
+- ✅ PCM audio capture working
+
+### 5.3 Speech-to-Text (Whisper via Ollama)
+- 🔄 Convert PCM → WAV → POST to Ollama (`whisper:latest`)
+- 🔄 Add request timeout + retries with backoff
+- ✅ Basic transcription working
+
+### 5.4 MQTT Contract
+- ✅ Publish `voice/req` and `voice/status`
+- ✅ Subscribe to `voice/res`
+- 🔄 Filter `voice/res` by `session_id`
+- ✅ Session ID generation
+
+### 5.5 Text-to-Speech (Piper) 🔴
+- 🔄 Add Markdown→speech preprocessor
+- 🔄 Synthesize with Piper → 16k PCM
+- 🔄 Play via ALSA with volume/speed control
+- ⏳ Environment variables: `TTS_VOLUME`, `TTS_SPEED`
+
+### 5.6 Health & Monitoring
+- 🔄 `GET /health` endpoint with state, uptime, counts, MQTT status
+- 🔄 Structured logs with component tags
+- 🔄 State transition logging
+
+---
+
+## Phase 8: Presentation Preparation
+
+### 8.1 Slide Deck
+- ⏳ Architecture overview slides
+- ⏳ Code highlights (LangChain tools, MQTT)
+- ⏳ Live demo walkthrough
+- ⏳ Dual approach: Custom tools vs MCP architecture
+
+### 8.2 Demo Preparation
+- ⏳ Live demo script (text + voice commands)
+- ⏳ Fallback options (scripted MQTT, recorded video)
+- ⏳ Hardware checklist (Pi, mic, Z-Wave devices)
+- ⏳ Practice demo 10+ times
+
+### 8.3 Documentation
+- ⏳ Architecture diagrams
+- ⏳ Setup instructions
+- ⏳ Troubleshooting guide
+- ⏳ Source code cleanup
+
+---
+
 ## ⚠️ CRITICAL: Testing Requirements
 
-**Status: 🔴 INCOMPLETE - Zero meaningful tests exist across all apps**
+**Status:** 🔴 INCOMPLETE - Zero meaningful tests exist across all apps
 
-### Testing Status by App (2025-10-19)
+### Testing Status by App
 
-#### 1. **apps/oracle** (Next.js + LangChain + Prisma)
-
+#### apps/oracle (Next.js + LangChain + Prisma)
 - ✅ Jest configured with `passWithNoTests: true`
-- ⚠️ **0 real tests** - Only placeholder example.test.js exists
-- ❌ No unit tests for utilities or tools
-- ❌ No integration tests for API endpoints
-- ❌ No tests for MQTT client functionality
-- ❌ No tests for LangChain tool implementations
+- ⚠️ **0 real tests** - Only placeholder exists
 - **Coverage: 0%** (Goal: 60%+)
-- **CI Status: ✅ PASSES** (but with no real tests)
+- **CI Status:** ✅ PASSES (but with no real tests)
 
-#### 2. **apps/voice-gateway-oww** (Wake Word + STT/TTS)
+**Required Tests:**
+- [ ] MQTT Client Tests (connection, reconnect, publish, subscribe)
+- [ ] LangChain Tools Tests (list devices, control, validation)
+- [ ] Device Service Tests (Prisma queries, MQTT formatting)
+- [ ] API Route Tests (chat endpoint, streaming)
 
+#### apps/voice-gateway-oww (Wake Word + STT/TTS)
 - ✅ Jest configured with `--passWithNoTests` flag
 - ⚠️ **0 tests** - No test files exist
-- ❌ No tests for wake word detection
-- ❌ No tests for STT/TTS integration
-- ❌ No tests for MQTT communication
-- ❌ No tests for XState machine logic
 - **Coverage: 0%**
-- **CI Status: ✅ PASSES** (but with no real tests)
+- **CI Status:** ✅ PASSES (but with no real tests)
 
-#### 3. **apps/voice-gateway-common** (Shared Audio Utils)
+**Required Tests:**
+- [ ] Wake word detection tests
+- [ ] STT/TTS integration tests
+- [ ] MQTT communication tests
+- [ ] XState machine logic tests
+- [ ] Audio processing tests (mocked)
 
-- ✅ **FIXED** - Test script now exits with code 0
-- ⚠️ **0 tests** - No Jest config, no test files
-- ❌ No tests for audio utilities (STT, audio utils)
+#### apps/voice-gateway-common (Shared Utils)
+- ✅ Test script exits with code 0
+- ⚠️ **0 tests** - No Jest config
 - **Coverage: 0%**
-- **CI Status: ✅ PASSES** (placeholder test script)
-- **TODO:** Add Jest config and actual tests
 
-#### 4. **apps/zwave-mcp-server** (MCP Server for Z-Wave)
+**Required Tests:**
+- [ ] Audio utilities tests
+- [ ] STT helper tests
 
+#### apps/zwave-mcp-server (MCP Server)
 - ⚠️ No test script defined
-- ⚠️ **0 tests** - No Jest config, no test files
-- ❌ No tests for MCP tools
-- ❌ No tests for MQTT integration
+- ⚠️ **0 tests**
 - **Coverage: 0%**
-- **CI Status: ✅ N/A** (no test script to run)
-- **TODO:** Add test script, Jest config, and tests
+
+**Required Tests:**
+- [ ] MCP tools tests
+- [ ] MQTT integration tests
+- [ ] Device registry tests
 
 ---
 
-### Required Tests (Before Demo)
+## Deprecated: Old Voice Architecture
 
-#### Phase 1: Core Functionality Tests (CRITICAL)
+**Do NOT implement the following** (kept for historical reference):
+- ❌ Porcupine (Picovoice) wake word + API key validation
+- ❌ WebRTC VAD C++ bindings
+- ❌ whisper.cpp build + direct bindings
+- ❌ Text-only responses (replaced with Piper TTS)
 
-**Oracle App:**
-
-- [ ] **MQTT Client Tests** (`apps/oracle/src/lib/mqtt/__tests__/client.test.js`)
-    - [ ] Connection establishment and reconnection
-    - [ ] Message publishing with QoS 1
-    - [ ] Topic subscription and message handling
-    - [ ] Error handling and recovery
-    - [ ] Singleton pattern validation
-
-- [ ] **LangChain Tools Tests** (`apps/oracle/src/lib/langchain/__tests__/tools.test.js`)
-    - [ ] Device listing tool
-    - [ ] Device control tool (turn on/off)
-    - [ ] Device status query tool
-    - [ ] Tool parameter validation (Zod schemas)
-    - [ ] Error handling for unavailable devices
-
-- [ ] **Device Service Tests** (`apps/oracle/src/lib/services/__tests__/device-service.test.js`)
-    - [ ] Prisma queries (list, get by ID, update status)
-    - [ ] MQTT message formatting
-    - [ ] Device state synchronization
-
-**Voice Gateway OWW:**
-
-- [ ] **Wake Word Detection Tests** (`apps/voice-gateway-oww/src/__tests__/wake-word.test.js`)
-    - [ ] OWW model loading and initialization
-    - [ ] Audio buffer processing
-    - [ ] Wake word confidence threshold validation
-    - [ ] Multiple wake word handling
-
-- [ ] **STT/TTS Tests** (`apps/voice-gateway-oww/src/__tests__/speech.test.js`)
-    - [ ] Whisper transcription via Ollama
-    - [ ] Piper TTS audio generation
-    - [ ] Audio format conversion
-    - [ ] Error handling for unavailable services
-
-- [ ] **State Machine Tests** (`apps/voice-gateway-oww/src/__tests__/state-machine.test.js`)
-    - [ ] XState transitions (idle → listening → processing → speaking)
-    - [ ] Timeout handling in listening state
-    - [ ] Wake word re-enable after speech playback
-    - [ ] Error recovery transitions
-
-**Voice Gateway Common:**
-
-- [ ] **Audio Utils Tests** (`apps/voice-gateway-common/__tests__/audioUtils.test.js`)
-    - [ ] Audio format conversions
-    - [ ] Buffer manipulations
-    - [ ] Sample rate conversions
-
-- [ ] **STT Module Tests** (`apps/voice-gateway-common/__tests__/stt.test.js`)
-    - [ ] Ollama Whisper integration
-    - [ ] Transcription accuracy validation
-    - [ ] Error handling
-
-**Z-Wave MCP Server:**
-
-- [ ] **MCP Tools Tests** (`apps/zwave-mcp-server/src/__tests__/tools.test.js`)
-    - [ ] Device discovery tool
-    - [ ] Device control tool
-    - [ ] Parameter validation
-    - [ ] MQTT message formatting
-
-#### Phase 2: API Integration Tests
-
-- [ ] **API Route Tests** (`apps/oracle/src/app/api/__tests__/`)
-    - [ ] `/api/devices` - List all devices
-    - [ ] `/api/devices/[id]` - Get device by ID
-    - [ ] `/api/chat` - LangChain conversation endpoint
-    - [ ] Auth0 session validation on protected routes
-
-#### Phase 3: Component Tests (Lower Priority)
-
-- [ ] **React Component Tests** (`apps/oracle/src/components/__tests__/`)
-    - [ ] DeviceList component rendering
-    - [ ] ChatInput component interaction
-    - [ ] Device control UI elements
+All old voice subsections are deprecated. Use current offline stack above.
 
 ---
 
-### Test Coverage Goals
+## Progress Snapshot
 
-```
-Minimum:  60% overall (matches jest.config.mjs)
-Critical: 80%+ for MQTT client, LangChain tools, device service, wake word detection
-Nice:     90%+ for utilities and helpers
-```
-
-### Test Setup Status
-
-- [x] **Oracle**: Jest configured, passWithNoTests enabled, placeholder test exists
-- [x] **Voice Gateway OWW**: Jest configured, --passWithNoTests flag enabled
-- [x] **Voice Gateway Common**: Test script fixed to not fail CI
-- [ ] **Voice Gateway Common**: TODO - Add Jest config and actual tests
-- [ ] **Z-Wave MCP Server**: TODO - Add test script, Jest config, and tests
-- [ ] **TODO: Remove all passWithNoTests flags after Phase 1 tests are written**
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 0: Infrastructure | 🟡 Partial | HiveMQ running, Ollama configured |
+| Phase 1: Project Setup | ✅ Complete | Next.js app, Prisma, basic structure |
+| Phase 2: AI Chatbot | 🔄 In Progress | API + streaming done; tools need DB |
+| Phase 3: MQTT | 🔄 In Progress | Broker up; client wiring needed |
+| Phase 4: Z-Wave | ⏳ Not Started | Pending device pairing |
+| Phase 5: Voice | 🔄 In Progress | Core path done; stability + TTS needed |
+| Phase 8: Presentation | ⏳ Not Started | Pending demo completion |
 
 ---
 
-### Action Items (Prioritized)
+## Completed Work Summary
 
-**URGENT (CI was failing):**
+See `docs/delivered.md` for detailed list of completed features.
 
-1. ✅ **DONE:** Fix oracle Jest config - Added passWithNoTests
-2. ✅ **DONE:** Create placeholder test in oracle - example.test.js created
-3. ✅ **DONE:** Fix voice-gateway-common test script - Now exits with code 0
-
-**HIGH (Phase 1 - Core Tests):**
-
-4. **Oracle:** Write MQTT client tests
-5. **Oracle:** Write LangChain tools tests
-6. **Oracle:** Write device service tests
-7. **Voice Gateway OWW:** Write wake word detection tests
-8. **Voice Gateway OWW:** Write STT/TTS tests
-9. **Voice Gateway OWW:** Write state machine tests
-
-**MEDIUM (Phase 2):**
-
-10. **Oracle:** Write API route tests
-11. **Voice Gateway Common:** Add Jest config
-12. **Voice Gateway Common:** Write audio utils tests
-13. **Z-Wave MCP Server:** Add test infrastructure
-
-**LOW (Phase 3):**
-
-14. **Oracle:** Write component tests
-
-**BEFORE DEMO:**
-
-15. Achieve 60%+ coverage minimum on oracle app
-16. Achieve 60%+ coverage on voice-gateway-oww app
-17. Remove all `passWithNoTests` flags from configs
+**Key Achievements:**
+- ✅ Next.js app with LangChain + Ollama
+- ✅ Prisma + SQLite with seed devices
+- ✅ Chat API with streaming SSE
+- ✅ HiveMQ broker connectivity verified
+- ✅ Voice Gateway service skeleton
+- ✅ OpenWakeWord + Whisper integration
+- ✅ MQTT contracts defined
 
 ---
 
-## Quick Links
+## Immediate Action Items (This Week)
 
-- Active Tasks: tasks-active.md
-- Delivered: delivered.md
-- Requirements (condensed): requirements.md
-- Network: network-dependencies.md
-- Voice: voice-gateway-architecture.md
-- Outline (current): outline.md
+**Priority 1 (DEMO CRITICAL):**
+1. Device tools → Prisma + MQTT command publish
+2. MQTT client singleton with reconnect logic
+3. Voice Gateway: STT timeout + re-enable wake word
+4. Piper TTS playback integration
+
+**Priority 2:**
+5. End-to-end demo pass (text + voice)
+6. Z-Wave device pairing and testing
+7. Write critical path tests (60%+ coverage)
+
+**Priority 3:**
+8. Presentation slide deck
+9. Demo script and practice runs
+10. Documentation updates
+
+---
+
+## Related Documentation
+
+- **Architecture:** `docs/voice-gateway-architecture.md`
+- **Requirements:** `docs/requirements.md`
+- **Completed Work:** `docs/delivered.md`
+- **Network Dependencies:** `docs/network-dependencies.md`
+- **Repository Guidelines:** `docs/repository-guidelines.md`
+- **Main Project README:** `../README.md`
