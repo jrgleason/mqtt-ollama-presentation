@@ -551,7 +551,7 @@ mkdir -p models
 # Download OpenWakeWord models
 wget https://github.com/dscripka/openWakeWord/releases/download/v0.1.1/openwakeword_melspectrogram.onnx -O models/openwakeword_melspectrogram.onnx
 wget https://github.com/dscripka/openWakeWord/releases/download/v0.1.1/openwakeword_embedding_model.onnx -O models/openwakeword_embedding_model.onnx
-wget https://github.com/dscripka/openWakeWord/releases/download/v0.1.1/hey_jarvis_v0.1.onnx -O models/hey_jarvis_v0.1.onnx
+wget https://github.com/fwartner/home-assistant-wakewords-collection/raw/refs/heads/main/en/Hey%20Luna/hey_jarvis_v0.1.onnx
 
 # Download Whisper model (via Ollama)
 ollama pull whisper:latest

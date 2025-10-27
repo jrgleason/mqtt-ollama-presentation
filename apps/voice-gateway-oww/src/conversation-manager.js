@@ -56,6 +56,27 @@ class ConversationManager {
     }
 
     /**
+     * Create a safe string preview for logging
+     * @param {any} value
+     * @returns {string}
+     */
+    static preview(value) {
+        let str;
+        if (value == null) {
+            str = '';
+        } else if (typeof value === 'string') {
+            str = value;
+        } else {
+            try {
+                str = JSON.stringify(value);
+            } catch {
+                str = String(value);
+            }
+        }
+        return str.length > 50 ? str.substring(0, 50) : str;
+    }
+
+    /**
      * Add a user message to conversation history
      * @param {string} userMessage - The user's message
      */
@@ -65,9 +86,13 @@ class ConversationManager {
             this.reset();
         }
 
+        const content = (userMessage == null) ? '' : (typeof userMessage === 'string' ? userMessage : (() => {
+            try { return JSON.stringify(userMessage); } catch { return String(userMessage); }
+        })());
+
         this.messages.push({
             role: 'user',
-            content: userMessage,
+            content,
             timestamp: new Date().toISOString(),
         });
 
@@ -76,7 +101,7 @@ class ConversationManager {
 
         logger.debug('Added user message to conversation', {
             messageCount: this.messages.length,
-            userMessage: userMessage.substring(0, 50),
+            userMessage: ConversationManager.preview(content),
         });
     }
 
@@ -85,9 +110,13 @@ class ConversationManager {
      * @param {string} assistantMessage - The assistant's response
      */
     addAssistantMessage(assistantMessage) {
+        const content = (assistantMessage == null) ? '' : (typeof assistantMessage === 'string' ? assistantMessage : (() => {
+            try { return JSON.stringify(assistantMessage); } catch { return String(assistantMessage); }
+        })());
+
         this.messages.push({
             role: 'assistant',
-            content: assistantMessage,
+            content,
             timestamp: new Date().toISOString(),
         });
 
@@ -96,7 +125,7 @@ class ConversationManager {
 
         logger.debug('Added assistant message to conversation', {
             messageCount: this.messages.length,
-            assistantMessage: assistantMessage.substring(0, 50),
+            assistantMessage: ConversationManager.preview(content),
         });
     }
 

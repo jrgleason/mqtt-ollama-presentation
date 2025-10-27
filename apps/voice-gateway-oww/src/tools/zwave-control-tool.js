@@ -80,25 +80,30 @@ export const zwaveControlTool = {
     type: 'function',
     function: {
         name: 'control_zwave_device',
-        description: 'Control Z-Wave smart home devices (switches, lights, dimmers). ONLY use this when the user explicitly asks to control a physical device with commands like "turn on/off the light", "dim the switch", or "check device status". DO NOT use this tool for general questions, information requests, or abstract concepts. This is ONLY for controlling real smart home hardware.',
+        description: 'Control Z-Wave smart home devices (switches, lights, dimmers). Only use when the user explicitly asks to control a device or check device status.',
         parameters: {
             type: 'object',
+            description: 'Parameters to perform a Z-Wave device control action.',
             properties: {
                 deviceName: {
                     type: 'string',
-                    description: 'The EXACT name of the physical smart home device (e.g., "Switch One", "Living Room Light", "Bedroom Dimmer")'
+                    minLength: 1,
+                    description: 'Exact device name (e.g., "Switch One", "Living Room Light").'
                 },
                 action: {
                     type: 'string',
                     enum: ['on', 'off', 'dim', 'status'],
-                    description: 'Action to perform: "on" (turn on device), "off" (turn off device), "dim" (set brightness), or "status" (check if device is online)'
+                    description: 'Action to perform.'
                 },
                 level: {
                     type: 'number',
-                    description: 'Brightness level for dimming (0-100). Only used when action is "dim".'
+                    minimum: 0,
+                    maximum: 100,
+                    description: 'Brightness level (0-100). Used only when action is "dim".'
                 }
             },
-            required: ['deviceName', 'action']
+            required: ['deviceName', 'action'],
+            additionalProperties: false
         }
     }
 };

@@ -5,6 +5,7 @@
  */
 
 import {logger} from '../logger.js';
+import {getCurrentDateTime} from './datetime-tool.js';
 
 /**
  * Search Google using a simple web scraping approach
@@ -74,16 +75,20 @@ export const searchTool = {
     type: 'function',
     function: {
         name: 'search_web',
-        description: 'REQUIRED: Search the web for factual information, current events, or answers to questions. You MUST call this function whenever the user asks "who is", "what is", "where is", "when did", "how many", or requests to search/google/look up information. DO NOT guess or make up facts - always call this function to get accurate information.',
+        description: 'REQUIRED: Search the web for factual information, current events, or answers to questions. If the user\'s question involves dates or relative time words (e.g., "next", "last", "upcoming"), you MUST also get today\'s date using the get_current_datetime tool to anchor your answer. DO NOT guess or make up facts - use this function to retrieve information.',
         parameters: {
             type: 'object',
+            description: 'Parameters for performing a web search query.',
             properties: {
                 query: {
                     type: 'string',
+                    minLength: 1,
+                    maxLength: 256,
                     description: 'The search query (e.g., "current weather in New York", "who won the 2024 Super Bowl", "population of Tokyo")'
                 }
             },
-            required: ['query']
+            required: ['query'],
+            additionalProperties: false
         }
     }
 };
@@ -100,7 +105,15 @@ export async function executeSearchTool(args) {
     }
 
     logger.info(`🔍 Search tool executing for: "${args.query}"`);
+
+    // Always include current date/time context so the model has an anchor
+    const dt = getCurrentDateTime();
+    const isoDate = `${dt.year}-${String(dt.monthNumber).padStart(2, '0')}-${String(dt.dayOfMonth).padStart(2, '0')}`;
+    const contextLine = `[Context: Today is ${dt.dayOfWeek}, ${dt.month} ${dt.dayOfMonth}, ${dt.year} (${isoDate}) in timezone ${dt.timezone}.]`;
+
     const result = await searchGoogle(args.query);
     logger.debug(`✅ Search result: ${result.substring(0, 100)}...`);
-    return result;
+
+    // Prepend context; keep behavior additive and concise
+    return `${contextLine} ${result}`;
 }

@@ -14,6 +14,7 @@ import wav from 'wav';
 import {assign, createMachine, interpret} from 'xstate';
 import {fillMelBufferWithZeros, newDetectorState, transcribeWithWhisper} from '@jrg-voice/common';
 import {checkOllamaHealth, queryOllama} from './ollama-client.js';
+import {checkAnthropicHealth, queryAnthropic} from './anthropic-client.js';
 import {connectMQTT, publishAIResponse, publishTranscription} from './mqtt-client.js';
 import {conversationManager} from './conversation-manager.js';
 import {checkElevenLabsHealth, synthesizeSpeech} from './elevenlabs-tts.js';
@@ -22,6 +23,7 @@ import {dateTimeTool, executeDateTimeTool} from './tools/datetime-tool.js';
 import {searchTool, executeSearchTool} from './tools/search-tool.js';
 import {zwaveControlTool, executeZWaveControlTool} from './tools/zwave-control-tool.js';
 import {playErrorSound} from './audio-feedback.js';
+import {streamSpeak} from './streaming-tts.js';
 
 // OpenWakeWord constants
 const SAMPLE_RATE = 16000;
@@ -36,6 +38,9 @@ const isLinux = process.platform === 'linux';
 // Small helpers
 const msToSamples = (ms, rate = SAMPLE_RATE) => Math.floor((ms / 1000) * rate);
 const PRE_ROLL_SAMPLES = msToSamples(PRE_ROLL_MS);
+
+// Safely derive a string message from unknown errors
+const errMsg = (e) => (e instanceof Error ? e.message : String(e));
 
 const toFloat32FromInt16Buffer = (buf) => {
     const pcm = new Int16Array(buf.buffer, buf.byteOffset, buf.length / Int16Array.BYTES_PER_ELEMENT);
@@ -238,6 +243,8 @@ class OpenWakeWordDetector {
         this.embeddingBufferFilled = detState.embeddingBufferFilled;
         this.framesSinceLastPrediction = detState.framesSinceLastPrediction;
         this.stepSize = 8; // every 8 frames (80ms)
+        this._owwInfoLogged = false;
+        this._detectionsLogged = 0;
     }
 
     async initialize() {
@@ -301,6 +308,18 @@ class OpenWakeWordDetector {
         const embeddingDims = embeddingOutput.dims;
         const embeddingSize = embeddingDims[embeddingDims.length - 1];
 
+        if (!this._owwInfoLogged) {
+            logger.debug('🔎 OWW model diagnostics', {
+                wakeWordModel: this.wakeWordModel,
+                melFrames: 76,
+                melBins: 32,
+                embeddingSize,
+                assumedWakeInputShape: `[1,16,${embeddingSize}]`,
+                sampleRate: SAMPLE_RATE
+            });
+            this._owwInfoLogged = true;
+        }
+
         this.embeddingBuffer.push(new Float32Array(embeddingData));
         if (this.embeddingBuffer.length > 16) this.embeddingBuffer.shift();
         if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= 16) {
@@ -317,7 +336,13 @@ class OpenWakeWordDetector {
 
         // Step 6: wake word detection
         const inputName = this.wakeWordSession.inputNames[0];
+        const t0 = Date.now();
         const wakeWordResult = await this.wakeWordSession.run({[inputName]: wakeWordTensor});
+        const inferMs = Date.now() - t0;
+        if (this._detectionsLogged < 5) {
+            this._detectionsLogged++;
+            logger.debug('🔎 OWW detection tick', {inferMs, frames: 16, embeddingSize});
+        }
         return Object.values(wakeWordResult)[0].data[0];
     }
 }
@@ -349,7 +374,7 @@ async function backgroundTranscribe(audioSamples) {
 
                 // Publish to MQTT in background (don't await)
                 publishTranscription(transcription, {duration: audioSamples.length / SAMPLE_RATE})
-                    .catch(err => logger.debug('MQTT publish failed', {error: err.message}));
+                    .catch(err => logger.debug('MQTT publish failed', {error: errMsg(err)}));
 
                 try {
                     conversationManager.addUserMessage(transcription);
@@ -366,7 +391,7 @@ async function backgroundTranscribe(audioSamples) {
                         pattern.test(transcription)
                     );
 
-                    let systemPrompt = 'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only. No <think> tags. IMPORTANT: When the user asks about the current date, time, day, or any temporal information, you MUST use the get_current_datetime tool. When the user asks you to search for information, you MUST use the search_web tool. Always use the appropriate tool when available.';
+                    let systemPrompt = 'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only. No <think> tags. IMPORTANT: When the user asks about the current date, time, day, or any temporal information, you MUST use the get_current_datetime tool. For any relative-date question (e.g., "next", "last", "upcoming" events like "next full moon"), you MUST first call get_current_datetime to anchor today\'s date, then use search_web if needed. When the user asks you to search for information, you MUST use the search_web tool. Always choose and chain tools appropriately. Output only the final concise answer in English.';
 
                     // Add device information to context if asking about devices
                     if (isDeviceQuery) {
@@ -416,31 +441,17 @@ async function backgroundTranscribe(audioSamples) {
                         /what (time|date) is it/i,
                         /what'?s the (time|date)/i,
                         /what day is (it|today)/i,
+                        /what day of the week/i,
+                        /what month is (it|this)/i,
+                        /what'?s the month/i,
                         /what'?s today'?s date/i,
                         /tell me the (time|date)/i,
-                        /current (time|date)/i,
+                        /current (time|date|day|month|year)/i,
                         /what year is (it|this)/i,
-                        /can you tell me (what|the) (time|date)/i,
+                        /can you tell me (what|the) (time|date|day)/i,
                     ];
 
                     const isDateTimeQuery = dateTimePatterns.some(pattern =>
-                        pattern.test(transcription)
-                    );
-
-                    // Detect if this is a search query (fallback for when AI doesn't use tools)
-                    const searchPatterns = [
-                        /search (for|google|the web)/i,
-                        /google (for|search)/i,
-                        /look up/i,
-                        /find (information|out) (about|on)/i,
-                        /who is/i,
-                        /what is/i,
-                        /where is/i,
-                        /when (did|was|is)/i,
-                        /how (many|much|does)/i,
-                    ];
-
-                    const isSearchQuery = searchPatterns.some(pattern =>
                         pattern.test(transcription)
                     );
 
@@ -461,24 +472,15 @@ async function backgroundTranscribe(audioSamples) {
                     // This is more reliable than hoping the small model uses tools correctly
                     let aiResponse;
                     let aiDuration;
+                    let usedStreaming = false;
 
                     if (isDateTimeQuery) {
                         logger.info('📅 Date/time query detected, using datetime tool directly');
                         const aiStartTime = Date.now();
-                        aiResponse = executeDateTimeTool();
+                        aiResponse = executeDateTimeTool({}, transcription);
                         aiDuration = Date.now() - aiStartTime;
                         logger.debug('✅ Using direct datetime tool result (bypassing AI)');
-                    } else if (isSearchQuery) {
-                        logger.info('🔍 Search query detected, using search tool directly');
-                        const aiStartTime = Date.now();
-                        // Extract the query from the transcription
-                        const query = transcription
-                            .replace(/^(search for|google|look up|find information about|find out about|who is|what is|where is|when did|when was|when is|how many|how much|how does)\s*/i, '')
-                            .trim();
-                        const searchResult = await executeSearchTool({query});
-                        aiResponse = searchResult;
-                        aiDuration = Date.now() - aiStartTime;
-                        logger.debug('✅ Using direct search tool result (bypassing AI)', {query, result: searchResult.substring(0, 100)});
+                        usedStreaming = false;
                     } else if (isDeviceControlQuery) {
                         logger.info('🏠 Device control query detected, using Z-Wave tool directly');
                         const aiStartTime = Date.now();
@@ -537,7 +539,7 @@ async function backgroundTranscribe(audioSamples) {
 
                         // Parse the status result to check if device exists and is online
                         // The result is formatted like: "Switch One (node 5 · Demo) — ready: yes | available: no | status: Asleep"
-                        const deviceNameLower = deviceName.toLowerCase();
+                        const deviceNameLower = (deviceName || '').toLowerCase();
                         const statusLines = statusResult.split('\n');
                         let deviceFound = false;
                         let deviceOnline = false;
@@ -564,12 +566,11 @@ async function backgroundTranscribe(audioSamples) {
                         } else {
                             // Device exists and is online, proceed with control
                             if (action) {
-                                const controlResult = await executeZWaveControlTool({
+                                aiResponse = await executeZWaveControlTool({
                                     deviceName,
                                     action,
                                     level
                                 });
-                                aiResponse = controlResult;
                             } else {
                                 aiResponse = `I'm not sure what you want me to do with ${deviceName}. Try "turn on" or "turn off".`;
                             }
@@ -577,16 +578,44 @@ async function backgroundTranscribe(audioSamples) {
 
                         aiDuration = Date.now() - aiStartTime;
                         logger.debug('✅ Using direct Z-Wave control tool result (bypassing AI)', {deviceName, action, result: aiResponse.substring(0, 100)});
+                        usedStreaming = false;
                     } else {
                         // Performance timing: AI inference
                         const aiStartTime = Date.now();
-                        aiResponse = await queryOllama(null, {messages, tools, toolExecutor});
-                        aiDuration = Date.now() - aiStartTime;
+
+                        if (config.ai.provider === 'anthropic' && config.tts.enabled && config.tts.streaming) {
+                            // Streaming path: speak as tokens arrive
+                            logger.debug('🔊 Streaming TTS engaged (Anthropic + streaming=true)');
+                            const tts = await streamSpeak('', {});
+                            // Stream tokens directly into TTS
+                            aiResponse = await queryAnthropic(null, {
+                                messages,
+                                tools,
+                                toolExecutor,
+                                onToken: (piece) => {
+                                    // Backpressure is handled inside streamSpeak queue/flush
+                                    tts.pushText(piece);
+                                }
+                            });
+                            await tts.finalize();
+                            aiDuration = Date.now() - aiStartTime;
+                            usedStreaming = true;
+                        } else {
+                            // Use appropriate AI provider based on config (non-streaming)
+                            if (config.ai.provider === 'anthropic') {
+                                aiResponse = await queryAnthropic(null, {messages, tools, toolExecutor});
+                            } else {
+                                aiResponse = await queryOllama(null, {messages, tools, toolExecutor});
+                            }
+                            aiDuration = Date.now() - aiStartTime;
+                            usedStreaming = false;
+                        }
                     }
 
                     conversationManager.addAssistantMessage(aiResponse);
 
-                    logger.info(`🤖 AI Response: "${aiResponse}" (${aiDuration}ms)`);
+                    const providerLabel = config.ai.provider === 'anthropic' ? 'Anthropic' : 'Ollama';
+                    logger.info(`🤖 AI Response (${providerLabel}): "${aiResponse}" (${aiDuration}ms)`);
 
                     // Play response received beep (dual-tone ascending)
                     try {
@@ -596,24 +625,33 @@ async function backgroundTranscribe(audioSamples) {
                     }
 
                     // Publish to MQTT in background (don't await)
+                    const modelName = config.ai.provider === 'anthropic' ? config.anthropic.model : config.ollama.model;
                     publishAIResponse(transcription, aiResponse, {
-                        model: config.ollama.model,
-                        conversationTurns: Math.floor(convSummary.totalMessages / 2)
-                    }).catch(err => logger.debug('MQTT publish failed', {error: err.message}));
+                        model: modelName,
+                        conversationTurns: Math.floor(convSummary.totalMessages / 2),
+                        provider: config.ai.provider,
+                        duration: aiDuration,
+                    }).catch(err => logger.debug('MQTT publish failed', {error: errMsg(err)}));
 
                     // Text-to-Speech
                     if (config.tts.enabled) {
                         try {
-                            logger.debug('🔊 Generating speech...');
-                            const audioBuffer = await synthesizeSpeech(aiResponse, {
-                                volume: config.tts.volume,
-                                speed: config.tts.speed
-                            });
+                            // If we already streamed speech in this turn, skip batch TTS playback
+                            const alreadySpoken = usedStreaming === true;
+                            if (!alreadySpoken) {
+                                logger.debug('🔊 Generating speech...');
+                                const audioBuffer = await synthesizeSpeech(aiResponse, {
+                                    volume: config.tts.volume,
+                                    speed: config.tts.speed
+                                });
 
-                            if (audioBuffer && audioBuffer.length > 0) {
-                                logger.debug('🔊 Playing AI response through speaker...');
-                                await playAudio(audioBuffer);
-                                logger.debug('✅ AI response playback complete');
+                                if (audioBuffer && audioBuffer.length > 0) {
+                                    logger.debug('🔊 Playing AI response through speaker...');
+                                    await playAudio(audioBuffer);
+                                    logger.debug('✅ AI response playback complete');
+                                }
+                            } else {
+                                logger.debug('🔊 Skipping batch TTS (already spoken via streaming)');
                             }
                         } catch (ttsError) {
                             logger.error('❌ TTS failed', {
@@ -635,7 +673,7 @@ async function backgroundTranscribe(audioSamples) {
             // Play error sound
             try {
                 await playErrorSound();
-            } catch (soundErr) {
+            } catch {
                 // Silently fail if audio playback isn't available
             }
         } finally {
@@ -659,17 +697,32 @@ async function main() {
         await connectMQTT();
         logger.debug('✅ MQTT connection established');
     } catch (err) {
-        logger.error('❌ Failed to connect to MQTT broker', {error: err.message});
+        logger.error('❌ Failed to connect to MQTT broker', {error: errMsg(err)});
         logger.warn('⚠️ Continuing without MQTT - AI responses will be logged only');
     }
 
-    // Ollama
-    try {
-        const ollamaReady = await checkOllamaHealth();
-        if (!ollamaReady) logger.warn('⚠️ Ollama not ready - AI responses may fail');
-    } catch (err) {
-        logger.error('❌ Ollama health check failed', {error: err.message});
-        logger.warn('⚠️ Continuing without Ollama - transcriptions will work but no AI responses');
+    // AI Provider Health Check
+    if (config.ai.provider === 'anthropic') {
+        logger.info('🤖 Using Anthropic (Claude) for AI inference');
+        try {
+            const anthropicReady = await checkAnthropicHealth();
+            if (!anthropicReady) {
+                logger.warn('⚠️ Anthropic not ready - AI responses may fail');
+                logger.warn('⚠️ Check ANTHROPIC_API_KEY environment variable');
+            }
+        } catch (err) {
+            logger.error('❌ Anthropic health check failed', {error: errMsg(err)});
+            logger.warn('⚠️ Continuing without Anthropic - transcriptions will work but no AI responses');
+        }
+    } else {
+        logger.info('🤖 Using Ollama for AI inference');
+        try {
+            const ollamaReady = await checkOllamaHealth();
+            if (!ollamaReady) logger.warn('⚠️ Ollama not ready - AI responses may fail');
+        } catch (err) {
+            logger.error('❌ Ollama health check failed', {error: errMsg(err)});
+            logger.warn('⚠️ Continuing without Ollama - transcriptions will work but no AI responses');
+        }
     }
 
     // ElevenLabs TTS
@@ -682,7 +735,7 @@ async function main() {
                 logger.warn('⚠️ Ensure ffmpeg is installed: brew install ffmpeg (macOS) or apt-get install ffmpeg (Linux)');
             }
         } catch (err) {
-            logger.error('❌ ElevenLabs TTS health check failed', {error: err.message});
+            logger.error('❌ ElevenLabs TTS health check failed', {error: errMsg(err)});
             logger.warn('⚠️ Continuing without TTS - AI responses will be text only');
         }
     }
@@ -692,7 +745,7 @@ async function main() {
         try {
             await checkAlsaDevice(config.audio.micDevice, config.audio.sampleRate, config.audio.channels);
         } catch (err) {
-            logger.error('❌ ALSA device check failed', {device: config.audio.micDevice, error: err.message});
+            logger.error('❌ ALSA device check failed', {device: config.audio.micDevice, error: errMsg(err)});
             logger.warn('⚠️  Continuing anyway - mic library will try to use device');
         }
     }
@@ -709,7 +762,7 @@ async function main() {
         logger.info('✅ Z-Wave connection successful!');
         logger.debug('📋 Devices:', deviceInfo);
     } catch (err) {
-        logger.error('❌ ZWave MCP client initialization failed', {error: err.message});
+        logger.error('❌ ZWave MCP client initialization failed', {error: errMsg(err)});
         logger.warn('⚠️ Continuing without device information - device queries will not work');
     }
 
@@ -726,14 +779,19 @@ async function main() {
         let recordedAudio = [];
         let recordTimeout = null; // intentionally left for compatibility with existing clearTimeout
         let preRollBuffer = [];
+        let recordingStartedAt = 0;
+        let hasSpokenDuringRecording = false;
 
         // VAD params
         let silenceSampleCount = 0;
         const SILENCE_THRESHOLD = 0.001;
-        const SILENCE_DURATION_MS = config.vad.trailingSilenceMs || 1500;
+        const SILENCE_DURATION_MS = Math.max(1500, (config.vad.trailingSilenceMs || 1800));
+        const MIN_SPEECH_MS = Math.max(400, (config.vad.minSpeechMs || 700));
+        const GRACE_BEFORE_STOP_MS = Math.max(500, (config.vad.graceBeforeStopMs || 1200));
         const SILENCE_SAMPLES_REQUIRED = msToSamples(SILENCE_DURATION_MS);
         const MAX_RECORDING_MS = config.vad.maxUtteranceMs || 10000;
         const MAX_RECORDING_SAMPLES = msToSamples(MAX_RECORDING_MS);
+        const MIN_SPEECH_SAMPLES = msToSamples(MIN_SPEECH_MS);
 
         // State machine
         const voiceMachine = createMachine(
@@ -793,6 +851,8 @@ async function main() {
                         recordedAudio = preRollBuffer.slice();
                         preRollBuffer = [];
                         audioBuffer = [];
+                        recordingStartedAt = Date.now();
+                        hasSpokenDuringRecording = false;
                         safeDetectorReset(detector, 'start');
                         if (recordTimeout) clearTimeout(recordTimeout);
                     },
@@ -839,7 +899,7 @@ async function main() {
         const micInstance = mic(micConfig);
         const micInputStream = micInstance.getAudioStream();
 
-        micInputStream.on('error', (err) => logger.error('❌ Microphone stream error', {error: err.message}));
+        micInputStream.on('error', (err) => logger.error('❌ Microphone stream error', {error: errMsg(err)}));
 
         logger.debug('🎤 Starting microphone...');
         micInstance.start();
@@ -932,7 +992,7 @@ async function main() {
                         // transition to "recording" immediately which stops further wake detections.
                     }
                 } catch (err) {
-                    logger.error('Error in wake word detection', {error: err.message});
+                    logger.error('Error in wake word detection', {error: errMsg(err)});
                 }
             }
 
@@ -957,12 +1017,25 @@ async function main() {
                             silenceDurationMs
                         });
                     }
-                    if (silenceSampleCount >= SILENCE_SAMPLES_REQUIRED) {
+                    const speechDurationMs = Math.floor((recordedAudio.length / SAMPLE_RATE) * 1000);
+                    const sinceStartMs = Date.now() - recordingStartedAt;
+                    const graceActive = !hasSpokenDuringRecording && sinceStartMs < GRACE_BEFORE_STOP_MS;
+                    if (graceActive) {
+                        logger.debug('⛳ Grace period active; not stopping on silence yet', {sinceStartMs, GRACE_BEFORE_STOP_MS});
+                    }
+                    if (!graceActive && silenceSampleCount >= SILENCE_SAMPLES_REQUIRED && recordedAudio.length >= MIN_SPEECH_SAMPLES) {
                         logger.debug('🔇 Silence detected, stopping recording', {
                             silenceDurationMs: Math.floor((silenceSampleCount / SAMPLE_RATE) * 1000),
-                            totalRecordingMs: Math.floor((recordedAudio.length / SAMPLE_RATE) * 1000)
+                            totalRecordingMs: speechDurationMs,
+                            minSpeechMs: MIN_SPEECH_MS
                         });
                         voiceService.send({type: 'SILENCE_DETECTED'});
+                    } else if (silenceSampleCount >= SILENCE_SAMPLES_REQUIRED) {
+                        logger.debug('⏳ Silence meets threshold but min speech not reached yet', {
+                            silenceDurationMs: Math.floor((silenceSampleCount / SAMPLE_RATE) * 1000),
+                            speechDurationMs,
+                            minSpeechMs: MIN_SPEECH_MS
+                        });
                     }
                 } else {
                     if (silenceSampleCount > 0) {
@@ -971,6 +1044,10 @@ async function main() {
                             threshold: SILENCE_THRESHOLD,
                             silenceDurationMs: Math.floor((silenceSampleCount / SAMPLE_RATE) * 1000)
                         });
+                    }
+                    if (!hasSpokenDuringRecording) {
+                        hasSpokenDuringRecording = true;
+                        logger.debug('✅ First speech detected within recording window');
                     }
                     silenceSampleCount = 0;
                 }
@@ -990,7 +1067,7 @@ async function main() {
         });
 
         process.on('uncaughtException', async (err) => {
-            logger.error('Uncaught exception', {error: err.message});
+            logger.error('Uncaught exception', {error: errMsg(err)});
             micInstance.stop();
             await shutdownMCPClient();
             process.exit(1);
@@ -1019,12 +1096,12 @@ async function main() {
             }
         }
     } catch (err) {
-        logger.error('Failed to initialize Voice Gateway', {error: err.message});
+        logger.error('Failed to initialize Voice Gateway', {error: errMsg(err)});
         process.exit(1);
     }
 }
 
 main().catch((err) => {
-    logger.error('Fatal error in main', {error: err.message});
+    logger.error('Fatal error in main', {error: errMsg(err)});
     process.exit(1);
 });

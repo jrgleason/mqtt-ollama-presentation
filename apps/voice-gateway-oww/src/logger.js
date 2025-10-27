@@ -37,7 +37,7 @@ class Logger {
                 warn: '\x1b[33m',
                 error: '\x1b[31m',
             }[level];
-            console.log(`${color}${emoji} [${level}]${'\x1b[0m'} ${message}`, metadata || '');
+            console.log(`${color}${emoji} [${level}]\x1b[0m ${message}`, metadata || '');
         }
     }
 
