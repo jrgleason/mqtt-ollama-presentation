@@ -80,18 +80,18 @@ export const zwaveControlTool = {
     type: 'function',
     function: {
         name: 'control_zwave_device',
-        description: 'REQUIRED: Control Z-Wave smart home devices (switches, lights, dimmers). You MUST call this function when the user asks to turn on/off a device, dim a light, or control any smart home device. ALWAYS check device status first before attempting control.',
+        description: 'Control Z-Wave smart home devices (switches, lights, dimmers). ONLY use this when the user explicitly asks to control a physical device with commands like "turn on/off the light", "dim the switch", or "check device status". DO NOT use this tool for general questions, information requests, or abstract concepts. This is ONLY for controlling real smart home hardware.',
         parameters: {
             type: 'object',
             properties: {
                 deviceName: {
                     type: 'string',
-                    description: 'The name of the device to control (e.g., "Switch One", "Demo Switch", "Living Room Light")'
+                    description: 'The EXACT name of the physical smart home device (e.g., "Switch One", "Living Room Light", "Bedroom Dimmer")'
                 },
                 action: {
                     type: 'string',
                     enum: ['on', 'off', 'dim', 'status'],
-                    description: 'Action to perform: "on" (turn on), "off" (turn off), "dim" (set brightness), or "status" (check current state)'
+                    description: 'Action to perform: "on" (turn on device), "off" (turn off device), "dim" (set brightness), or "status" (check if device is online)'
                 },
                 level: {
                     type: 'number',
