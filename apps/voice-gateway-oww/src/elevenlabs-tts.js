@@ -120,7 +120,7 @@ async function convertMP3ToPCM(mp3Buffer) {
                 });
                 try {
                     unlinkSync(pcmPath);
-                } catch (e) {
+                } catch {
                     // Ignore cleanup errors
                 }
                 reject(new Error(`ffmpeg conversion failed (exit code ${code}): ${stderr}`));
