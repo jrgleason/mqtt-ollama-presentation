@@ -9,10 +9,24 @@ Offline voice command gateway for MQTT + Ollama home automation using OpenWakeWo
 - **Speech-to-Text:** Local Whisper.cpp (tiny model, 1.5s transcription)
 - **AI Response:** Ollama with qwen2.5:0.5b (~1s response time, optimized for Pi 5) or llama3.2:1b for better tool support (not suitable for lower-resource devices)
 - **Text-to-Speech:** ElevenLabs API with streaming (high-quality voice synthesis)
+- **Volume Control:** Voice commands to adjust speaker volume ("turn up the volume", "set volume to 50%")
 - **MQTT Integration:** Communicates with Oracle chatbot
 - **Local-First Processing:** Wake word, STT, and AI processing happen locally
 - **Cloud TTS:** High-quality voice output via ElevenLabs (requires internet)
 - **Fast Response Time:** ~7-10 seconds end-to-end (wake word to audio playback)
+
+## Technology Stack & Alternatives
+
+This voice gateway uses a **traditional ASR pipeline**: OpenWakeWord → Whisper.cpp → Ollama → ElevenLabs/Piper.
+
+**📖 For detailed comparison of ASR technologies, hardware requirements, and cost tradeoffs, see:**
+- **[Voice & ASR Technologies Guide](../../docs/voice-asr-technologies.md)** - Comprehensive guide covering:
+  - What is ASR and how it works
+  - Whisper.cpp vs Ultravox (multimodal voice LLM)
+  - ElevenLabs vs Piper TTS comparison
+  - Hardware requirements (Pi 5 vs GPU server)
+  - Cost analysis ($100 vs $2000+ options)
+  - When to use each approach
 
 ## Why OpenWakeWord?
 
@@ -163,6 +177,33 @@ USB Speaker (plughw:2,0) - Audio playback (~3s)
 - **After optimization:** 7 seconds (74% improvement)
 - See [Performance Optimization Guide](../../docs/performance-optimization.md) for details
 
+## Audio Feedback Beeps
+
+The voice gateway provides audio feedback through different beeps to indicate system state:
+
+| Beep | Sound | When Played |
+|------|-------|-------------|
+| **Wake Word** | 800Hz single tone (150ms) | Immediately when "Hey Jarvis" is detected. Confirms the system heard the wake word and is now listening for your command. |
+| **Processing** | 500Hz single tone (100ms) | When voice recording is complete. Indicates the system is transcribing and processing your query. |
+| **Response Ready** | 600Hz → 900Hz ascending dual-tone | When the AI response is ready. A two-tone "chime" signals the answer is about to be spoken. |
+| **Error** | 400Hz → 300Hz → 200Hz descending | When an error occurs (transcription failure, AI timeout, etc.). Three descending tones like a "sad trombone." |
+
+**Typical Interaction Flow:**
+1. Say "Hey Jarvis" → **Wake Word beep** (high-pitched)
+2. Speak your command → System records
+3. Stop speaking → **Processing beep** (medium-pitched)
+4. AI generates response → **Response Ready beep** (ascending chime)
+5. TTS speaks the response
+
+**Volume Control:**
+
+Beep volume can be adjusted via the `BEEP_VOLUME` environment variable (default: 0.3, range: 0.0-1.0):
+
+```bash
+# In .env file
+BEEP_VOLUME=0.5  # 50% volume
+```
+
 ## Available Wake Words
 
 OpenWakeWord includes several pre-trained models:
@@ -174,6 +215,63 @@ OpenWakeWord includes several pre-trained models:
 5. **weather** - "Weather"
 
 Custom wake words can be trained using the OpenWakeWord toolkit.
+
+## Voice Commands
+
+The voice assistant supports various commands through AI tool calling:
+
+### Volume Control
+
+Control the speaker volume using natural voice commands:
+
+**Get current volume:**
+- "What's the current volume?"
+- "How loud is the volume?"
+
+**Set specific volume:**
+- "Set volume to 50%"
+- "Set volume to 75 percent"
+- "Volume to half"
+
+**Increase volume:**
+- "Turn up the volume"
+- "Increase the volume"
+- "Make it louder"
+- "Volume up"
+
+**Decrease volume:**
+- "Turn down the volume"
+- "Decrease the volume"
+- "Make it quieter"
+- "Volume down"
+
+**Special commands:**
+- "Mute" - Set volume to 0
+- "Unmute" - Restore volume to 50%
+- "Maximum volume" / "Max volume" - Set to 100%
+
+### Z-Wave Device Control
+
+Control smart home devices:
+
+- "Turn on the living room light"
+- "Turn off the bedroom fan"
+- "What's the status of the kitchen light?"
+
+### Date & Time
+
+Get current date and time information:
+
+- "What time is it?"
+- "What's the date today?"
+- "What day of the week is it?"
+
+### Web Search
+
+Search for information:
+
+- "Search for the weather in Seattle"
+- "Look up the current price of Bitcoin"
 
 ## MQTT Topics
 

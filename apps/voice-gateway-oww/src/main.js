@@ -22,6 +22,7 @@ import {getDevicesForAI, initializeMCPClient, shutdownMCPClient} from './mcp-zwa
 import {dateTimeTool, executeDateTimeTool} from './tools/datetime-tool.js';
 import {searchTool, executeSearchTool} from './tools/search-tool.js';
 import {zwaveControlTool, executeZWaveControlTool} from './tools/zwave-control-tool.js';
+import {volumeControlTool, executeVolumeControlTool} from './tools/volume-control-tool.js';
 import {playErrorSound} from './audio-feedback.js';
 import {streamSpeak} from './streaming-tts.js';
 
@@ -228,10 +229,11 @@ const checkAlsaDevice = async (alsaDevice, rate, channels) => {
  * OpenWakeWord Model Manager with Mel Spectrogram Buffering
  */
 class OpenWakeWordDetector {
-    constructor(modelsPath, wakeWordModel, threshold = 0.5) {
+    constructor(modelsPath, wakeWordModel, threshold = 0.5, embeddingFrames = 16) {
         this.modelsPath = modelsPath;
         this.wakeWordModel = wakeWordModel;
         this.threshold = threshold;
+        this.embeddingFrames = embeddingFrames; // Configurable: 16 for hey_jarvis, 28 for hello_robot
         this.melSession = null;
         this.embeddingSession = null;
         this.wakeWordSession = null;
@@ -311,28 +313,27 @@ class OpenWakeWordDetector {
         if (!this._owwInfoLogged) {
             logger.debug('🔎 OWW model diagnostics', {
                 wakeWordModel: this.wakeWordModel,
-                melFrames: 76,
-                melBins: 32,
                 embeddingSize,
-                assumedWakeInputShape: `[1,16,${embeddingSize}]`,
+                embeddingFrames: this.embeddingFrames,
+                wakeInputShape: `[1,${this.embeddingFrames},${embeddingSize}]`,
                 sampleRate: SAMPLE_RATE
             });
             this._owwInfoLogged = true;
         }
 
         this.embeddingBuffer.push(new Float32Array(embeddingData));
-        if (this.embeddingBuffer.length > 16) this.embeddingBuffer.shift();
-        if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= 16) {
+        if (this.embeddingBuffer.length > this.embeddingFrames) this.embeddingBuffer.shift();
+        if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= this.embeddingFrames) {
             this.embeddingBufferFilled = true;
             logger.info('🎧 Listening for wake word...');
         }
         if (!this.embeddingBufferFilled) return 0;
 
-        // Step 5: wake word input [1,16,96]
-        const wakeWordInput = new Float32Array(16 * embeddingSize);
-        for (let i = 0; i < 16; i++) for (let j = 0; j < embeddingSize; j++) wakeWordInput[i * embeddingSize + j] = this.embeddingBuffer[i][j];
+        // Step 5: wake word input [1,embeddingFrames,embeddingSize]
+        const wakeWordInput = new Float32Array(this.embeddingFrames * embeddingSize);
+        for (let i = 0; i < this.embeddingFrames; i++) for (let j = 0; j < embeddingSize; j++) wakeWordInput[i * embeddingSize + j] = this.embeddingBuffer[i][j];
 
-        const wakeWordTensor = new ort.Tensor('float32', wakeWordInput, [1, 16, embeddingSize]);
+        const wakeWordTensor = new ort.Tensor('float32', wakeWordInput, [1, this.embeddingFrames, embeddingSize]);
 
         // Step 6: wake word detection
         const inputName = this.wakeWordSession.inputNames[0];
@@ -341,7 +342,7 @@ class OpenWakeWordDetector {
         const inferMs = Date.now() - t0;
         if (this._detectionsLogged < 5) {
             this._detectionsLogged++;
-            logger.debug('🔎 OWW detection tick', {inferMs, frames: 16, embeddingSize});
+            logger.debug('🔎 OWW detection tick', {inferMs, frames: this.embeddingFrames, embeddingSize});
         }
         return Object.values(wakeWordResult)[0].data[0];
     }
@@ -417,7 +418,7 @@ async function backgroundTranscribe(audioSamples) {
                     }
 
                     // Define available tools
-                    const tools = [dateTimeTool, searchTool, zwaveControlTool];
+                    const tools = [dateTimeTool, searchTool, zwaveControlTool, volumeControlTool];
 
                     // Tool executor function
                     const toolExecutor = async (toolName, toolArgs) => {
@@ -430,6 +431,8 @@ async function backgroundTranscribe(audioSamples) {
                                 return await executeSearchTool(toolArgs);
                             case 'control_zwave_device':
                                 return await executeZWaveControlTool(toolArgs);
+                            case 'control_speaker_volume':
+                                return executeVolumeControlTool(toolArgs);
                             default:
                                 logger.warn(`⚠️ Unknown tool requested: ${toolName}`);
                                 return `Error: Unknown tool ${toolName}`;
@@ -770,7 +773,12 @@ async function main() {
         // OWW detector
         const modelsDir = path.dirname(config.openWakeWord.modelPath);
         const wakeWordModelFile = path.basename(config.openWakeWord.modelPath);
-        const detector = new OpenWakeWordDetector(modelsDir, wakeWordModelFile, config.openWakeWord.threshold);
+        const detector = new OpenWakeWordDetector(
+            modelsDir,
+            wakeWordModelFile,
+            config.openWakeWord.threshold,
+            config.openWakeWord.embeddingFrames
+        );
         await detector.initialize();
 
         // Buffers and state
@@ -797,12 +805,18 @@ async function main() {
         const voiceMachine = createMachine(
             {
                 id: 'voice',
-                initial: 'listening',
+                initial: 'startup',
                 context: {
                     lastTrigger: 0,
                     minRearmMs: config.audio.triggerCooldownMs || 1500
                 },
                 states: {
+                    startup: {
+                        entry: () => logger.debug('🚀 Startup mode - microphone muted until ready'),
+                        on: {
+                            READY: 'listening'
+                        }
+                    },
                     listening: {
                         entry: () => logger.debug('🎧 Listening for wake word...'),
                         on: {
@@ -908,6 +922,12 @@ async function main() {
         let detectionCount = 0;
         let firstChunkLogged = false;
 
+        // Debug recording state (for hello_robot debugging)
+        const DEBUG_BUFFER_DURATION_MS = 3000;
+        const DEBUG_BUFFER_SIZE = Math.floor((SAMPLE_RATE * DEBUG_BUFFER_DURATION_MS) / 1000);
+        let debugAudioBuffer = [];
+        let savedRecordingCount = 0;
+
         const micTimeout = setTimeout(() => {
             if (audioChunkCount === 0) {
                 logger.error('❌ No audio chunks received after 3 seconds!', {
@@ -939,22 +959,84 @@ async function main() {
             const normalized = toFloat32FromInt16Buffer(data);
             audioBuffer = audioBuffer.concat(Array.from(normalized));
 
-            // Wake word detection only in listening state
+            // Wake word detection only in listening state (not startup or recording)
             while (audioBuffer.length >= CHUNK_SIZE) {
                 const snapshot = getServiceSnapshot(voiceService);
-                if (!snapshot || typeof snapshot.matches !== 'function' || !snapshot.matches('listening')) break;
+                // Skip processing if in startup mode (prevents startup TTS from triggering)
+                if (!snapshot || typeof snapshot.matches !== 'function') break;
+                if (snapshot.matches('startup')) {
+                    // Drain buffer during startup to avoid processing old audio
+                    audioBuffer = audioBuffer.slice(CHUNK_SIZE);
+                    continue;
+                }
+                if (!snapshot.matches('listening')) break;
 
                 const chunk = new Float32Array(audioBuffer.slice(0, CHUNK_SIZE));
                 audioBuffer = audioBuffer.slice(CHUNK_SIZE);
 
+                // Add chunk to rolling debug buffer
+                debugAudioBuffer = debugAudioBuffer.concat(Array.from(chunk));
+                if (debugAudioBuffer.length > DEBUG_BUFFER_SIZE) {
+                    debugAudioBuffer = debugAudioBuffer.slice(debugAudioBuffer.length - DEBUG_BUFFER_SIZE);
+                }
+
                 try {
                     const score = await detector.detect(chunk);
                     detectionCount++;
-                    if (detectionCount % 100 === 0) logger.debug('👂 Still listening...', {detections: detectionCount, lastScore: score.toFixed(3)});
 
-                    // Log scores above 0.1 to help diagnose threshold issues
-                    if (score > 0.1) {
-                        logger.debug('🎯 Detection score elevated', {score: score.toFixed(3), threshold: config.openWakeWord.threshold});
+                    // Calculate RMS energy of the chunk to verify audio is varying
+                    const chunkEnergy = rmsEnergy(chunk);
+
+                    // DEBUG MODE: Log ALL scores for hello_robot debugging
+                    const isDebugMode = config.openWakeWord.modelPath.includes('hello_robot');
+
+                    if (isDebugMode) {
+                        // Log every 10th detection with score AND audio energy for continuous monitoring
+                        if (detectionCount % 10 === 0) {
+                            logger.info('🔍 Detection score', {
+                                score: score.toFixed(4),
+                                threshold: config.openWakeWord.threshold,
+                                count: detectionCount,
+                                audioEnergy: chunkEnergy.toFixed(6),
+                                bufferFilled: debugAudioBuffer.length >= DEBUG_BUFFER_SIZE
+                            });
+                        }
+                    } else {
+                        if (detectionCount % 100 === 0) logger.debug('👂 Still listening...', {detections: detectionCount, lastScore: score.toFixed(3)});
+                    }
+
+                    // Log scores above 0.05 to help diagnose threshold issues
+                    if (score > 0.05) {
+                        logger.info('🎯 Detection score elevated', {
+                            score: score.toFixed(4),
+                            threshold: config.openWakeWord.threshold,
+                            audioEnergy: chunkEnergy.toFixed(6)
+                        });
+                    }
+
+                    // DEBUG: Save audio recordings for interesting scores
+                    if (isDebugMode && score > 0.05 && savedRecordingCount < 20) {
+                        savedRecordingCount++;
+                        const debugDir = path.join(process.cwd(), 'debug_recordings');
+                        await fs.promises.mkdir(debugDir, {recursive: true}).catch(() => {});
+
+                        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                        const scoreStr = score.toFixed(4).replace('.', '_');
+                        const debugPath = path.join(debugDir, `score_${scoreStr}_${timestamp}.wav`);
+
+                        // Save the last 3 seconds of audio
+                        const recordingSamples = new Float32Array(debugAudioBuffer);
+                        await writeWavFile(debugPath, recordingSamples).catch(err => {
+                            logger.debug('Failed to save debug recording', {error: errMsg(err)});
+                        });
+
+                        logger.info('💾 Saved debug recording', {
+                            score: score.toFixed(4),
+                            threshold: config.openWakeWord.threshold,
+                            path: debugPath,
+                            durationSec: (recordingSamples.length / SAMPLE_RATE).toFixed(2),
+                            savedCount: savedRecordingCount
+                        });
                     }
 
                     const snapshot2 = getServiceSnapshot(voiceService);
@@ -1088,12 +1170,30 @@ async function main() {
                 if (audioBuffer && audioBuffer.length > 0) {
                     await playAudio(audioBuffer);
                     logger.info('✅ Welcome message spoken');
+
+                    // Wait for audio to finish and settle
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // Reset detector and clear audio buffer after TTS
+                    logger.debug('🔄 Resetting wake word detector after TTS...');
+                    safeDetectorReset(detector, 'post-startup-tts');
+
+                    // Transition from startup to listening mode
+                    logger.info('🎧 Activating wake word detection...');
+                    voiceService.send({type: 'READY'});
                 }
             } catch (ttsError) {
                 logger.error('❌ Failed to speak welcome message', {
                     error: ttsError.message
                 });
+                // Still transition to listening even if TTS fails
+                logger.info('🎧 Activating wake word detection (TTS skipped)...');
+                voiceService.send({type: 'READY'});
             }
+        } else {
+            // If TTS is disabled, immediately transition to listening
+            logger.info('🎧 Activating wake word detection (TTS disabled)...');
+            voiceService.send({type: 'READY'});
         }
     } catch (err) {
         logger.error('Failed to initialize Voice Gateway', {error: errMsg(err)});

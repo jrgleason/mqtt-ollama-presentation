@@ -1,6 +1,6 @@
 # MQTT + Ollama Home Automation
 
-[![CI](https://github.com/jrgleason/mqtt-ollama-presentation/actions/workflows/ci.yml/badge.svg)](https://github.com/jrgleason/mqtt-ollama-presentation/actions/workflows/ci.yml)
+[Presentation Slides][presentation-slides]
 
 Local-first automation demo that pairs Ollama with MQTT, Z-Wave, and a Next.js control surface. Everything runs on your
 LAN so you can prototype voice-driven home routines without shipping data to the cloud.
@@ -70,6 +70,8 @@ LAN so you can prototype voice-driven home routines without shipping data to the
 - [Voice Gateway Overview][voice-doc] – how wake-word, transcription, and TTS pieces fit together
 
 [get-started]: docs/GETTING-STARTED.md
+
+[presentation-slides]: https://docs.google.com/presentation/d/1tRRNnYO50JHrfEF5NropKH8I7REwsic7dhM0d34oBRs/edit?usp=sharing
 
 [docs-index]: docs/README.md
 

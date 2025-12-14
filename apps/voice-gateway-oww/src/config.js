@@ -13,13 +13,28 @@ dotenv.config();
 const cliArgs = process.argv.slice(2);
 const useOllama = cliArgs.includes('--ollama');
 
+// Model-specific configurations (different models have different embedding frame requirements)
+const MODEL_CONFIGS = {
+    'hey_jarvis_v0.1.onnx': {
+        embeddingFrames: 16,
+        description: 'Hey Jarvis wake word',
+    },
+    'hello_robot.onnx': {
+        embeddingFrames: 28,
+        description: 'Hello Robot wake word',
+    },
+    // Add more models here as needed
+};
+
 const config = {
     nodeEnv: process.env.NODE_ENV || 'development',
     logLevel: process.env.LOG_LEVEL || 'info',
     openWakeWord: {
-        modelPath: process.env.OWW_MODEL_PATH || 'models/hey_jarvis_v0.1.onnx',
+        modelPath: process.env.OWW_MODEL_PATH,
         threshold: process.env.OWW_THRESHOLD ? Number(process.env.OWW_THRESHOLD) : 0.5,
         inferenceFramework: process.env.OWW_INFERENCE_FRAMEWORK || 'onnx',
+        // Auto-detect embedding frames based on model, or allow manual override
+        embeddingFrames: process.env.OWW_EMBEDDING_FRAMES ? Number(process.env.OWW_EMBEDDING_FRAMES) : null,
     },
     audio: {
         micDevice: process.env.AUDIO_MIC_DEVICE || 'hw:2,0',
@@ -70,7 +85,7 @@ const config = {
     },
     elevenlabs: {
         apiKey: process.env.ELEVENLABS_API_KEY,
-        voiceId: process.env.ELEVENLABS_VOICE_ID || 'UgBBYS2sOqTuMpoF3BR0', // Default: George (deep, authoritative male)
+        voiceId: process.env.ELEVENLABS_VOICE_ID || '2i0Vtk39FYVTw6Tx1mC9', // Default: George (deep, authoritative male)
         modelId: process.env.ELEVENLABS_MODEL_ID || 'eleven_v3',
         stability: process.env.ELEVENLABS_STABILITY ? Number(process.env.ELEVENLABS_STABILITY) : 0.5,
         similarityBoost: process.env.ELEVENLABS_SIMILARITY_BOOST ? Number(process.env.ELEVENLABS_SIMILARITY_BOOST) : 0.75,
@@ -79,7 +94,41 @@ const config = {
     },
 };
 
-export {config};
+/**
+ * Get model-specific configuration
+ * @param {string} modelPath - Path to the wake word model (e.g., "models/hey_jarvis_v0.1.onnx")
+ * @returns {Object} Model configuration with embeddingFrames
+ */
+function getModelConfig(modelPath) {
+    if (!modelPath) {
+        throw new Error('OWW_MODEL_PATH is required');
+    }
+
+    // Extract model filename from path
+    const modelFileName = modelPath.split('/').pop();
+
+    // Look up model-specific config
+    const modelConfig = MODEL_CONFIGS[modelFileName];
+
+    if (!modelConfig) {
+        console.warn(`⚠️  Unknown wake word model: ${modelFileName}`);
+        console.warn('   Using default embedding frames: 16');
+        console.warn('   Supported models:', Object.keys(MODEL_CONFIGS).join(', '));
+        return {
+            embeddingFrames: 16,
+            description: 'Unknown model',
+        };
+    }
+
+    return modelConfig;
+}
+
+// Add computed model-specific settings
+const modelConfig = getModelConfig(config.openWakeWord.modelPath);
+config.openWakeWord.embeddingFrames = config.openWakeWord.embeddingFrames || modelConfig.embeddingFrames;
+config.openWakeWord.modelDescription = modelConfig.description;
+
+export {config, getModelConfig, MODEL_CONFIGS};
 
 // Validate configuration
 if (config.openWakeWord.threshold < 0 || config.openWakeWord.threshold > 1) {

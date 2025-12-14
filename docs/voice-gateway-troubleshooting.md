@@ -341,7 +341,7 @@ If issues persist:
 
 4. **Search documentation:**
    - Main README: `apps/voice-gateway-oww/README.md`
-   - QuickStart Guide: `apps/voice-gateway-oww/QUICKSTART.md`
+   - QuickStart Guide: `docs/voice-gateway-quickstart.md`
    - Project Issues: Check GitHub issues for similar problems
 
 ---
@@ -477,7 +477,7 @@ To add support for new query types, edit `apps/voice-gateway-oww/src/main.js`:
 ## See Also
 
 - **Main README:** `apps/voice-gateway-oww/README.md`
-- **QuickStart Guide:** `apps/voice-gateway-oww/QUICKSTART.md`
+- **QuickStart Guide:** `docs/voice-gateway-quickstart.md`
 - **Architecture:** `docs/voice-gateway-architecture.md`
 - **ALSA Setup Guide:** `docs/alsa-setup.md`
 - **Raspberry Pi Setup:** `docs/raspberry-pi-setup.md`

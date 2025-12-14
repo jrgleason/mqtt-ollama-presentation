@@ -52,8 +52,8 @@ Use this guide to navigate project documentation. Each section links to detailed
 
 ### Voice Gateway OWW
 - **[/apps/voice-gateway-oww/README.md](/apps/voice-gateway-oww/README.md)** - Main voice gateway documentation
-- **[/apps/voice-gateway-oww/QUICKSTART.md](/apps/voice-gateway-oww/QUICKSTART.md)** - Quick setup guide
-- **[/apps/voice-gateway-oww/TROUBLESHOOTING.md](/apps/voice-gateway-oww/TROUBLESHOOTING.md)** - Platform-specific diagnostics
+- **[voice-gateway-quickstart.md](voice-gateway-quickstart.md)** - Quick setup guide
+- **[voice-gateway-troubleshooting.md](voice-gateway-troubleshooting.md)** - Platform-specific diagnostics
 
 ### Z-Wave MCP Server
 - **[/apps/zwave-mcp-server/README.md](/apps/zwave-mcp-server/README.md)** - MCP server documentation
@@ -63,6 +63,7 @@ Use this guide to navigate project documentation. Each section links to detailed
 ## 📖 Reference & Research
 
 ### Voice & Audio
+- **[voice-asr-technologies.md](voice-asr-technologies.md)** - ASR technologies explained: Whisper.cpp, ElevenLabs, Piper, Ultravox, hardware/cost tradeoffs
 - **[openwakeword-guide.md](openwakeword-guide.md)** - OpenWakeWord integration, setup, and custom training
 
 ### Z-Wave Setup
@@ -85,7 +86,7 @@ Use this guide to navigate project documentation. Each section links to detailed
 ## 🛠️ Troubleshooting
 
 For troubleshooting help, see:
-- **[/apps/voice-gateway-oww/TROUBLESHOOTING.md](/apps/voice-gateway-oww/TROUBLESHOOTING.md)** - Voice gateway diagnostics (macOS & Linux)
+- **[voice-gateway-troubleshooting.md](voice-gateway-troubleshooting.md)** - Voice gateway diagnostics (macOS & Linux)
 - **[SETUP.md](SETUP.md)** - Comprehensive troubleshooting section covering all services
 
 ---
@@ -131,6 +132,7 @@ docs/
 ├── network-dependencies.md         # Local-first architecture
 │
 ├── zwave-setup-guide.md            # Complete Z-Wave guide
+├── voice-asr-technologies.md       # ASR tech comparison (Whisper, Ultravox, ElevenLabs, Piper)
 ├── openwakeword-guide.md           # OpenWakeWord consolidated
 │
 ├── notes.md                        # Research & Z-Wave MCP findings (comprehensive)
@@ -150,7 +152,7 @@ docs/
 - ✅ 3 architecture docs → 1 `ARCHITECTURE.md`
 - ✅ 2 OpenWakeWord docs → 1 `openwakeword-guide.md`
 - ✅ 3 Z-Wave docs → 1 `zwave-setup-guide.md` (device pairing, MQTT config, troubleshooting)
-- ✅ Voice diagnostics → `/apps/voice-gateway-oww/TROUBLESHOOTING.md`
+- ✅ Voice diagnostics → `voice-gateway-troubleshooting.md`
 - ✅ Z-Wave MCP findings → added to `notes.md`
 - ✅ Archive → single comprehensive `README.md`
 - ✅ Removed: delivered.md, fix summaries, old analysis docs
@@ -174,7 +176,7 @@ docs/
 - Review `/CLAUDE.md` for complete guidelines
 
 **For troubleshooting:**
-- Check `/apps/voice-gateway-oww/TROUBLESHOOTING.md` for voice issues
+- Check `voice-gateway-troubleshooting.md` for voice issues
 - Review `alsa-setup.md` for audio problems
 - Search `notes.md` for research and solutions
 - Check `archive/README.md` for historical bug fixes

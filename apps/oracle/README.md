@@ -80,14 +80,14 @@ npm start
 ## Project Structure
 
 - `src/app/` - Next.js app router pages and layouts
-- `src/lib/mqtt/` - MQTT client for device communication ([API docs](docs/MQTT_CLIENT_API.md))
+- `src/lib/mqtt/` - MQTT client for device communication ([API docs](../../docs/mqtt-client-api.md))
 - `src/lib/langchain/` - LangChain integration with Ollama
 - `src/lib/langchain/tools/` - Device control and listing tools
 - `prisma/` - Database schema and migrations
 
 ## API Documentation
 
-- **[MQTT Client API](docs/MQTT_CLIENT_API.md)** - Complete reference for MQTT client usage
+- **[MQTT Client API](../../docs/mqtt-client-api.md)** - Complete reference for MQTT client usage
     - Full support for all mqtt.js options (retain, QoS, MQTT 5.0 properties)
     - Z-Wave device control helpers
     - Examples and best practices
