@@ -21,7 +21,7 @@
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "latest",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "latest",
     "mqtt": "latest",
     "node-fetch": "latest",

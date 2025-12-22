@@ -25,6 +25,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@jrg-voice/common": "file:../voice-gateway-common",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "latest",
     "fft-js": "latest",
     "mic": "latest",
@@ -35,7 +36,6 @@
     "uuid": "latest",
     "wav": "latest",
     "xstate": "latest",
-    "@modelcontextprotocol/sdk": "1.20.0",
     "zwave-mcp-server": "file:../zwave-mcp-server"
   },
   "devDependencies": {

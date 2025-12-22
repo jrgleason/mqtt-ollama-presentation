@@ -4,6 +4,7 @@
  * Publishes transcriptions and AI responses to MQTT broker.
  */
 
+import crypto from 'crypto';
 import mqtt from 'mqtt';
 import {logger} from './logger.js';
 import {config} from './config.js';
@@ -21,8 +22,12 @@ async function connectMQTT() {
         return client;
     }
 
+    // Append random suffix to client ID to allow multiple instances
+    const uniqueSuffix = crypto.randomBytes(4).toString('hex');
+    const uniqueClientId = `${config.mqtt.clientId}-${uniqueSuffix}`;
+
     const options = {
-        clientId: config.mqtt.clientId,
+        clientId: uniqueClientId,
     };
 
     if (config.mqtt.username) {
@@ -37,7 +42,7 @@ async function connectMQTT() {
             isConnected = true;
             logger.debug('✅ Connected to MQTT broker', {
                 broker: config.mqtt.brokerUrl,
-                clientId: config.mqtt.clientId,
+                clientId: uniqueClientId,
             });
             resolve(client);
         });
