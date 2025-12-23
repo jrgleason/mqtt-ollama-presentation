@@ -1,8 +1,10 @@
 # Proposal: Remove voice-gateway-common Module
 
 **Change ID:** `remove-voice-gateway-common`
-**Status:** Draft
+**Status:** Completed
 **Created:** 2025-12-22
+**Completed:** 2025-12-22
+**Commit:** 94c4061
 **Affects:** Transcription Service, Module Dependencies
 
 ## Summary
