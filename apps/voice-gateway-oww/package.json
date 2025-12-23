@@ -28,7 +28,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "latest",
     "@elevenlabs/elevenlabs-js": "latest",
-    "@jrg-voice/common": "file:../voice-gateway-common",
     "@langchain/anthropic": "latest",
     "@langchain/core": "latest",
     "@langchain/mcp-adapters": "^1.1.1",

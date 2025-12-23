@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import {execSync, spawn} from 'child_process';
 import { SAMPLE_RATE } from '../audio/constants.js';
 import { rmsEnergy, writeWavFile } from '../audio/AudioUtils.js';
-import { transcribeWithWhisper } from '@jrg-voice/common';
 import { errMsg } from '../util/Logger.js';
 
 /**
@@ -77,7 +77,7 @@ export class TranscriptionService {
             });
 
             // Transcribe with Whisper (with timeout)
-            const transcription = await transcribeWithWhisper(
+            const transcription = await this._transcribeWithWhisper(
                 this.whisperModel,
                 wavPath,
                 { timeoutMs: this.timeoutMs }
@@ -153,5 +153,133 @@ export class TranscriptionService {
             duration: audioSamples.length / SAMPLE_RATE,
             energy
         };
+    }
+
+    /**
+     * Resolve whisper-cli executable path
+     * @private
+     * @returns {string|null} Path to whisper-cli or null if not found
+     */
+    _resolveWhisperPath() {
+        // Check WHISPER_CLI_PATH environment variable
+        const envPath = process.env.WHISPER_CLI_PATH;
+        if (envPath) {
+            const candidates = [envPath, path.join(envPath, 'whisper-cli')];
+            for (const candidate of candidates) {
+                if (fs.existsSync(candidate)) return candidate;
+            }
+        }
+
+        // Try 'which' command
+        try {
+            const whichOut = execSync('which whisper-cli', {encoding: 'utf8'}).trim();
+            if (whichOut) return whichOut;
+        } catch { /* not found via which */ }
+
+        // Scan PATH manually
+        const pathDirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
+        for (const dir of pathDirs) {
+            const candidate = path.join(dir, 'whisper-cli');
+            if (fs.existsSync(candidate)) return candidate;
+        }
+
+        return null;
+    }
+
+    /**
+     * Transcribe audio file with Whisper (private implementation with timeout support)
+     * @private
+     * @param {string} modelRel - Path to Whisper model
+     * @param {string} wavPath - Path to WAV file to transcribe
+     * @param {Object} options - Options object
+     * @param {number} options.timeoutMs - Timeout in milliseconds (default: 30000)
+     * @returns {Promise<string>} Transcription text
+     * @throws {Error} If transcription fails or times out
+     */
+    async _transcribeWithWhisper(modelRel, wavPath, options = {}) {
+        const { timeoutMs = 30000 } = options;
+
+        return new Promise((resolve, reject) => {
+            const whisperModelAbs = path.isAbsolute(modelRel) ? modelRel : path.resolve(process.cwd(), modelRel);
+            const modelName = path.basename(whisperModelAbs);
+            this.logger.debug(`Starting Whisper transcription with ${modelName}`, {
+                wavPath,
+                timeoutMs
+            });
+
+            const startTime = Date.now();
+            const whisperCmd = this._resolveWhisperPath();
+            const whisperArgs = ['-m', whisperModelAbs, '-f', wavPath, '-nt'];
+
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                this.logger.error('Whisper transcription timed out', {
+                    model: modelName,
+                    wavPath,
+                    timeoutMs,
+                    elapsed: Date.now() - startTime
+                });
+            }, timeoutMs);
+
+            const whisper = whisperCmd
+                ? spawn(whisperCmd, whisperArgs, {
+                    env: process.env,
+                    signal: controller.signal
+                })
+                : spawn('whisper-cli', whisperArgs, {
+                    shell: true,
+                    env: process.env,
+                    signal: controller.signal
+                });
+
+            if (!whisper?.stdout) {
+                clearTimeout(timeoutId);
+                return reject(new Error('Failed to start whisper process'));
+            }
+
+            if (!whisperCmd) {
+                this.logger.warn('whisper-cli not found via which/PATH — using shell fallback', {
+                    WHISPER_CLI_PATH: process.env.WHISPER_CLI_PATH || '<not set>',
+                    PATH: process.env.PATH ? process.env.PATH.substring(0, 100) + '...' : '<empty>'
+                });
+            }
+
+            let stdout = '';
+            let stderr = '';
+
+            whisper.stdout.on('data', (data) => stdout += data.toString());
+            whisper.stderr.on('data', (data) => stderr += data.toString());
+
+            whisper.on('error', (err) => {
+                clearTimeout(timeoutId);
+
+                // Handle AbortError (timeout)
+                if (err.name === 'AbortError') {
+                    return reject(new Error(`Whisper transcription timed out after ${timeoutMs}ms`));
+                }
+
+                // Handle other errors
+                const message = err.code === 'ENOENT'
+                    ? `whisper-cli not found. Install it or set WHISPER_CLI_PATH. Model: ${whisperModelAbs}`
+                    : err.message;
+                reject(new Error(message));
+            });
+
+            whisper.on('close', (code) => {
+                clearTimeout(timeoutId);
+                const duration = Date.now() - startTime;
+
+                if (code !== 0) {
+                    reject(new Error(`whisper-cli exited ${code}: ${stderr}`));
+                } else {
+                    this.logger.debug(`Whisper transcription complete with ${modelName}`, {
+                        duration: `${duration}ms`
+                    });
+                    resolve(stdout.trim());
+                }
+            });
+        });
     }
 }
