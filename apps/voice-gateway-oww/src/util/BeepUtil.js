@@ -18,8 +18,12 @@ export class BeepUtil {
             wakeWord: this.generateBeep(800, 150),
             processing: this.generateBeep(500, 100),
             response: this.generateDualBeep(600, 900, 80, 30),
+<<<<<<< HEAD
             error: this.generateBeep(300, 200), // Lower frequency for error
             ready: this.generateBeep(1000, 300) // Ready-to-listen beep after welcome
+=======
+            error: this.generateBeep(300, 200) // Lower frequency for error
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         };
     }
 

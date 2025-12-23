@@ -39,6 +39,25 @@ export class AnthropicClient {
         return this.#client;
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Convert tool definition from Ollama format to LangChain/Anthropic format
+     * @param {Object} tool - Tool in Ollama format
+     * @returns {Object} Tool in LangChain format
+     */
+    static convertToolToLangChainFormat(tool) {
+        return {
+            name: tool.function.name,
+            description: tool.function.description,
+            input_schema: {
+                type: 'object',
+                properties: tool.function.parameters.properties || {},
+                required: tool.function.parameters.required || [],
+            },
+        };
+    }
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
     /**
      * Normalize Anthropic (LangChain) content into a plain string
@@ -173,6 +192,7 @@ export class AnthropicClient {
             const messageBuildTime = Date.now() - messageBuildStart;
             this.logger.debug(`⏱️ Message building took ${messageBuildTime}ms`);
 
+<<<<<<< HEAD
             // Bind LangChain tools to model if provided
             // Tools from ToolManager are already in LangChain format (no conversion needed)
             const toolBindStart = Date.now();
@@ -187,6 +207,19 @@ export class AnthropicClient {
                 // Bind tools to the model using .bindTools()
                 // Tools are already LangChain-compatible from ToolManager
                 client = client.bindTools(options.tools);
+=======
+            // Convert tools to Anthropic format and bind to model if provided
+            const toolBindStart = Date.now();
+            if (options.tools && options.tools.length > 0) {
+                const langchainTools = options.tools.map(AnthropicClient.convertToolToLangChainFormat);
+                this.logger.debug('🔧 Tools provided', {
+                    toolCount: langchainTools.length,
+                    tools: langchainTools.map(t => t.name)
+                });
+
+                // Bind tools to the model using .bindTools()
+                client = client.bindTools(langchainTools);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             }
             const toolBindTime = Date.now() - toolBindStart;
             this.logger.debug(`⏱️ Tool binding took ${toolBindTime}ms`);
@@ -243,6 +276,7 @@ export class AnthropicClient {
                     let chunkIndex = 0;
                     for await (const chunk of stream) {
                         chunkIndex++;
+<<<<<<< HEAD
 
                         // Debug: log full chunk structure for first few chunks
                         if (chunkIndex <= 3) {
@@ -259,6 +293,20 @@ export class AnthropicClient {
                         }
 
                         const c = chunk?.content;
+=======
+                        const c = chunk?.content;
+                        // Debug: log content block types for first few chunks
+                        if (chunkIndex <= 3) {
+                            if (Array.isArray(c)) {
+                                this.logger.debug('🔎 Stream chunk types', {
+                                    idx: chunkIndex,
+                                    types: c.map(p => p && p.type)
+                                });
+                            } else {
+                                this.logger.debug('🔎 Stream chunk (non-array)', {idx: chunkIndex, kind: typeof c});
+                            }
+                        }
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                         const piece = AnthropicClient.extractTextOnly(c);
                         if (piece) {
                             onToken(piece);
@@ -268,6 +316,7 @@ export class AnthropicClient {
                     }
                     const finalApiTime = Date.now() - finalApiStart;
                     this.logger.debug(`⏱️ Final Anthropic streaming took ${finalApiTime}ms`);
+<<<<<<< HEAD
 
                     this.logger.debug('📊 Stream summary (after tools)', {
                         totalChunks: chunkIndex,
@@ -275,6 +324,8 @@ export class AnthropicClient {
                         extractedTextPreview: finalText.substring(0, 100)
                     });
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                     const totalTime = Date.now() - overallStartTime;
                     const normalized = finalText.replace(/\s{2,}/g, ' ').trim();
                     this.logger.info(`✅ Anthropic response (with tools, streamed) received in ${totalTime}ms`, {
@@ -320,6 +371,7 @@ export class AnthropicClient {
                 let chunkIndex = 0;
                 for await (const chunk of stream) {
                     chunkIndex++;
+<<<<<<< HEAD
 
                     // Debug: log full chunk structure for first few chunks
                     if (chunkIndex <= 3) {
@@ -339,12 +391,26 @@ export class AnthropicClient {
                     }
 
                     const c = chunk?.content;
+=======
+                    const c = chunk?.content;
+                    if (chunkIndex <= 3) {
+                        if (Array.isArray(c)) {
+                            this.logger.debug('🔎 Stream chunk types', {
+                                idx: chunkIndex,
+                                types: c.map(p => p && p.type)
+                            });
+                        } else {
+                            this.logger.debug('🔎 Stream chunk (non-array)', {idx: chunkIndex, kind: typeof c});
+                        }
+                    }
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                     const piece = AnthropicClient.extractTextOnly(c);
                     if (piece) {
                         onToken(piece);
                         text += (text && !text.endsWith(' ') ? ' ' : '') + piece;
                     }
                 }
+<<<<<<< HEAD
 
                 this.logger.debug('📊 Stream summary', {
                     totalChunks: chunkIndex,
@@ -352,6 +418,8 @@ export class AnthropicClient {
                     extractedTextPreview: text.substring(0, 100)
                 });
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 return text.replace(/\s{2,}/g, ' ').trim();
             }
 
@@ -375,6 +443,7 @@ export class AnthropicClient {
 
             return aiResponse;
         } catch (error) {
+<<<<<<< HEAD
             // Log full error details for debugging
             this.logger.error('❌ Anthropic query failed', {
                 error: error.message,
@@ -393,6 +462,13 @@ export class AnthropicClient {
                 });
             }
 
+=======
+            this.logger.error('❌ Anthropic query failed', {
+                error: error.message,
+                model: this.config.anthropic.model,
+                prompt: prompt ? prompt.substring(0, 50) : '[conversation]',
+            });
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             throw error;
         }
     }

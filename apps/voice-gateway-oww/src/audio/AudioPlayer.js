@@ -24,7 +24,10 @@ export class AudioPlayer {
         this.config = config;
         this.logger = logger;
         this.isMacOS = process.platform === 'darwin';
+<<<<<<< HEAD
         this.currentPlayback = null; // Track active playback for interruption
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     }
 
     /**
@@ -54,6 +57,7 @@ export class AudioPlayer {
     }
 
     /**
+<<<<<<< HEAD
      * Play PCM audio with interruption support (cancellable playback)
      *
      * @param {Buffer} pcmAudio - PCM audio data (Int16LE format)
@@ -103,6 +107,8 @@ export class AudioPlayer {
     }
 
     /**
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
      * Play audio on macOS using afplay
      * @private
      */
@@ -166,6 +172,7 @@ export class AudioPlayer {
     }
 
     /**
+<<<<<<< HEAD
      * Play audio on macOS using afplay with interruption support
      * @private
      * @returns {{cancel: Function, wavPath: string}} Cancel callback and WAV path
@@ -279,6 +286,8 @@ export class AudioPlayer {
     }
 
     /**
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
      * Clean up temporary WAV file
      * @private
      */

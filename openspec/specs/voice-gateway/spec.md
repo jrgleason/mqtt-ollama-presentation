@@ -303,6 +303,7 @@ The system SHALL log performance metrics for voice interaction stages.
 
 ---
 
+<<<<<<< HEAD
 ### Requirement: Startup Sequence
 
 The voice gateway SHALL initialize all subsystems in an order that ensures the system is fully ready before announcing readiness to the user, with optimized parallelization for faster boot times while maintaining detector warm-up and promise orchestration.
@@ -720,3 +721,5 @@ The voice gateway SHALL allow configuration of the detector warm-up timer to ena
 
 **Rationale:** Input validation prevents misconfiguration from degrading system accuracy or stability.
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)

@@ -30,8 +30,12 @@
     "@elevenlabs/elevenlabs-js": "latest",
     "@langchain/anthropic": "latest",
     "@langchain/core": "latest",
+<<<<<<< HEAD
     "@langchain/mcp-adapters": "latest",
     "@langchain/ollama": "^1.1.0",
+=======
+    "@langchain/mcp-adapters": "^1.1.1",
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     "@modelcontextprotocol/sdk": "latest",
     "dotenv": "latest",
     "fft-js": "latest",

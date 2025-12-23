@@ -36,6 +36,7 @@ The system SHALL define PRE_ROLL_MS constant set to 300 milliseconds to capture 
 
 ### Requirement: Silence Detection Threshold
 
+<<<<<<< HEAD
 The system SHALL define SILENCE_THRESHOLD constant set to **0.003** RMS energy by default (configurable via `config.vad.silenceThreshold`) to distinguish speech from background noise, with a single source of truth in audio/constants.js.
 
 **Previous Implementation**: Hardcoded 0.01 in audio/constants.js, with duplicate undocumented 0.005 threshold in main.js VAD_CONSTANTS causing inconsistency.
@@ -78,6 +79,23 @@ The system SHALL define SILENCE_THRESHOLD constant set to **0.003** RMS energy b
 **Then** it SHALL import from audio/constants.js
 **And** NO duplicate definitions SHALL exist in main.js or elsewhere
 **And** all threshold references SHALL use the same getSilenceThreshold(config) helper
+=======
+The system SHALL define SILENCE_THRESHOLD constant set to 0.01 RMS energy to distinguish speech from background noise.
+
+#### Scenario: Detecting speech vs silence
+
+- **WHEN** processing audio samples during recording
+- **THEN** audio with RMS energy below 0.01 SHALL be classified as silence
+- **AND** audio with RMS energy above 0.01 SHALL be classified as potential speech
+- **AND** the threshold SHALL account for typical voice energy (0.05-0.2) vs background (<0.01)
+
+#### Scenario: Environment noise adaptation
+
+- **WHEN** the environment has different noise characteristics
+- **THEN** developers SHALL be able to adjust SILENCE_THRESHOLD
+- **AND** documentation SHALL explain that lower values increase sensitivity (more noise captured)
+- **AND** documentation SHALL explain that higher values reduce sensitivity (may cut off quiet speech)
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 ### Requirement: Minimum Speech Duration
 
@@ -191,6 +209,7 @@ Constants that support environment/config overrides SHALL document the config pa
 - **AND** this allows runtime tuning without code changes
 - **AND** the config path SHALL be documented in comments
 
+<<<<<<< HEAD
 ### Requirement: VAD Threshold Configuration Override
 
 The system SHALL support runtime configuration of the silence detection threshold via `config.vad.silenceThreshold` environment variable, allowing users to tune sensitivity without code changes.
@@ -241,3 +260,5 @@ The system SHALL provide detailed diagnostic logging during recording to help us
 **And** SHALL categorize as "True silence" (< 0.002) or "Close to threshold" (0.002-0.004)
 **And** SHALL provide actionable guidance based on the category
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)

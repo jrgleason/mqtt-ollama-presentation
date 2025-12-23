@@ -7,11 +7,17 @@ import { AIRouter } from '../ai/AIRouter.js';
 import { conversationManager } from '../ConversationManager.js';
 import { publishTranscription, publishAIResponse } from '../mqttClient.js';
 import { ElevenLabsTTS } from '../util/ElevenLabsTTS.js';
+<<<<<<< HEAD
 import { synthesizeSpeech as piperSynthesize } from '../piperTTS.js';
 import { streamSpeak } from '../streamingTTS.js';
 import { executeDateTimeTool } from '../util/tools.js';
 import { errMsg } from '../util/Logger.js';
 import { isPlaying } from '../state-machines/PlaybackMachine.js';
+=======
+import { streamSpeak } from '../streamingTTS.js';
+import { executeDateTimeTool, executeZWaveControlTool } from '../util/tools.js';
+import { errMsg } from '../util/Logger.js';
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 /**
  * VoiceInteractionOrchestrator - Coordinate complete voice interaction pipeline
@@ -30,6 +36,7 @@ import { isPlaying } from '../state-machines/PlaybackMachine.js';
  *   await orchestrator.processVoiceInteraction(audioSamples);
  */
 export class VoiceInteractionOrchestrator {
+<<<<<<< HEAD
     constructor(config, logger, toolExecutor, voiceService = null, isRecordingChecker = null, playbackMachine = null) {
         this.config = config;
         this.logger = logger;
@@ -37,6 +44,12 @@ export class VoiceInteractionOrchestrator {
         this.voiceService = voiceService;
         this.isRecordingChecker = isRecordingChecker || (() => false);
         this.playbackMachine = playbackMachine; // PlaybackMachine service
+=======
+    constructor(config, logger, toolExecutor) {
+        this.config = config;
+        this.logger = logger;
+        this.toolExecutor = toolExecutor;
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
         // Initialize dependencies
         this.audioPlayer = new AudioPlayer(config, logger);
@@ -44,17 +57,25 @@ export class VoiceInteractionOrchestrator {
         this.transcriptionService = new TranscriptionService(config, logger);
         this.intentClassifier = new IntentClassifier();
         this.aiRouter = new AIRouter(config, logger, toolExecutor);
+<<<<<<< HEAD
 
         // Track active TTS playback for interruption support
         // This will be deprecated in favor of PlaybackMachine
         this.activePlayback = null; // Stores {cancel, promise} from playInterruptible
+=======
+        this.elevenLabsTTS = new ElevenLabsTTS(config, logger);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
         this.logger.info('VoiceInteractionOrchestrator initialized', {
             aiProvider: config.ai.provider,
             ttsEnabled: config.tts.enabled,
+<<<<<<< HEAD
             streamingEnabled: config.tts.streaming,
             beepIsolationEnabled: isRecordingChecker !== null,
             playbackMachineEnabled: playbackMachine !== null
+=======
+            streamingEnabled: config.tts.streaming
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         });
     }
 
@@ -69,6 +90,7 @@ export class VoiceInteractionOrchestrator {
 
         try {
             // ============================================
+<<<<<<< HEAD
             // STAGE 0: Cancel Previous TTS (Voice Interruption)
             // ============================================
             // If user triggers wake word while previous TTS is still playing,
@@ -76,6 +98,8 @@ export class VoiceInteractionOrchestrator {
             this.cancelActivePlayback();
 
             // ============================================
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             // STAGE 1: Transcription
             // ============================================
             this.logger.debug('VoiceInteractionOrchestrator: Starting transcription');
@@ -103,6 +127,7 @@ export class VoiceInteractionOrchestrator {
                 isDeviceControlQuery: intent.isDeviceControlQuery
             });
 
+<<<<<<< HEAD
             // Add user message to conversation history BEFORE AI query
             conversationManager.addUserMessage(transcription);
 
@@ -115,11 +140,21 @@ export class VoiceInteractionOrchestrator {
             } else {
                 this.logger.debug('🔇 Suppressed processing beep (recording or playback in progress)');
             }
+=======
+            // ============================================
+            // STAGE 3: Processing Beep (before AI query)
+            // ============================================
+            await this.audioPlayer.play(this.beep.BEEPS.processing);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             // ============================================
             // STAGE 4: AI Query or Direct Tool Execution
             // ============================================
+<<<<<<< HEAD
             const { response: aiResponse, streamingUsed } = await this._handleAIOrDirectTools(transcription, intent);
+=======
+            const aiResponse = await this._handleAIOrDirectTools(transcription, intent);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             this.logger.info(`🤖 AI Response: "${aiResponse}"`);
 
@@ -127,6 +162,7 @@ export class VoiceInteractionOrchestrator {
             conversationManager.addAssistantMessage(aiResponse);
 
             // ============================================
+<<<<<<< HEAD
             // STAGE 5: TTS Playback (if enabled and not already streamed)
             // ============================================
             // Skip TTS if streaming already played the response
@@ -140,6 +176,12 @@ export class VoiceInteractionOrchestrator {
                 await this._speakResponse(aiResponse);
             } else if (streamingWasUsed) {
                 this.logger.debug('VoiceInteractionOrchestrator: TTS already played via streaming, skipping');
+=======
+            // STAGE 5: TTS Playback (if enabled)
+            // ============================================
+            if (this.config.tts.enabled) {
+                await this._speakResponse(aiResponse);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             } else {
                 this.logger.debug('VoiceInteractionOrchestrator: TTS disabled, skipping speech');
             }
@@ -147,12 +189,16 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 6: Response Beep (after TTS)
             // ============================================
+<<<<<<< HEAD
             // Only play response beep if not currently recording or playing audio (prevents beep feedback)
             if (!this._shouldSuppressBeep()) {
                 await this.audioPlayer.play(this.beep.BEEPS.response);
             } else {
                 this.logger.debug('🔇 Suppressed response beep (recording or playback in progress)');
             }
+=======
+            await this.audioPlayer.play(this.beep.BEEPS.response);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             // ============================================
             // STAGE 7: Publish AI Response to MQTT
@@ -185,6 +231,7 @@ export class VoiceInteractionOrchestrator {
 
             // Re-throw error for caller to handle if needed
             throw error;
+<<<<<<< HEAD
         } finally {
             // ============================================
             // STAGE 9: Signal Interaction Complete
@@ -246,6 +293,8 @@ export class VoiceInteractionOrchestrator {
                 });
             }
             this.activePlayback = null;
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         }
     }
 
@@ -261,12 +310,24 @@ export class VoiceInteractionOrchestrator {
         // Direct tool execution for simple queries (skip AI)
         if (intent.isDateTimeQuery) {
             this.logger.debug('VoiceInteractionOrchestrator: Direct datetime tool execution');
+<<<<<<< HEAD
             const response = await executeDateTimeTool({}, transcription);
             return { response, streamingUsed: false }; // Direct tool = no streaming
         }
 
         // Device control queries now go through AI + ToolExecutor (MCP tools)
         // The AI will call control_zwave_device tool via MCP integration
+=======
+            return await executeDateTimeTool({}, transcription);
+        }
+
+        if (intent.isDeviceControlQuery) {
+            this.logger.debug('VoiceInteractionOrchestrator: Direct device control tool execution');
+            return await this._handleDeviceControl();
+        }
+
+        // Otherwise, use AI router for general queries
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         return await this._queryAI(transcription, intent);
     }
 
@@ -281,16 +342,26 @@ export class VoiceInteractionOrchestrator {
     async _queryAI(transcription, intent) {
         // Check if streaming is enabled (Anthropic + TTS streaming)
         if (this.aiRouter.isStreamingEnabled()) {
+<<<<<<< HEAD
             const response = await this._queryAIWithStreaming(transcription, intent);
             return { response, streamingUsed: true }; // Streaming was used
         } else {
             const response = await this._queryAIWithoutStreaming(transcription, intent);
             return { response, streamingUsed: false }; // No streaming
+=======
+            return await this._queryAIWithStreaming(transcription, intent);
+        } else {
+            return await this._queryAIWithoutStreaming(transcription, intent);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         }
     }
 
     /**
+<<<<<<< HEAD
      * Query AI with streaming TTS (Anthropic only) - with interruption support
+=======
+     * Query AI with streaming TTS (Anthropic only)
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
      *
      * @param {string} transcription - User's transcribed speech
      * @param {Object} intent - Classified intent
@@ -298,6 +369,7 @@ export class VoiceInteractionOrchestrator {
      * @private
      */
     async _queryAIWithStreaming(transcription, intent) {
+<<<<<<< HEAD
         this.logger.debug('VoiceInteractionOrchestrator: Using streaming TTS with cancellation support');
 
         // Create AbortController for streaming cancellation
@@ -337,6 +409,22 @@ export class VoiceInteractionOrchestrator {
             // Clear activePlayback after streaming completes or is cancelled
             this.activePlayback = null;
         }
+=======
+        this.logger.debug('VoiceInteractionOrchestrator: Using streaming TTS');
+
+        // Initialize streaming TTS
+        const tts = await streamSpeak('', {});
+
+        // Query AI with token streaming callback
+        const aiResponse = await this.aiRouter.query(transcription, intent, {
+            onToken: (token) => tts.pushText(token)
+        });
+
+        // Finalize TTS stream
+        await tts.finalize();
+
+        return aiResponse;
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     }
 
     /**
@@ -357,7 +445,30 @@ export class VoiceInteractionOrchestrator {
     }
 
     /**
+<<<<<<< HEAD
      * Speak AI response using TTS with interruption support
+=======
+     * Handle device control query (simplified - delegates to tool)
+     *
+     * @returns {Promise<string>} Tool execution result
+     * @private
+     */
+    async _handleDeviceControl() {
+        // Simplified device control - extract device and action
+        // In a real implementation, you'd parse the transcription more carefully
+        // For now, just call the tool with example params
+        // TODO: Implement proper device/action parsing from transcription
+        this.logger.warn('VoiceInteractionOrchestrator: Device control parsing not fully implemented');
+
+        return await executeZWaveControlTool({
+            deviceName: 'example',
+            action: 'on'
+        });
+    }
+
+    /**
+     * Speak AI response using TTS
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
      *
      * @param {string} aiResponse - AI response text to speak
      * @returns {Promise<void>}
@@ -365,6 +476,7 @@ export class VoiceInteractionOrchestrator {
      */
     async _speakResponse(aiResponse) {
         try {
+<<<<<<< HEAD
             const provider = this.config.tts.provider || 'ElevenLabs';
             let audioBuffer;
 
@@ -416,6 +528,16 @@ export class VoiceInteractionOrchestrator {
                     // Clear activePlayback after completion or cancellation
                     this.activePlayback = null;
                 }
+=======
+            const audioBuffer = await this.elevenLabsTTS.synthesizeSpeech(aiResponse, {
+                volume: this.config.tts.volume,
+                speed: this.config.tts.speed
+            });
+
+            if (audioBuffer && audioBuffer.length > 0) {
+                await this.audioPlayer.play(audioBuffer);
+                this.logger.info('✅ AI response playback complete');
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             } else {
                 this.logger.warn('VoiceInteractionOrchestrator: Empty audio buffer from TTS');
             }

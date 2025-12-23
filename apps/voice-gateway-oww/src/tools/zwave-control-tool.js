@@ -4,8 +4,8 @@
  * Allows the AI to control Z-Wave devices through the MCP client
  */
 
-import {logger} from '../logger.js';
-import {getMCPClient} from '../mcp-zwave-client.js';
+import {logger} from '../util/Logger.js';
+import {getMCPClient} from '../mcpZWaveClient.js';
 
 /**
  * Control a Z-Wave device

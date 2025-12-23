@@ -34,6 +34,7 @@ function splitIntoSpeakableChunks(text) {
 }
 
 // Simple PCM player: converts PCM to WAV in temp and plays via afplay/aplay quickly
+<<<<<<< HEAD
 // Returns {promise, cancel} for interruption support
 function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
     if (!pcmBuffer || pcmBuffer.length === 0) {
@@ -92,11 +93,44 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
             });
         });
 
+=======
+async function playPcmNow(pcmBuffer, sampleRate = 16000) {
+    if (!pcmBuffer || pcmBuffer.length === 0) return;
+    return new Promise((resolve, reject) => {
+        const wavPath = join(tmpdir(), `tts_stream_${Date.now()}.wav`);
+        const writer = new wav.FileWriter(wavPath, {channels: 1, sampleRate, bitDepth: 16});
+        writer.write(pcmBuffer);
+        writer.end();
+        writer.on('finish', () => {
+            const player = process.platform === 'darwin'
+                ? spawn('afplay', [wavPath])
+                : spawn('aplay', ['-f', 'S16_LE', '-r', String(sampleRate), '-c', '1', wavPath]);
+            const startedAt = Date.now();
+            player.on('close', (code) => {
+                const dur = Date.now() - startedAt;
+                logger.debug('🔊 Player closed', {code, durationMs: dur});
+                try {
+                    fs.unlinkSync(wavPath);
+                } catch { /* ignore */
+                }
+                if (code === 0) resolve(); else reject(new Error(`player exit ${code}`));
+            });
+            player.on('error', (e) => {
+                logger.error('🔊 Player error', {error: e.message});
+                try {
+                    fs.unlinkSync(wavPath);
+                } catch { /* ignore */
+                }
+                reject(e);
+            });
+        });
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         writer.on('error', (e) => {
             logger.error('🔊 WAV writer error', {error: e.message});
             reject(e);
         });
     });
+<<<<<<< HEAD
 
     const cancel = () => {
         cancelled = true;
@@ -115,6 +149,11 @@ export async function streamSpeak(text, options = {}) {
     const { abortController = null } = options;
     const abortSignal = abortController?.signal;
 
+=======
+}
+
+export async function streamSpeak(text) {
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     const provider = config.tts.provider || 'ElevenLabs';
     const enabled = config.tts.enabled !== false;
     const streaming = config.tts.streaming !== false;
@@ -134,8 +173,12 @@ export async function streamSpeak(text, options = {}) {
         const t0 = Date.now();
         const pcm = await synth(text, {volume: config.tts.volume, speed: config.tts.speed});
         logger.debug('🔊 streamSpeak: batch synth complete', {provider, ms: Date.now() - t0});
+<<<<<<< HEAD
         const playback = playPcmNow(pcm, 16000, abortSignal);
         await playback.promise;
+=======
+        await playPcmNow(pcm, 16000);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         return;
     }
 
@@ -145,7 +188,10 @@ export async function streamSpeak(text, options = {}) {
     let buffer = '';
     let firstTokenAt = 0;
     let debounceTimer = null;
+<<<<<<< HEAD
     const activePlayers = []; // Track active playback for cancellation
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
     async function flush() {
         if (flushing) return; // prevent overlap
@@ -153,17 +199,21 @@ export async function streamSpeak(text, options = {}) {
         logger.debug('🔊 streamSpeak: flush start', {queueLen: queue.length});
         try {
             while (queue.length) {
+<<<<<<< HEAD
                 // Check if aborted before processing next chunk
                 if (abortSignal?.aborted) {
                     logger.info('🛑 streamSpeak: flush aborted');
                     break;
                 }
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 const chunk = queue.shift();
                 const synth = provider === 'ElevenLabs' ? elevenSynthesize : piperSynthesize;
                 const t1 = Date.now();
                 const pcm = await synth(chunk, {volume: config.tts.volume, speed: config.tts.speed});
                 logger.debug('🔊 streamSpeak: chunk synth complete', {len: chunk.length, ms: Date.now() - t1});
+<<<<<<< HEAD
 
                 const t2 = Date.now();
                 const playback = playPcmNow(pcm, 16000, abortSignal);
@@ -183,6 +233,11 @@ export async function streamSpeak(text, options = {}) {
                     const idx = activePlayers.indexOf(playback);
                     if (idx !== -1) activePlayers.splice(idx, 1);
                 }
+=======
+                const t2 = Date.now();
+                await playPcmNow(pcm, 16000);
+                logger.debug('🔊 streamSpeak: chunk played', {ms: Date.now() - t2});
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             }
         } catch (e) {
             logger.error('streamSpeak flush failed', {error: e instanceof Error ? e.message : String(e)});
@@ -247,7 +302,10 @@ export async function streamSpeak(text, options = {}) {
     }
 
     const pushText = async (partial) => {
+<<<<<<< HEAD
         if (abortSignal?.aborted) return; // Don't process new text if aborted
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         if (!partial) return;
         if (!firstTokenAt) firstTokenAt = Date.now();
 
@@ -259,11 +317,14 @@ export async function streamSpeak(text, options = {}) {
     };
 
     const finalize = async () => {
+<<<<<<< HEAD
         if (abortSignal?.aborted) {
             logger.info('🛑 streamSpeak: finalize aborted');
             return; // Don't finalize if aborted
         }
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         if (debounceTimer) {
             clearTimeout(debounceTimer);
             debounceTimer = null;
@@ -284,6 +345,7 @@ export async function streamSpeak(text, options = {}) {
         await flush();
     };
 
+<<<<<<< HEAD
     const cancel = () => {
         logger.info('🛑 streamSpeak: cancelling streaming TTS');
 
@@ -309,4 +371,7 @@ export async function streamSpeak(text, options = {}) {
     };
 
     return {pushText, finalize, cancel};
+=======
+    return {pushText, finalize};
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 }

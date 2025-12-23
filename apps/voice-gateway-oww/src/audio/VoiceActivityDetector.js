@@ -13,7 +13,11 @@
  *
  * VAD Algorithm:
  * 1. After wake word, allow grace period (default 1200ms) before silence can stop recording
+<<<<<<< HEAD
  * 2. Detect speech when RMS energy >= silenceThreshold (default 0.003, configurable)
+=======
+ * 2. Detect speech when RMS energy >= 0.01 (SILENCE_THRESHOLD)
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
  * 3. After speech detected, require trailing silence (default 1500ms) before stopping
  * 4. Require minimum speech duration (default 700ms) before stopping
  * 5. Force stop after maximum recording length (default 10000ms)
@@ -21,11 +25,19 @@
 
 import { rmsEnergy } from './AudioUtils.js';
 import {
+<<<<<<< HEAD
     MIN_SPEECH_SAMPLES,
     getTrailingSilenceSamples,
     getMaxRecordingSamples,
     getGraceBeforeStopMs,
     getSilenceThreshold
+=======
+    SILENCE_THRESHOLD,
+    MIN_SPEECH_SAMPLES,
+    getTrailingSilenceSamples,
+    getMaxRecordingSamples,
+    getGraceBeforeStopMs
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 } from './constants.js';
 
 export class VoiceActivityDetector {
@@ -44,7 +56,10 @@ export class VoiceActivityDetector {
         this.hasSpokenDuringRecording = false;
 
         // Calculate thresholds from config
+<<<<<<< HEAD
         this.silenceThreshold = getSilenceThreshold(config);
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         this.silenceSamplesRequired = getTrailingSilenceSamples(config);
         this.maxRecordingSamples = getMaxRecordingSamples(config);
         this.graceBeforeStopMs = getGraceBeforeStopMs(config);
@@ -86,6 +101,7 @@ export class VoiceActivityDetector {
         // Calculate RMS energy to detect silence vs. speech
         const energy = rmsEnergy(samples);
 
+<<<<<<< HEAD
         // Check grace period (don't stop during grace period after wake word)
         const sinceStartMs = recordingState.getRecordingDurationMs();
         const graceActive = !this.hasSpokenDuringRecording && sinceStartMs < this.graceBeforeStopMs;
@@ -114,6 +130,15 @@ export class VoiceActivityDetector {
                         : 'Energy is just above threshold'
                 });
             }
+=======
+        if (energy < SILENCE_THRESHOLD) {
+            // Silence detected
+            this.silenceSampleCount += samples.length;
+
+            // Check grace period (don't stop during grace period after wake word)
+            const sinceStartMs = recordingState.getRecordingDurationMs();
+            const graceActive = !this.hasSpokenDuringRecording && sinceStartMs < this.graceBeforeStopMs;
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             if (graceActive) {
                 // Still in grace period, don't stop yet
@@ -144,10 +169,16 @@ export class VoiceActivityDetector {
             // Speech detected (energy above threshold)
             if (!this.hasSpokenDuringRecording) {
                 this.hasSpokenDuringRecording = true;
+<<<<<<< HEAD
                 this.logger.debug('Speech detected in recording', {
                     energy: energy.toFixed(6),
                     threshold: this.silenceThreshold,
                     aboveThresholdBy: (energy - this.silenceThreshold).toFixed(6)
+=======
+                this.logger.debug('✅ Speech detected in recording', {
+                    energy: energy.toFixed(4),
+                    threshold: SILENCE_THRESHOLD
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 });
             }
 
@@ -170,7 +201,10 @@ export class VoiceActivityDetector {
         return {
             silenceSampleCount: this.silenceSampleCount,
             hasSpokenDuringRecording: this.hasSpokenDuringRecording,
+<<<<<<< HEAD
             silenceThreshold: this.silenceThreshold,
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             silenceSamplesRequired: this.silenceSamplesRequired,
             maxRecordingSamples: this.maxRecordingSamples,
             graceBeforeStopMs: this.graceBeforeStopMs

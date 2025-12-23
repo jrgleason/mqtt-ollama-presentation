@@ -5,7 +5,12 @@
  */
 
 import {logger} from './util/Logger.js';
+<<<<<<< HEAD
 import { CONVERSATION_TIMEOUT_MS } from './constants/timing.js';
+=======
+
+const CONVERSATION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 class ConversationManager {
     constructor() {

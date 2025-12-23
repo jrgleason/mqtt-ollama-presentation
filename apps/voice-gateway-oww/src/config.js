@@ -7,8 +7,13 @@ import dotenv from 'dotenv';
 import { WAKE_WORD_THRESHOLD } from './constants/thresholds.js';
 import { MCP_RETRY_BASE_DELAY_MS } from './constants/timing.js';
 
+<<<<<<< HEAD
 // Load .env file (quiet mode to suppress verbose logging)
 dotenv.config({ quiet: true });
+=======
+// Load .env.tmp file
+dotenv.config();
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 // Parse command-line arguments
 // Support: npm run dev --ollama (default is Anthropic)

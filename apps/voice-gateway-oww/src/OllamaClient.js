@@ -1,4 +1,5 @@
 /**
+<<<<<<< HEAD
  * Ollama AI Client using LangChain ChatOllama
  *
  * Migrated from manual ollama package to @langchain/ollama for:
@@ -15,6 +16,14 @@
 
 import {ChatOllama} from '@langchain/ollama';
 import {HumanMessage, AIMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
+=======
+ * Ollama AI Client (Class-based)
+ *
+ * Handles communication with local Ollama instance for AI inference.
+ */
+
+import {Ollama} from 'ollama';
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 import {logger} from './util/Logger.js';
 import {config} from './config.js';
 
@@ -29,6 +38,7 @@ export class OllamaClient {
     /** Get or initialize Ollama client */
     get client() {
         if (!this.#client) {
+<<<<<<< HEAD
             this.#client = new ChatOllama({
                 baseUrl: this.config.ollama.baseUrl,
                 model: this.config.ollama.model,
@@ -39,6 +49,14 @@ export class OllamaClient {
 
             this.logger.debug('✅ ChatOllama client initialized', {
                 baseUrl: this.config.ollama.baseUrl,
+=======
+            this.#client = new Ollama({
+                host: this.config.ollama.baseUrl,
+            });
+
+            this.logger.debug('✅ Ollama client initialized', {
+                host: this.config.ollama.baseUrl,
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 model: this.config.ollama.model,
             });
         }
@@ -46,12 +64,18 @@ export class OllamaClient {
     }
 
     /**
+<<<<<<< HEAD
      * Clean up non-English characters and thinking blocks that Qwen adds
      * Removes: <think>...</think> blocks, Chinese/Japanese/Korean characters
+=======
+     * Clean up non-English characters that Qwen sometimes adds
+     * Removes Chinese/Japanese/Korean characters and surrounding punctuation
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
      * @param {string} text - Text to clean
      * @returns {string} Cleaned text
      */
     static cleanNonEnglish(text) {
+<<<<<<< HEAD
         if (!text) return '';
 
         // Remove <think>...</think> blocks (qwen3 reasoning)
@@ -143,6 +167,9 @@ export class OllamaClient {
                     return new HumanMessage(msg.content);
             }
         });
+=======
+        return text.replace(/[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF。，]/g, '').trim();
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     }
 
     /**
@@ -173,6 +200,7 @@ export class OllamaClient {
                 {role: 'user', content: prompt}
             ];
 
+<<<<<<< HEAD
             // For qwen3 models, optionally append /no_think to disable thinking mode
             // This significantly speeds up response time (40s -> 2-5s) but may reduce accuracy
             // Controlled by OLLAMA_NO_THINK=true environment variable
@@ -305,6 +333,59 @@ export class OllamaClient {
                 });
 
                 const aiResponse = OllamaClient.cleanNonEnglish(rawContent);
+=======
+            const chatOptions = {
+                model,
+                messages,
+                stream: false,
+            };
+
+            // Add tools if provided
+            if (options.tools && options.tools.length > 0) {
+                chatOptions.tools = options.tools;
+            }
+
+            const response = await this.client.chat(chatOptions);
+
+            const duration = Date.now() - startTime;
+
+            // Check if the model wants to call a tool
+            if (response.message.tool_calls && response.message.tool_calls.length > 0 && options.toolExecutor) {
+                this.logger.debug('🔧 AI requested tool calls', {
+                    toolCount: response.message.tool_calls.length,
+                    tools: response.message.tool_calls.map(tc => tc.function.name)
+                });
+
+                // Execute each tool call
+                const toolResults = [];
+                for (const toolCall of response.message.tool_calls) {
+                    const toolName = toolCall.function.name;
+                    const toolArgs = toolCall.function.arguments;
+
+                    this.logger.debug(`🔧 Executing tool: ${toolName}`, toolArgs);
+                    const toolResult = await options.toolExecutor(toolName, toolArgs);
+
+                    toolResults.push({
+                        role: 'tool',
+                        content: toolResult
+                    });
+                }
+
+                // Send tool results back to the model for final response
+                const finalMessages = [
+                    ...messages,
+                    response.message,
+                    ...toolResults
+                ];
+
+                const finalResponse = await this.client.chat({
+                    model,
+                    messages: finalMessages,
+                    stream: false,
+                });
+
+                const aiResponse = OllamaClient.cleanNonEnglish(finalResponse.message.content);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
                 this.logger.debug('✅ Ollama response (with tools) received', {
                     model,
@@ -316,9 +397,14 @@ export class OllamaClient {
             }
 
             // No tool calls, return direct response
+<<<<<<< HEAD
             const aiResponse = OllamaClient.cleanNonEnglish(response.content);
 
             const duration = Date.now() - startTime;
+=======
+            const aiResponse = OllamaClient.cleanNonEnglish(response.message.content);
+
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             this.logger.debug('✅ Ollama response received', {
                 model,
                 duration: `${duration}ms`,
@@ -344,6 +430,7 @@ export class OllamaClient {
      */
     async checkHealth() {
         try {
+<<<<<<< HEAD
             // Use fetch to check Ollama API directly
             const response = await fetch(`${this.config.ollama.baseUrl}/api/tags`, {
                 method: 'GET',
@@ -361,18 +448,31 @@ export class OllamaClient {
             const data = await response.json();
             const models = data.models || [];
             const modelExists = models.some(m => m.name === this.config.ollama.model);
+=======
+            // List available models
+            const models = await this.client.list();
+            const modelExists = models.models.some(m => m.name === this.config.ollama.model);
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             if (!modelExists) {
                 this.logger.warn('⚠️ Ollama model not found', {
                     model: this.config.ollama.model,
+<<<<<<< HEAD
                     availableModels: models.map(m => m.name),
+=======
+                    availableModels: models.models.map(m => m.name),
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 });
                 return false;
             }
 
             this.logger.debug('✅ Ollama health check passed', {
                 model: this.config.ollama.model,
+<<<<<<< HEAD
                 modelCount: models.length,
+=======
+                modelCount: models.models.length,
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             });
             return true;
         } catch (error) {

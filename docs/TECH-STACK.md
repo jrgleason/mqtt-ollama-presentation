@@ -17,6 +17,7 @@ This document provides comprehensive information about the technology stack, mod
 
 - **Wake Word Detection:** OpenWakeWord with ONNX runtime
 - **Speech-to-Text:** Whisper (whisper.cpp implementation)
+<<<<<<< HEAD
 - **Text-to-Speech:** ElevenLabs API (cloud) or Piper TTS (local)
 - **Audio I/O:** ALSA (Linux), afplay (macOS), node-mic
 - **State Management:** XState v5
@@ -38,6 +39,12 @@ The voice gateway supports 4 configuration-driven demo modes with independent AI
 - AI: Set `AI_PROVIDER=anthropic` or `AI_PROVIDER=ollama`
 - TTS: Set `TTS_PROVIDER=ElevenLabs` or `TTS_PROVIDER=Piper`
 
+=======
+- **Text-to-Speech:** ElevenLabs API (cloud-based, requires internet)
+- **Audio I/O:** ALSA (Linux), afplay (macOS), node-mic
+- **State Management:** XState v5
+
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 ## Ollama Model Recommendations
 
 ### For Voice Gateway (Conversational AI)

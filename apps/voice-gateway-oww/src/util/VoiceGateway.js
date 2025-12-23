@@ -22,7 +22,11 @@ function setupVoiceStateMachine() {
                 }
             },
             listening: {
+<<<<<<< HEAD
                 entry: () => logger.info('🎧 Listening for wake word'),
+=======
+                entry: () => logger.debug('🎧 Listening for wake word...'),
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 on: {
                     TRIGGER: [{
                         cond: 'canTrigger',
@@ -36,6 +40,7 @@ function setupVoiceStateMachine() {
             recording: {
                 entry: () => logger.debug('🎙️ Recording user speech...'),
                 on: {
+<<<<<<< HEAD
                     SILENCE_DETECTED: 'processing',
                     MAX_LENGTH_REACHED: 'processing'
                 }
@@ -59,6 +64,16 @@ function setupVoiceStateMachine() {
                     }, {
                         actions: 'logTriggerBlocked'
                     }]
+=======
+                    SILENCE_DETECTED: 'cooldown',
+                    MAX_LENGTH_REACHED: 'cooldown'
+                }
+            },
+            cooldown: {
+                entry: () => logger.debug('⏸️ Cooldown period before re-arming'),
+                after: {
+                    [config.audio.triggerCooldownMs || 1500]: 'listening'
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 }
             }
         }

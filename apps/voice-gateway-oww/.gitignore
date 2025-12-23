@@ -2,7 +2,10 @@
 node_modules
 
 # Environment variables
+<<<<<<< HEAD
 .env
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 .env.tmp
 .env.local
 secrets.env

@@ -23,6 +23,7 @@ The system SHALL provide a centralized ToolExecutor class that handles all tool 
 - **THEN** ToolExecutor logs the error with context and returns a user-friendly error message
 
 ### Requirement: Tool Registry
+<<<<<<< HEAD
 
 The system SHALL provide a simplified ToolManager that maintains a collection of available tools without unnecessary abstraction layers.
 
@@ -69,6 +70,21 @@ The system SHALL provide a simplified ToolManager that maintains a collection of
 - **AND** returns the tool object or undefined if not found
 
 **Rationale:** Simple array search replaces Map lookup.
+=======
+The system SHALL provide a ToolRegistry module that maintains a registry of all available tools.
+
+#### Scenario: Register tool at startup
+- **WHEN** the application starts
+- **THEN** all tools are automatically registered in the ToolRegistry with their definitions and executor functions
+
+#### Scenario: Get tool definition
+- **WHEN** an AI client needs tool definitions for the model
+- **THEN** ToolRegistry returns an array of all registered tool definitions in the correct format
+
+#### Scenario: Get tool executor function
+- **WHEN** ToolExecutor needs to execute a tool by name
+- **THEN** ToolRegistry returns the executor function for that tool
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 ### Requirement: Tool Definition Format
 Tool definitions SHALL follow a consistent schema with name, description, and parameters.
@@ -82,6 +98,7 @@ Tool definitions SHALL follow a consistent schema with name, description, and pa
 - **THEN** ToolRegistry logs a warning and overwrites the previous registration
 
 ### Requirement: Tool Executor Interface
+<<<<<<< HEAD
 
 All tools SHALL follow LangChain's tool interface with `invoke(args)` method instead of custom executor functions.
 
@@ -107,6 +124,21 @@ All tools SHALL follow LangChain's tool interface with `invoke(args)` method ins
 - **AND** execution time and result are logged
 
 **Rationale:** Keep existing error handling and monitoring logic.
+=======
+All tool executor functions SHALL accept a single arguments object and return a Promise resolving to a string result.
+
+#### Scenario: Tool executor signature
+- **WHEN** a tool executor is called
+- **THEN** it receives an object containing the tool arguments as key-value pairs
+
+#### Scenario: Tool executor return value
+- **WHEN** a tool executor completes successfully
+- **THEN** it returns a Promise resolving to a string describing the result
+
+#### Scenario: Tool executor error handling
+- **WHEN** a tool executor encounters an error
+- **THEN** it throws an Error with a descriptive message that can be shown to the user
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 ### Requirement: Performance Monitoring
 ToolExecutor SHALL track and log execution time for all tool calls.
@@ -120,6 +152,7 @@ ToolExecutor SHALL track and log execution time for all tool calls.
 - **THEN** ToolExecutor logs a warning with the tool name and duration
 
 ### Requirement: AI Client Integration
+<<<<<<< HEAD
 
 AI clients (AnthropicClient, OllamaClient) SHALL use ToolExecutor for all tool calls instead of implementing their own logic, **and SHALL convert tool formats as required by their respective AI providers**.
 
@@ -143,10 +176,24 @@ AI clients (AnthropicClient, OllamaClient) SHALL use ToolExecutor for all tool c
 
 #### Scenario: BackgroundTranscriber tool execution (UNCHANGED)
 
+=======
+AI clients (AnthropicClient, OllamaClient) SHALL use ToolExecutor for all tool calls instead of implementing their own logic.
+
+#### Scenario: Anthropic tool execution
+- **WHEN** AnthropicClient receives tool_calls from the model
+- **THEN** it delegates execution to ToolExecutor instance
+
+#### Scenario: Ollama tool execution
+- **WHEN** OllamaClient receives tool_calls from the model
+- **THEN** it delegates execution to ToolExecutor instance
+
+#### Scenario: BackgroundTranscriber tool execution
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 - **WHEN** BackgroundTranscriber handles AI queries with tools
 - **THEN** it uses a ToolExecutor instance instead of inline toolExecutor method
 
 ### Requirement: Logging Context
+<<<<<<< HEAD
 
 Tool execution logs SHALL include sufficient context for debugging and monitoring **on the appropriate output stream**.
 
@@ -156,6 +203,21 @@ Tool execution logs SHALL include sufficient context for debugging and monitorin
 - **THEN** the debug output is written to stderr using `console.error()` or equivalent
 
 **Rationale:** Clarifies that MCP servers MUST use stderr for logs, not stdout.
+=======
+Tool execution logs SHALL include sufficient context for debugging and monitoring.
+
+#### Scenario: Log successful execution
+- **WHEN** a tool executes successfully
+- **THEN** logs include tool name, arguments (sanitized), duration, and result summary
+
+#### Scenario: Log failed execution
+- **WHEN** a tool execution fails
+- **THEN** logs include tool name, arguments (sanitized), error message, and stack trace
+
+#### Scenario: Sanitize sensitive data
+- **WHEN** logging tool arguments
+- **THEN** ToolExecutor redacts sensitive fields like API keys, passwords, and tokens
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 ### Requirement: Error Recovery
 ToolExecutor SHALL provide graceful error recovery and user-friendly error messages.
@@ -172,6 +234,7 @@ ToolExecutor SHALL provide graceful error recovery and user-friendly error messa
 - **WHEN** a tool execution exceeds a reasonable timeout (30 seconds)
 - **THEN** ToolExecutor cancels the operation and returns a timeout error message
 
+<<<<<<< HEAD
 ### Requirement: MCP Server Logging Compliance
 
 MCP servers SHALL use stderr for all diagnostic output to maintain stdout protocol compliance.
@@ -459,3 +522,5 @@ Tools passed to Ollama SHALL comply with the Qwen function calling specification
 
 **Rationale:** Format conversion is only for sending tool definitions TO Ollama. Tool execution uses the original LangChain tools stored in ToolManager.
 
+=======
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)

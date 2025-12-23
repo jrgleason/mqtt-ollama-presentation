@@ -72,7 +72,15 @@ export class MCPZWaveClient {
             this.pendingRequests.clear();
         });
 
+<<<<<<< HEAD
         // Wait for server to be ready (initialization is event-driven, no arbitrary timeout needed)
+=======
+        // TODO: This seems wrong
+        // Give the server a moment to fully initialize its stdio transport
+        // await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Wait for server to be ready
+>>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         await this.initialize();
     }
 
