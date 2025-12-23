@@ -195,7 +195,9 @@ export class AnthropicClient {
                 const langchainTools = options.tools.map(AnthropicClient.convertToolToLangChainFormat);
                 this.logger.debug('🔧 Tools provided', {
                     toolCount: langchainTools.length,
-                    tools: langchainTools.map(t => t.name)
+                    tools: langchainTools.map(t => t.name),
+                    // Log full tool schema for first tool to debug format issues
+                    firstToolSchema: JSON.stringify(langchainTools[0], null, 2).substring(0, 500)
                 });
 
                 // Bind tools to the model using .bindTools()
@@ -256,18 +258,22 @@ export class AnthropicClient {
                     let chunkIndex = 0;
                     for await (const chunk of stream) {
                         chunkIndex++;
-                        const c = chunk?.content;
-                        // Debug: log content block types for first few chunks
+
+                        // Debug: log full chunk structure for first few chunks
                         if (chunkIndex <= 3) {
-                            if (Array.isArray(c)) {
-                                this.logger.debug('🔎 Stream chunk types', {
-                                    idx: chunkIndex,
-                                    types: c.map(p => p && p.type)
-                                });
-                            } else {
-                                this.logger.debug('🔎 Stream chunk (non-array)', {idx: chunkIndex, kind: typeof c});
-                            }
+                            this.logger.debug('🔎 Stream chunk details (after tools)', {
+                                idx: chunkIndex,
+                                chunkKeys: Object.keys(chunk || {}),
+                                contentType: typeof chunk?.content,
+                                contentIsArray: Array.isArray(chunk?.content),
+                                contentLength: Array.isArray(chunk?.content) ? chunk.content.length : 'n/a',
+                                rawContent: typeof chunk?.content === 'string'
+                                    ? chunk.content.substring(0, 100)
+                                    : JSON.stringify(chunk?.content).substring(0, 200)
+                            });
                         }
+
+                        const c = chunk?.content;
                         const piece = AnthropicClient.extractTextOnly(c);
                         if (piece) {
                             onToken(piece);
@@ -277,6 +283,13 @@ export class AnthropicClient {
                     }
                     const finalApiTime = Date.now() - finalApiStart;
                     this.logger.debug(`⏱️ Final Anthropic streaming took ${finalApiTime}ms`);
+
+                    this.logger.debug('📊 Stream summary (after tools)', {
+                        totalChunks: chunkIndex,
+                        extractedTextLength: finalText.length,
+                        extractedTextPreview: finalText.substring(0, 100)
+                    });
+
                     const totalTime = Date.now() - overallStartTime;
                     const normalized = finalText.replace(/\s{2,}/g, ' ').trim();
                     this.logger.info(`✅ Anthropic response (with tools, streamed) received in ${totalTime}ms`, {
@@ -322,23 +335,37 @@ export class AnthropicClient {
                 let chunkIndex = 0;
                 for await (const chunk of stream) {
                     chunkIndex++;
-                    const c = chunk?.content;
+
+                    // Debug: log full chunk structure for first few chunks
                     if (chunkIndex <= 3) {
-                        if (Array.isArray(c)) {
-                            this.logger.debug('🔎 Stream chunk types', {
-                                idx: chunkIndex,
-                                types: c.map(p => p && p.type)
-                            });
-                        } else {
-                            this.logger.debug('🔎 Stream chunk (non-array)', {idx: chunkIndex, kind: typeof c});
-                        }
+                        this.logger.debug('🔎 Stream chunk details', {
+                            idx: chunkIndex,
+                            chunkKeys: Object.keys(chunk || {}),
+                            contentType: typeof chunk?.content,
+                            contentIsArray: Array.isArray(chunk?.content),
+                            contentLength: Array.isArray(chunk?.content) ? chunk.content.length : 'n/a',
+                            rawContent: typeof chunk?.content === 'string'
+                                ? chunk.content.substring(0, 100)
+                                : JSON.stringify(chunk?.content).substring(0, 200),
+                            hasAdditionalKwargs: !!chunk?.additional_kwargs,
+                            additionalKwargsKeys: chunk?.additional_kwargs ? Object.keys(chunk.additional_kwargs) : []
+                        });
                     }
+
+                    const c = chunk?.content;
                     const piece = AnthropicClient.extractTextOnly(c);
                     if (piece) {
                         onToken(piece);
                         text += (text && !text.endsWith(' ') ? ' ' : '') + piece;
                     }
                 }
+
+                this.logger.debug('📊 Stream summary', {
+                    totalChunks: chunkIndex,
+                    extractedTextLength: text.length,
+                    extractedTextPreview: text.substring(0, 100)
+                });
+
                 return text.replace(/\s{2,}/g, ' ').trim();
             }
 
@@ -362,11 +389,24 @@ export class AnthropicClient {
 
             return aiResponse;
         } catch (error) {
+            // Log full error details for debugging
             this.logger.error('❌ Anthropic query failed', {
                 error: error.message,
+                errorName: error.name,
+                errorType: error.constructor.name,
+                statusCode: error.status || error.statusCode,
                 model: this.config.anthropic.model,
                 prompt: prompt ? prompt.substring(0, 50) : '[conversation]',
             });
+
+            // If error has response data, log it too
+            if (error.response) {
+                this.logger.error('❌ Anthropic API error details', {
+                    status: error.response.status,
+                    data: JSON.stringify(error.response.data).substring(0, 500)
+                });
+            }
+
             throw error;
         }
     }

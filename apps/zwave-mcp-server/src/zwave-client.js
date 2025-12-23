@@ -34,7 +34,7 @@ export class ZWaveUIClient {
 
         if (data && data.success && data.user && data.user.token) {
             this.authToken = data.user.token;
-            console.log('[ZWave UI] Authenticated successfully');
+            console.warn('[ZWave UI] Authenticated successfully');
         } else {
             throw new Error('Authentication failed');
         }

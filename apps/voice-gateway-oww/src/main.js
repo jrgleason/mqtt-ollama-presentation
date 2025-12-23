@@ -314,9 +314,8 @@ async function main() {
     try {
         await initServices();
         const detector = await setupWakeWordDetector();
-        await startTTSWelcome(detector, audioPlayer);
 
-        // Initialize tool system
+        // Initialize tool system BEFORE welcome message
         logger.info('🔧 Initializing tool system...');
         const toolRegistry = new ToolRegistry();
 
@@ -333,20 +332,22 @@ async function main() {
             tools: toolRegistry.getToolNames()
         });
 
-        // Setup state machine, microphone, and audio loop
+        // Setup voice orchestrator and state machine
         const orchestrator = new VoiceInteractionOrchestrator(config, logger, toolExecutor);
         const voiceService = setupVoiceStateMachine();
 
-        // Start microphone
+        // Start microphone (buffers will be drained until READY signal)
         const micInstance = setupMic(voiceService, orchestrator, detector);
-
         handleSignals(micInstance);
+
+        // Activate wake word detection
+        logger.info('🎧 Activating wake word detection...');
+        voiceService.send({type: 'READY'});
 
         logger.info('✅ Voice Gateway ready');
 
-        // Transition to listening mode after TTS welcome
-        logger.info('🎧 Activating wake word detection...');
-        voiceService.send({type: 'READY'});
+        // Now speak welcome message - system is TRULY ready to respond!
+        await startTTSWelcome(detector, audioPlayer);
     } catch (err) {
         logger.error('Failed to initialize Voice Gateway', {error: errMsg(err)});
         process.exit(1);

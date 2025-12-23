@@ -16,7 +16,7 @@ export class MQTTClientWrapper {
         });
 
         this.client.on('connect', () => {
-            console.log('[MQTT] Connected to broker');
+            console.warn('[MQTT] Connected to broker');
             this.connected = true;
         });
 
@@ -25,7 +25,7 @@ export class MQTTClientWrapper {
         });
 
         this.client.on('offline', () => {
-            console.log('[MQTT] Disconnected');
+            console.warn('[MQTT] Disconnected');
             this.connected = false;
         });
     }
@@ -56,7 +56,7 @@ export class MQTTClientWrapper {
             });
         });
 
-        console.log(`[MQTT] Published to ${topic}: ${payload}`);
+        console.warn(`[MQTT] Published to ${topic}: ${payload}`);
     }
 
     /**
@@ -68,7 +68,7 @@ export class MQTTClientWrapper {
             if (err) {
                 console.error(`[MQTT] Subscribe error for ${topic}:`, err);
             } else {
-                console.log(`[MQTT] Subscribed to ${topic}`);
+                console.warn(`[MQTT] Subscribed to ${topic}`);
             }
         });
 

@@ -3,6 +3,11 @@
  *
  * This client can be used by any application to communicate with the zwave-mcp-server.
  * It handles spawning the server process and communicating via JSON-RPC over stdio.
+ *
+ * IMPORTANT: MCP Client Logging Convention
+ * All debug/diagnostic logs MUST use console.warn() to write to stderr.
+ * Actual errors should use console.error().
+ * This prevents pollution of the JSON-RPC communication channel on stdout.
  */
 
 import {spawn} from 'child_process';
@@ -230,12 +235,25 @@ export class MCPZWaveClient {
 
     /**
      * Get list of all Z-Wave devices
-     * @returns {Promise<Device[]>}
+     * @param {Object} [options] - Options for listing devices
+     * @param {boolean} [options.includeInactive=true] - Include inactive devices
+     * @param {string} [options.filter] - Filter devices by name or location
+     * @returns {Promise<string>} Human-readable device list
      */
-    async listDevices() {
+    async listDevices(options = {}) {
         if (!this.isReady) {
             await this.start();
         }
+
+        const args = {
+            includeInactive: options.includeInactive !== undefined ? options.includeInactive : true
+        };
+
+        if (options.filter) {
+            args.filter = options.filter;
+        }
+
+        console.warn('[mcp-client] listDevices called with:', args);
 
         const message = {
             jsonrpc: '2.0',
@@ -243,22 +261,27 @@ export class MCPZWaveClient {
             method: 'tools/call',
             params: {
                 name: 'list_zwave_devices',
-                arguments: {
-                    includeInactive: true  // Include all devices, not just active ones
-                }
+                arguments: args
             }
         };
 
         try {
             const result = await this.sendRequest(message);
+            console.warn('[mcp-client] listDevices result:', {
+                hasContent: !!result.content,
+                contentLength: result.content?.length,
+                isError: result.isError
+            });
 
             // The MCP server now returns human-readable text, not JSON
             // Just return the text content for the AI to use
             const content = result.content?.[0]?.text;
             if (!content) {
+                console.warn('[mcp-client] No content in result, returning default message');
                 return 'No devices found.';
             }
 
+            console.warn('[mcp-client] Device list preview:', content.substring(0, 200));
             return content;  // Return the formatted text directly
         } catch (error) {
             console.error('❌ Failed to list devices:', error.message);
@@ -305,12 +328,15 @@ export class MCPZWaveClient {
 
     /**
      * Get devices formatted for AI context
+     * @param {Object} [options] - Options for listing devices
+     * @param {boolean} [options.includeInactive=true] - Include inactive devices
+     * @param {string} [options.filter] - Filter devices by name or location
      * @returns {Promise<string>}
      */
-    async getDevicesForAI() {
+    async getDevicesForAI(options) {
         try {
             // listDevices() now returns human-readable text directly from the MCP server
-            const deviceText = await this.listDevices();
+            const deviceText = await this.listDevices(options);
             return deviceText;
         } catch (error) {
             console.error('[getDevicesForAI] Error:', error.message);
@@ -347,11 +373,14 @@ export function getMCPClient() {
 
 /**
  * Get list of devices from MCP server
- * @returns {Promise<Device[]>}
+ * @param {Object} [options] - Options for listing devices
+ * @param {boolean} [options.includeInactive=true] - Include inactive devices
+ * @param {string} [options.filter] - Filter devices by name or location
+ * @returns {Promise<string>} Human-readable device list
  */
-export async function listDevices() {
+export async function listDevices(options) {
     const client = getMCPClient();
-    return client.listDevices();
+    return client.listDevices(options);
 }
 
 /**
@@ -368,11 +397,14 @@ export async function controlDevice(deviceName, action, level) {
 
 /**
  * Get devices formatted for AI context
+ * @param {Object} [options] - Options for listing devices
+ * @param {boolean} [options.includeInactive=true] - Include inactive devices
+ * @param {string} [options.filter] - Filter devices by name or location
  * @returns {Promise<string>}
  */
-export async function getDevicesForAI() {
+export async function getDevicesForAI(options) {
     const client = getMCPClient();
-    return client.getDevicesForAI();
+    return client.getDevicesForAI(options);
 }
 
 /**

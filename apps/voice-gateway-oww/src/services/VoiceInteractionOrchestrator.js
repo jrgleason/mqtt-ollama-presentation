@@ -86,6 +86,9 @@ export class VoiceInteractionOrchestrator {
                 isDeviceControlQuery: intent.isDeviceControlQuery
             });
 
+            // Add user message to conversation history BEFORE AI query
+            conversationManager.addUserMessage(transcription);
+
             // ============================================
             // STAGE 3: Processing Beep (before AI query)
             // ============================================

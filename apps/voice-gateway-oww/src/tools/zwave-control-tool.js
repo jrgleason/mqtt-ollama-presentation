@@ -16,21 +16,39 @@ import {getMCPClient} from '../mcpZWaveClient.js';
  */
 async function controlDevice(deviceName, action, level) {
     try {
+        logger.debug('🎮 controlDevice called', {deviceName, action, level});
+
         const mcpClient = getMCPClient();
 
         // Ensure client is started
         if (!mcpClient.isReady) {
+            logger.debug('⏳ MCP client not ready, starting...');
             await mcpClient.start();
+            logger.debug('✅ MCP client started');
         }
+
+        logger.debug('📞 Calling MCP client controlDevice...', {deviceName, action, level});
 
         // Call the MCP client method directly
         const result = await mcpClient.controlDevice(deviceName, action, level);
 
-        logger.info(`✅ Device control successful`, {deviceName, action, level});
+        logger.info('✅ Device control successful', {
+            deviceName,
+            action,
+            level,
+            resultLength: result.length,
+            resultPreview: result.substring(0, 100)
+        });
 
         return result;
     } catch (error) {
-        logger.error('❌ Device control failed', {error: error.message, deviceName, action});
+        logger.error('❌ Device control failed', {
+            error: error.message,
+            stack: error.stack,
+            deviceName,
+            action,
+            level
+        });
 
         // Check if it's a device not found error
         if (error.message.includes('not found') || error.message.includes('No device')) {
@@ -60,10 +78,19 @@ async function getDeviceStatus(deviceName) {
             await mcpClient.start();
         }
 
-        // List all devices
-        const result = await mcpClient.listDevices();
+        logger.debug('🔍 Checking device status', {deviceName});
 
-        logger.debug(`✅ Device status check`, {deviceName});
+        // List devices filtered by the specific device name
+        const result = await mcpClient.listDevices({
+            includeInactive: true,  // Include even offline devices
+            filter: deviceName      // Filter to the specific device
+        });
+
+        logger.debug('✅ Device status check complete', {
+            deviceName,
+            resultLength: result.length,
+            resultPreview: result.substring(0, 100)
+        });
 
         // Result is already a formatted string
         return result;
@@ -117,23 +144,52 @@ export const zwaveControlTool = {
  * @returns {Promise<string>} Result message
  */
 export async function executeZWaveControlTool(args) {
-    if (!args.deviceName || !args.action) {
+    logger.info('🏠 Z-Wave control tool called', {
+        args,
+        argsType: typeof args,
+        argsKeys: Object.keys(args || {}),
+        deviceName: args?.deviceName,
+        action: args?.action,
+        level: args?.level
+    });
+
+    if (!args || !args.deviceName || !args.action) {
+        logger.error('❌ Missing required arguments', {args});
         return 'Error: deviceName and action are required';
     }
 
-    logger.info(`🏠 Z-Wave control tool executing`, {
+    logger.info('🏠 Z-Wave control tool executing', {
         deviceName: args.deviceName,
         action: args.action,
         level: args.level
     });
 
-    // If action is status, get device status
-    if (args.action === 'status') {
-        return await getDeviceStatus(args.deviceName);
-    }
+    try {
+        // If action is status, get device status
+        if (args.action === 'status') {
+            logger.debug('📊 Getting device status...');
+            const statusResult = await getDeviceStatus(args.deviceName);
+            logger.debug('📊 Status result', {
+                resultLength: statusResult.length,
+                resultPreview: statusResult.substring(0, 150)
+            });
+            return statusResult;
+        }
 
-    // Otherwise, control the device
-    const result = await controlDevice(args.deviceName, args.action, args.level);
-    logger.debug(`✅ Z-Wave control result: ${result.substring(0, 100)}...`);
-    return result;
+        // Otherwise, control the device
+        logger.debug('🎮 Controlling device...');
+        const result = await controlDevice(args.deviceName, args.action, args.level);
+        logger.debug('✅ Z-Wave control result', {
+            resultLength: result.length,
+            resultPreview: result.substring(0, 100)
+        });
+        return result;
+    } catch (error) {
+        logger.error('❌ Z-Wave control tool execution failed', {
+            error: error.message,
+            stack: error.stack,
+            args
+        });
+        return `Error executing Z-Wave control: ${error.message}`;
+    }
 }

@@ -82,6 +82,7 @@ const config = {
     },
     anthropic: {
         apiKey: process.env.ANTHROPIC_API_KEY,
+        // Valid Claude 4.5 models: claude-haiku-4-5-20251001, claude-sonnet-4-5-20250929, claude-opus-4-5-20251101
         model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
     },
     ollama: {

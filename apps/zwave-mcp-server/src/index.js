@@ -6,6 +6,16 @@ import {DeviceRegistryBuilder} from './device-registry.js';
 import {ZWaveUIClient} from './zwave-client.js';
 import {getConfig} from './config.js';
 
+/**
+ * IMPORTANT: MCP Server Logging Convention
+ *
+ * All debug/diagnostic logs MUST use console.warn() to write to stderr.
+ * Actual errors should use console.error().
+ * The MCP SDK stdio transport requires stdout to contain ONLY newline-delimited JSON-RPC messages.
+ * Any output to stdout (e.g., console.log, console.debug, console.info) will break the protocol
+ * and cause JSON parse failures in the client.
+ */
+
 /** @typedef {import('./types.js').ZWaveNode} ZWaveNode */
 /** @typedef {import('./types.js').ZWaveConfig} ZWaveConfig */
 /** @typedef {import('./types.js').DeviceRegistry} DeviceRegistry */
@@ -216,10 +226,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const filterDisplay = args.filter;
         const filter = filterDisplay ? String(filterDisplay).toLowerCase() : undefined;
 
+        console.warn('[mcp-server] list_zwave_devices called', {
+            args,
+            includeInactive,
+            filter,
+            filterDisplay
+        });
+
         try {
+            console.warn('[mcp-server] Fetching live nodes from Z-Wave JS UI...');
             const liveNodes = await zwaveClient.getLiveNodes();
+            console.warn('[mcp-server] Got live nodes', {
+                totalNodes: liveNodes.length,
+                nodeIds: liveNodes.map(n => n.id)
+            });
             const registry = registryBuilder.build(toRegistry(liveNodes));
 
+            console.warn('[mcp-server] Filtering nodes...', {filter, includeInactive});
             const filteredSummaries = liveNodes
                 .filter((node) => {
                     const nameLower = (node.name || `Node ${node.id}`).toLowerCase();
@@ -231,7 +254,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
                     const isActive = (node.ready ?? false) && (node.available ?? true);
 
-                    return matchesFilter && (includeInactive || isActive);
+                    const passes = matchesFilter && (includeInactive || isActive);
+
+                    // Log each node evaluation if filter is active
+                    if (filter) {
+                        console.warn('[mcp-server] Node filter check', {
+                            nodeId: node.id,
+                            name: node.name,
+                            nameLower,
+                            filter,
+                            matchesFilter,
+                            isActive,
+                            passes
+                        });
+                    }
+
+                    return passes;
                 })
                 .map((node) => {
                     // Simplified device summary for AI - only essential fields
@@ -246,10 +284,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 })
                 .sort((a, b) => a.name.localeCompare(b.name));
 
+            console.warn('[mcp-server] Filtered to', {
+                matchedCount: filteredSummaries.length,
+                devices: filteredSummaries.map(d => d.name)
+            });
+
             // Build a clear, formatted response for the AI
             let responseText;
             if (filteredSummaries.length === 0) {
-                responseText = 'No Z-Wave devices are currently available.';
+                responseText = filter
+                    ? `No Z-Wave devices found matching "${filterDisplay}".`
+                    : 'No Z-Wave devices are currently available.';
             } else {
                 const deviceList = filteredSummaries
                     .map(d => {
@@ -258,8 +303,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     })
                     .join('\n');
 
-                responseText = `Available Z-Wave devices (${filteredSummaries.length} total):\n${deviceList}`;
+                const filterNote = filter ? ` matching "${filterDisplay}"` : '';
+                responseText = `Available Z-Wave devices${filterNote} (${filteredSummaries.length} total):\n${deviceList}`;
             }
+
+            console.warn('[mcp-server] Returning response', {
+                responseLength: responseText.length,
+                responsePreview: responseText.substring(0, 150)
+            });
 
             return {
                 content: [
