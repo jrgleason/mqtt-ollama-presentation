@@ -22,6 +22,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ## Project Overview
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 **Multi-module CodeMash presentation** demonstrating local AI-powered home automation using Next.js, LangChain.js, Ollama, MQTT, Z-Wave devices, and Auth0.
 =======
 This is a **multi-module CodeMash presentation project** demonstrating local AI-powered home automation using:
@@ -32,6 +33,9 @@ This is a **multi-module CodeMash presentation project** demonstrating local AI-
 - SQLite for local database storage
 - Auth0 for authentication
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+**Multi-module CodeMash presentation** demonstrating local AI-powered home automation using Next.js, LangChain.js, Ollama, MQTT, Z-Wave devices, and Auth0.
+>>>>>>> aeee250 (In a working state with the device list working)
 
 **Presentation Date:** January 12, 2026
 
@@ -39,12 +43,16 @@ This is a **multi-module CodeMash presentation project** demonstrating local AI-
 ```
 mqtt-ollama-presentation/
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> aeee250 (In a working state with the device list working)
 ├── docs/           # All documentation
 ├── apps/
 │   ├── oracle/              # Next.js + LangChain
 │   ├── voice-gateway-oww/   # Voice command service
 │   └── zwave-mcp-server/    # Z-Wave MCP server
 └── openspec/       # Change proposals
+<<<<<<< HEAD
 =======
 ├── docs/                      # Project documentation
 │   ├── TECH-STACK.md          # Technology stack reference
@@ -61,6 +69,8 @@ mqtt-ollama-presentation/
 ├── CLAUDE.md                  # This file (AI assistant guidelines)
 └── README.md                  # Project overview
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+>>>>>>> aeee250 (In a working state with the device list working)
 ```
 
 ---
@@ -119,6 +129,7 @@ User merges via PR.
 - `docs/DEPLOYMENT.md` - Deployment changes
 - `docs/tasks.md` - ALWAYS update for completed tasks
 - `docs/network-dependencies.md` - New network dependencies
+<<<<<<< HEAD
 
 ---
 
@@ -207,36 +218,37 @@ This project prioritizes **local-first architecture** - all AI processing, devic
 - ✅ Demo reliability > Feature complexity
 
 See `docs/network-dependencies.md` for complete list and rationale.
+=======
+>>>>>>> aeee250 (In a working state with the device list working)
 
 ---
 
 ## Quick Reference
 
-### Technology Stack
+### Key Technologies
 
-For detailed technology stack information, model recommendations, performance benchmarks, coding standards, and common code patterns, see:
-
-**📚 [docs/TECH-STACK.md](docs/TECH-STACK.md)**
-
-Key highlights:
-- **JavaScript only** - NO TypeScript
-- **Ollama models:** `qwen2.5:0.5b` (voice gateway, speed), `qwen2.5:3b` (oracle, accuracy)
-- **Whisper models:** `ggml-tiny.bin` (speed), `ggml-base.bin` (accuracy)
-- **Code patterns:** API routes, LangChain tools, MQTT subscribe
+See **[docs/TECH-STACK.md](docs/TECH-STACK.md)** for complete details:
+- **Models:** Ollama `qwen2.5:0.5b` (voice), `qwen2.5:3b` (oracle), Whisper `ggml-tiny.bin`
+- **Stack:** Next.js, LangChain.js, MQTT, Z-Wave, Auth0, ElevenLabs TTS
 - **Testing:** Jest + React Testing Library
 
-### External Integrations
+### Integrations
 
-For Z-Wave, MQTT, Auth0, Ollama configuration, and environment variables, see:
+See **[docs/EXTERNAL-INTEGRATIONS.md](docs/EXTERNAL-INTEGRATIONS.md)** for Z-Wave, MQTT, Auth0, Ollama config.
 
+<<<<<<< HEAD
 **📚 [docs/EXTERNAL-INTEGRATIONS.md](docs/EXTERNAL-INTEGRATIONS.md)**
 
 **🚨 CRITICAL:** Z-Wave MQTT topic format must NOT be changed:
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+**🚨 CRITICAL:** Don't change Z-Wave MQTT topic format:
+>>>>>>> aeee250 (In a working state with the device list working)
 ```
 zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
 ```
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 ### Deployment
 
@@ -248,26 +260,28 @@ journalctl -u oracle.service -f
 =======
 This format is tested and working with actual hardware. See the integration guide for complete details.
 
+=======
+>>>>>>> aeee250 (In a working state with the device list working)
 ### Deployment
 
-For systemd service setup, pre-deployment checklists, common issues, and service management, see:
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for systemd setup and service management.
 
-**📚 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
-
-Quick service log commands:
+Quick logs:
 ```bash
-# Oracle service
-systemctl status oracle.service
 journalctl -u oracle.service -f
+<<<<<<< HEAD
 
 # Voice Gateway service
 systemctl status voice-gateway-oww.service
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+>>>>>>> aeee250 (In a working state with the device list working)
 journalctl -u voice-gateway-oww.service -f
 ```
 
 ---
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 ## Pre-Commit Checklist
 
@@ -285,6 +299,13 @@ Before committing code, verify:
 - [ ] Updated docs/tasks.md
 - [ ] Updated relevant documentation
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+## Pre-Commit Checklist
+
+- [ ] JavaScript only (no `.ts`/`.tsx` files)
+- [ ] Tests pass, no console errors
+- [ ] Documentation updated (`docs/tasks.md` always!)
+>>>>>>> aeee250 (In a working state with the device list working)
 - [ ] No secrets in code
 - [ ] Feature branch (not `main`)
 - [ ] Conventional commit message
@@ -293,6 +314,7 @@ Before committing code, verify:
 - [ ] `npm run build` succeeds
 - [ ] Service files have correct paths
 - [ ] All environment variables set
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 ---
@@ -316,29 +338,22 @@ Before committing code, verify:
 - [ ] All environment variables configured correctly
 
 **Remember:** This project is for a presentation. Code quality, demo reliability, and documentation are equally important!
+=======
+>>>>>>> aeee250 (In a working state with the device list working)
 
 ---
 
 ## Documentation Index
 
-This project has comprehensive documentation organized by purpose:
+**For AI:** `CLAUDE.md` (this file), `openspec/project.md`
 
-### For AI Assistants
-- **CLAUDE.md** (this file) - AI assistant guidelines and project rules
-- **openspec/project.md** - Project context for OpenSpec workflow
+**For Developers:** `README.md`, `docs/GETTING-STARTED.md`, `docs/TECH-STACK.md`, `docs/EXTERNAL-INTEGRATIONS.md`, `docs/DEPLOYMENT.md`
 
-### For Developers
-- **README.md** - Project overview and quick start
-- **docs/GETTING-STARTED.md** - Detailed setup instructions
-- **docs/TECH-STACK.md** - Technology stack reference
-- **docs/EXTERNAL-INTEGRATIONS.md** - Integration patterns and configuration
-- **docs/DEPLOYMENT.md** - Production deployment guide
+**Troubleshooting:** `docs/voice-gateway-troubleshooting.md`, `docs/performance-analysis.md`, `docs/optimization-summary.md`
 
-### Troubleshooting & Optimization
-- **docs/voice-gateway-troubleshooting.md** - Voice gateway debugging
-- **docs/performance-analysis.md** - Performance optimization tips
-- **docs/optimization-summary.md** - Model selection and benchmarks
+**Modules:** `apps/voice-gateway-oww/README.md`, `apps/zwave-mcp-server/README.md`
 
+<<<<<<< HEAD
 ### Module-Specific
 - **apps/voice-gateway-oww/README.md** - Voice gateway architecture
 - **apps/zwave-mcp-server/README.md** - Z-Wave MQTT integration
@@ -360,3 +375,6 @@ This project has comprehensive documentation organized by purpose:
 - Specify which module/file
 - Note your environment (OS, Node version, etc.)
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+**Remember:** This is a presentation project - code quality, demo reliability, and documentation are equally important!
+>>>>>>> aeee250 (In a working state with the device list working)

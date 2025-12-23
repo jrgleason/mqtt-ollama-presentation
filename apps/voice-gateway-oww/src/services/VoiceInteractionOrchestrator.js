@@ -128,6 +128,7 @@ export class VoiceInteractionOrchestrator {
             });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             // Add user message to conversation history BEFORE AI query
             conversationManager.addUserMessage(transcription);
 
@@ -141,6 +142,11 @@ export class VoiceInteractionOrchestrator {
                 this.logger.debug('🔇 Suppressed processing beep (recording or playback in progress)');
             }
 =======
+=======
+            // Add user message to conversation history BEFORE AI query
+            conversationManager.addUserMessage(transcription);
+
+>>>>>>> aeee250 (In a working state with the device list working)
             // ============================================
             // STAGE 3: Processing Beep (before AI query)
             // ============================================

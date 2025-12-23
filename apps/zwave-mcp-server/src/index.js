@@ -17,6 +17,16 @@ import {getConfig, getMQTTConfig} from './config.js';
  * and cause JSON parse failures in the client.
  */
 
+/**
+ * IMPORTANT: MCP Server Logging Convention
+ *
+ * All debug/diagnostic logs MUST use console.warn() to write to stderr.
+ * Actual errors should use console.error().
+ * The MCP SDK stdio transport requires stdout to contain ONLY newline-delimited JSON-RPC messages.
+ * Any output to stdout (e.g., console.log, console.debug, console.info) will break the protocol
+ * and cause JSON parse failures in the client.
+ */
+
 /** @typedef {import('./types.js').ZWaveNode} ZWaveNode */
 /** @typedef {import('./types.js').ZWaveConfig} ZWaveConfig */
 /** @typedef {import('./types.js').DeviceRegistry} DeviceRegistry */
