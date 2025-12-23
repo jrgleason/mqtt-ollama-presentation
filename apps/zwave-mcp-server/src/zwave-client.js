@@ -174,4 +174,8 @@ export class ZWaveUIClient {
         const nodes = await this.getNodes();
         return nodes[nodeId.toString()] || null;
     }
+
+    async getAllDevices() {
+        return await this.getNodes();
+    }
 }

@@ -178,7 +178,7 @@ After updating `main.js` with diagnostic logging, you'll see these messages:
 **Quick fix if no detection:**
 ```bash
 # Stop voice gateway (Ctrl+C)
-# Edit .env and change:
+# Edit .env.tmp and change:
 OWW_THRESHOLD=0.01  # Much lower = more sensitive
 
 # Restart:
@@ -221,7 +221,7 @@ cd apps/voice-gateway-oww
 ### Enable Verbose Logging
 
 ```bash
-# Set in .env
+# Set in .env.tmp
 LOG_LEVEL=debug
 
 # Or run manually:
@@ -298,7 +298,7 @@ mosquitto_sub -h localhost -p 1883 -t 'test' -v
 
 # If fails:
 # - Check broker is running
-# - Verify port in .env matches broker config
+# - Verify port in .env.tmp matches broker config
 # - Check firewall rules
 ```
 
@@ -310,7 +310,7 @@ curl http://localhost:11434/api/tags
 
 # If fails:
 # - Check Ollama is running: systemctl status ollama
-# - Verify URL in .env: OLLAMA_BASE_URL=http://localhost:11434
+# - Verify URL in .env.tmp: OLLAMA_BASE_URL=http://localhost:11434
 # - Check firewall rules
 ```
 
@@ -330,7 +330,7 @@ If issues persist:
    node --version
    npm --version
    ollama --version
-   cat .env
+   cat .env.tmp
    ```
 
 3. **Verify setup:**

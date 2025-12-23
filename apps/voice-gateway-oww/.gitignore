@@ -2,7 +2,7 @@
 node_modules
 
 # Environment variables
-.env
+.env.tmp
 .env.local
 
 # Models (downloaded via setup script)

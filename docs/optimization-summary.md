@@ -29,7 +29,7 @@
 
 **To apply this change:**
 ```bash
-# Option 1: Update your .env file
+# Option 1: Update your .env.tmp file
 VAD_TRAILING_SILENCE_MS=800
 
 # Option 2: Set via environment variable
@@ -113,8 +113,8 @@ const response = await client.invoke(messages, {
 ## Testing the Changes
 
 ```bash
-# 1. Update your .env file
-echo "VAD_TRAILING_SILENCE_MS=800" >> .env
+# 1. Update your .env.tmp file
+echo "VAD_TRAILING_SILENCE_MS=800" >> .env.tmp
 
 # 2. Restart the service
 npm run dev

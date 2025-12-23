@@ -158,12 +158,12 @@ case $VOICE_CHOICE in
         ;;
 esac
 
-# Step 4: Create .env file if it doesn't exist
+# Step 4: Create .env.tmp file if it doesn't exist
 echo ""
 print_info "Step 4: Checking environment configuration..."
-if [[ ! -f .env ]]; then
+if [[ ! -f .env.tmp ]]; then
     print_info "Creating .env file from .env.example..."
-    cp .env.example .env
+    cp .env.tmp.example .env.tmp
     print_success ".env file created"
     print_warning "Please edit .env to configure your settings"
 else
@@ -230,11 +230,11 @@ if command -v ollama &> /dev/null; then
     if curl -s http://localhost:11434/api/version &> /dev/null; then
         print_success "Ollama is running"
 
-        # Read OLLAMA_MODEL from .env file (default to qwen2.5:0.5b)
+        # Read OLLAMA_MODEL from .env.tmp file (default to qwen2.5:0.5b)
         OLLAMA_MODEL="qwen2.5:0.5b"
-        if [[ -f .env ]]; then
-            # Extract OLLAMA_MODEL value from .env
-            ENV_MODEL=$(grep "^OLLAMA_MODEL=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'" | xargs)
+        if [[ -f .env.tmp ]]; then
+            # Extract OLLAMA_MODEL value from .env.tmp
+            ENV_MODEL=$(grep "^OLLAMA_MODEL=" .env.tmp | cut -d'=' -f2 | tr -d '"' | tr -d "'" | xargs)
             if [[ -n "$ENV_MODEL" ]]; then
                 OLLAMA_MODEL="$ENV_MODEL"
             fi

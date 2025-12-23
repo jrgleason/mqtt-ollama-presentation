@@ -31,10 +31,10 @@ npm install
 
 ```bash
 # Copy environment template
-cp .env.example .env
+cp .env.tmp.example .env.tmp
 
 # Edit if needed (defaults work out of the box)
-nano .env
+nano .env.tmp
 ```
 
 **Default Configuration (works as-is):**
@@ -122,8 +122,8 @@ npm run dev
 **To disable TTS (text only):**
 
 ```bash
-# Edit .env
-nano .env
+# Edit .env.tmp
+nano .env.tmp
 
 # Set TTS_ENABLED=false
 TTS_ENABLED=false
@@ -184,8 +184,8 @@ mosquitto_sub -h 10.0.0.58 -p 31883 -t 'voice/#' -v
 ### Use Different Wake Word
 
 ```bash
-# Edit .env
-nano .env
+# Edit .env.tmp
+nano .env.tmp
 
 # Change to "Alexa"
 OWW_MODEL_PATH=models/alexa_v0.1.onnx
@@ -210,7 +210,7 @@ OWW_THRESHOLD=0.7
 # List available devices
 arecord -l
 
-# Update .env
+# Update .env.tmp
 AUDIO_MIC_DEVICE=hw:X,Y  # Replace X,Y with your device
 ```
 
@@ -239,8 +239,8 @@ fixed timeout, it listens for silence and automatically ends the recording.
 **Configuration options:**
 
 ```bash
-# Edit .env
-nano .env
+# Edit .env.tmp
+nano .env.tmp
 
 # Adjust silence duration before stopping (in milliseconds)
 # Default: 1500ms (1.5 seconds)
@@ -401,13 +401,13 @@ Normal on Raspberry Pi:
    # Linux: List audio devices
    aplay -l
 
-   # Update .env if needed
+   # Update .env.tmp if needed
    AUDIO_SPEAKER_DEVICE=hw:X,Y
    ```
 
 6. **Temporarily disable TTS:**
    ```bash
-   # Edit .env
+   # Edit .env.tmp
    TTS_ENABLED=false
    ```
 
@@ -418,7 +418,7 @@ Normal on Raspberry Pi:
 **Solution:** Increase the silence duration threshold:
 
 ```bash
-# Edit .env
+# Edit .env.tmp
 VAD_TRAILING_SILENCE_MS=2000  # Wait 2 seconds of silence instead of 1.5
 ```
 
@@ -432,7 +432,7 @@ with long pauses, increase this value to allow more time between words.
 **Solution:** Decrease the silence duration threshold:
 
 ```bash
-# Edit .env
+# Edit .env.tmp
 VAD_TRAILING_SILENCE_MS=1000  # Only wait 1 second of silence
 ```
 
@@ -446,7 +446,7 @@ noise. Try recording in a quieter environment or decrease the silence threshold.
 **Solution:** Increase the maximum recording length:
 
 ```bash
-# Edit .env
+# Edit .env.tmp
 VAD_MAX_UTTERANCE_MS=15000  # Allow 15 seconds instead of 10
 ```
 
@@ -532,7 +532,7 @@ voice-gateway-oww/
 ├── src/
 │   ├── main.js                    ✅ OpenWakeWord integration + orchestration + TTS
 │   ├── config.js                  ✅ Configuration loader
-│   ├── logger.js                  ✅ Logging utility
+│   ├── Logger.js                  ✅ Logging utility
 │   ├── ollama-client.js           ✅ Ollama AI integration
 │   ├── mqtt-client.js             ✅ MQTT publish/subscribe
 │   ├── conversation-manager.js    ✅ Conversation context with 5-min timeout

@@ -37,7 +37,6 @@ export class MCPZWaveClient {
             stdio: ['pipe', 'pipe', 'pipe'],  // stdin, stdout, stderr
             env: {
                 ...process.env,
-                NODE_ENV: 'production',  // Disable debug output
             }
         });
 
@@ -68,8 +67,9 @@ export class MCPZWaveClient {
             this.pendingRequests.clear();
         });
 
+        // TODO: This seems wrong
         // Give the server a moment to fully initialize its stdio transport
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // await new Promise(resolve => setTimeout(resolve, 500));
 
         // Wait for server to be ready
         await this.initialize();

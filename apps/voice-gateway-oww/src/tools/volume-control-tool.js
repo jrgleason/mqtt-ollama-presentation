@@ -94,7 +94,7 @@ export function controlVolume(args) {
                 message = `Current volume is ${formatVolumePercentage(newVolume)} (${getVolumeDescription(newVolume)})`;
                 break;
 
-            case 'set':
+            case 'set': {
                 if (level === undefined || level === null) {
                     throw new Error('Level parameter required for set action');
                 }
@@ -103,11 +103,12 @@ export function controlVolume(args) {
                 newVolume = setVolume(normalizedLevel);
                 message = `Volume set to ${formatVolumePercentage(newVolume)} (${getVolumeDescription(newVolume)})`;
                 break;
+            }
 
             case 'up':
             case 'increase':
             case 'louder':
-            case 'raise':
+            case 'raise': {
                 // Handle custom amount or use default step
                 const increaseAmount = amount !== undefined
                     ? (amount > 1 ? amount / 100 : amount)
@@ -115,11 +116,12 @@ export function controlVolume(args) {
                 newVolume = increaseVolume(increaseAmount);
                 message = `Volume increased to ${formatVolumePercentage(newVolume)} (${getVolumeDescription(newVolume)})`;
                 break;
+            }
 
             case 'down':
             case 'decrease':
             case 'quieter':
-            case 'lower':
+            case 'lower': {
                 // Handle custom amount or use default step
                 const decreaseAmount = amount !== undefined
                     ? (amount > 1 ? amount / 100 : amount)
@@ -127,6 +129,7 @@ export function controlVolume(args) {
                 newVolume = decreaseVolume(decreaseAmount);
                 message = `Volume decreased to ${formatVolumePercentage(newVolume)} (${getVolumeDescription(newVolume)})`;
                 break;
+            }
 
             case 'mute':
                 newVolume = setVolume(0);

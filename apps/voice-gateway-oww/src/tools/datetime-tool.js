@@ -13,7 +13,7 @@ export function getCurrentDateTime() {
 
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'];
+        'July', 'August', 'September', 'October', 'November', 'December'];
 
     return {
         // Date components
@@ -87,7 +87,7 @@ export function getDateTimeDescription(context = '') {
         }
 
         // 3) Numeric US format: MM/DD/YYYY or M/D/YY
-        const m3 = s.match(/\b(\d{1,2})[\/](\d{1,2})[\/](\d{2,4})\b/);
+        const m3 = s.match(/\b(\d{1,2})[/](\d{1,2})[/](\d{2,4})\b/);
         if (m3) {
             let year = parseInt(m3[3], 10);
             if (year < 100) year += (year <= 29 ? 2000 : 1900);

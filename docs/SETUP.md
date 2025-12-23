@@ -60,8 +60,8 @@ ollama pull qwen2.5:0.5b  # For voice gateway (fast)
 ollama pull qwen2.5:3b    # For Oracle app (accurate)
 
 # 3. Configure environment
-cp apps/oracle/.env.example apps/oracle/.env.local
-# Edit .env.local with your MQTT broker URL and other settings
+cp apps/oracle/.env.tmp.example apps/oracle/.env.tmp.local
+# Edit .env.tmp.local with your MQTT broker URL and other settings
 
 # 4. Start services with Docker Compose
 docker compose up --build
@@ -433,10 +433,10 @@ npm install
 ### 5.3 Configure Environment
 
 ```bash
-cp .env.example .env.local
+cp .env.tmp.example .env.tmp.local
 
-# Edit .env.local
-nano .env.local
+# Edit .env.tmp.local
+nano .env.tmp.local
 ```
 
 **Required variables:**
@@ -560,8 +560,8 @@ ollama pull whisper:latest
 ### 6.3 Configure Environment
 
 ```bash
-cp .env.example .env
-nano .env
+cp .env.tmp.example .env.tmp
+nano .env.tmp
 ```
 
 **Configuration:**
@@ -771,7 +771,7 @@ arecord -D plughw:3,0 -f S16_LE -r 16000 -d 3 test.wav
 aplay test.wav
 
 # Lower detection threshold
-# Edit .env: OWW_THRESHOLD=0.15
+# Edit .env.tmp: OWW_THRESHOLD=0.15
 sudo systemctl restart voice-gateway-oww.service
 ```
 

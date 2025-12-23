@@ -7,7 +7,7 @@ The Voice Gateway now supports **two AI providers**: **Anthropic (Claude)** and 
 ### Using Anthropic (Default)
 
 ```bash
-# Set your API key in .env
+# Set your API key in .env.tmp
 ANTHROPIC_API_KEY=your_api_key_here
 
 # Run with Anthropic (default)

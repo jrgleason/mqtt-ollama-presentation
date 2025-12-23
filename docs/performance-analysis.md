@@ -150,7 +150,7 @@ LOG_LEVEL=debug npm run dev
 
 ### Method 2: .env File
 ```bash
-# Add to .env
+# Add to .env.tmp
 LOG_LEVEL=debug
 ```
 

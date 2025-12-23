@@ -1,3 +1,22 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # Claude Code Guidelines for MQTT + Ollama Home Automation
 
 ## Project Overview
@@ -9,7 +28,6 @@ This is a **multi-module CodeMash presentation project** demonstrating local AI-
 - zwave-js-ui for Z-Wave device control
 - SQLite for local database storage
 - Auth0 for authentication
-- Docker + Helm for deployment
 
 **Presentation Date:** January 12, 2026
 
@@ -88,24 +106,19 @@ This is a **multi-module repository** with the following structure:
 ```
 mqtt-ollama-presentation/
 ├── docs/                      # Project documentation
-│   ├── questions.md           # Clarifying questions & decisions
-│   ├── requirements.md        # Technical requirements
-│   ├── tasks.md               # Implementation task list
-│   └── architecture.md        # System architecture
+│   ├── TECH-STACK.md          # Technology stack reference
+│   ├── EXTERNAL-INTEGRATIONS.md  # Integration guide
+│   ├── DEPLOYMENT.md          # Deployment guide
+│   ├── GETTING-STARTED.md     # Setup instructions
+│   └── tasks.md               # Implementation task list
 ├── apps/                      # All application modules
 │   ├── oracle/                # Next.js + LangChain module (main app)
-│   │   ├── src/
-│   │   ├── package.json
-│   │   ├── Dockerfile
-│   │   └── helm/
 │   ├── voice-gateway-oww/     # Voice command service
 │   └── zwave-mcp-server/      # Z-Wave MCP server
-├── deployment/
-│   └── docker-compose.yml
-├── presentation/
-│   └── slides/
-├── CLAUDE.md                  # This file
-└── README.md
+├── openspec/                  # OpenSpec change proposals
+│   └── project.md             # Project context for OpenSpec
+├── CLAUDE.md                  # This file (AI assistant guidelines)
+└── README.md                  # Project overview
 ```
 
 **Important:**
@@ -184,8 +197,9 @@ mqtt-ollama-presentation/
 **When making changes, update:**
 
 - `README.md` if user-facing changes
-- `docs/architecture.md` if architectural changes
-- `docs/requirements.md` if requirements change
+- `docs/TECH-STACK.md` if technology stack changes
+- `docs/EXTERNAL-INTEGRATIONS.md` if integration patterns change
+- `docs/DEPLOYMENT.md` if deployment procedures change
 - `docs/tasks.md` ALWAYS for completed tasks
 - `docs/questions.md` when decisions are made
 - `docs/network-dependencies.md` when adding network/internet dependencies
@@ -196,31 +210,31 @@ mqtt-ollama-presentation/
 
 **ALL network/internet dependencies must be documented and justified**
 
-This project prioritizes **local-first architecture** - all AI processing, device control, and data storage happens
-locally without cloud dependencies (except for Auth0 authentication).
+This project prioritizes **local-first architecture** - all AI processing, device control, and data storage happens locally without cloud dependencies (except for Auth0 authentication and ElevenLabs TTS).
 
 **📍 Central Documentation:** `docs/network-dependencies.md`
 
 **When adding ANY code that requires network access:**
 
 1. **Check if it's truly necessary**
-    - Can this be done locally instead?
-    - Is there a local-first alternative?
+   - Can this be done locally instead?
+   - Is there a local-first alternative?
 
 2. **Document in `docs/network-dependencies.md`**
-    - What service/endpoint is accessed?
-    - Why is network access required?
-    - What is the mitigation if network fails?
-    - Is it required during demo or just setup?
+   - What service/endpoint is accessed?
+   - Why is network access required?
+   - What is the mitigation if network fails?
+   - Is it required during demo or just setup?
 
 3. **Defend the decision**
-    - Every network dependency must have a clear rationale
-    - Consider impact on demo reliability
-    - Document backup plan for network failures
+   - Every network dependency must have a clear rationale
+   - Consider impact on demo reliability
+   - Document backup plan for network failures
 
 **Current network dependencies:**
 
 - ☁️ **Auth0** - Authentication (internet required during demo)
+- ☁️ **ElevenLabs TTS** - Text-to-speech (internet required, fallback: disable)
 - 🔽 **Ollama models** - One-time download (pre-cache before demo)
 - 📦 **npm packages** - One-time install (pre-install before demo)
 - 🏠 **MQTT broker** - Local network only
@@ -237,1146 +251,50 @@ See `docs/network-dependencies.md` for complete list and rationale.
 
 ---
 
-### 8. Technology Stack
+## Quick Reference
 
-### Core Technologies
+### Technology Stack
 
-- **Language:** JavaScript (ES6+) - **NEVER use TypeScript**
-- **Framework:** Next.js 14+ with App Router
-- **LLM Integration:** LangChain.js + Ollama
-- **Database:** SQLite with Prisma or Drizzle ORM
-- **Authentication:** Auth0 Next.js SDK
-- **MQTT:** MQTT.js client library
+For detailed technology stack information, model recommendations, performance benchmarks, coding standards, and common code patterns, see:
+
+**📚 [docs/TECH-STACK.md](docs/TECH-STACK.md)**
+
+Key highlights:
+- **JavaScript only** - NO TypeScript
+- **Ollama models:** `qwen2.5:0.5b` (voice gateway, speed), `qwen2.5:3b` (oracle, accuracy)
+- **Whisper models:** `ggml-tiny.bin` (speed), `ggml-base.bin` (accuracy)
+- **Code patterns:** API routes, LangChain tools, MQTT subscribe
 - **Testing:** Jest + React Testing Library
 
-### Ollama Model Recommendations (Updated October 2025)
+### External Integrations
 
-**For Voice Gateway (Conversational AI):**
+For Z-Wave, MQTT, Auth0, Ollama configuration, and environment variables, see:
 
-- **Primary:** `qwen2.5:0.5b` - Fastest response time (~1s warm), suitable for simple queries
-- **Alternative:** `qwen2.5:1.5b` - Better accuracy (~4.6s warm), recommended if quality matters
-- **Not Recommended:** `qwen3:1.7b` or larger - Too slow for voice interactions (14s+)
+**📚 [docs/EXTERNAL-INTEGRATIONS.md](docs/EXTERNAL-INTEGRATIONS.md)**
 
-**Performance Benchmarks (Raspberry Pi 5):**
-| Model | Cold Start | Warm Response | Tool Support | Quality |
-|-------|-----------|---------------|--------------|---------|
-| qwen2.5:0.5b | ~3.2s | ~1s | Yes (limited) | Good |
-| qwen2.5:1.5b | ~16s | ~4.6s | Yes (strong) | Better |
-| qwen3:1.7b | ~14s | ~14s | Yes | Best |
-
-**Why qwen2.5:0.5b?**
-
-- 93% faster than qwen3:1.7b (warm inference)
-- Supports tool calling (for future MQTT device control)
-- Small enough for fast inference on Pi 5 without GPU
-- Total voice pipeline: **~7 seconds** (vs 27s with qwen3:1.7b) - **74% improvement**
-
-**For Next.js/LangChain (Oracle module):**
-
-- **Primary:** `qwen2.5:3b` or `gemma2:2b` - Better for complex reasoning
-- **Alternative:** `phi-3.5-mini-instruct` - Good instruction following
-
-### Whisper Model Recommendations (Updated October 2025)
-
-**For Voice Gateway:**
-
-- **Primary:** `ggml-tiny.bin` - Fast transcription (~1.5s), good accuracy for clear speech
-- **Alternative:** `ggml-base.bin` - Better accuracy in noisy environments (4x slower, ~6s)
-- **Not Recommended:** `ggml-turbo` - Designed for cloud/GPU, not optimized for edge devices
-
-**Performance Benchmarks (Raspberry Pi 5):**
-| Model | Size | Memory | Transcription Time | Quality |
-|-------|------|--------|-------------------|---------|
-| tiny | 75 MB | ~273 MB | ~1.5s | Good |
-| base | 142 MB | ~388 MB | ~6s | Better |
-
-**Why ggml-tiny.bin?**
-
-- 75% faster than base model
-- 47% smaller file size
-- Good accuracy for clear voice commands
-- Sufficient for home automation queries
-
-**See [Performance Optimization Guide](docs/performance-optimization.md) for detailed benchmarks and optimization
-techniques.**
-
-### Coding Standards
-
-- **NEVER use TypeScript** - Always use plain JavaScript (ES6+)
-- **NO .ts or .tsx files** - Use .js and .jsx only
-- **NO type annotations** - Keep code clean and simple
-- Use functional components in React
-- Prefer async/await over promises
-- Use Zod for runtime validation (not TypeScript types)
-- Follow Next.js App Router conventions
-- Use server components by default
-- Use client components only when needed
-- Use JSDoc comments for documentation if needed
-
----
-
-### 8. External Integrations
-
-### Z-Wave (zwave-js-ui)
-
-- **Approach:** Use zwave-js-ui MQTT integration as-is (not forking)
-- **Integration:** Subscribe to MQTT topics published by zwave-js-ui
-- **Documentation:** https://github.com/zwave-js/zwave-js-ui
-
-**🚨 CRITICAL: Z-Wave MQTT Topic Format 🚨**
-
-**DO NOT change the MQTT topic format in `apps/zwave-mcp-server/src/device-registry.js`**
-
-This project uses **human-readable MQTT topics** that match Z-Wave JS UI's `nodeNames=true` configuration:
-
-**Correct Format (TESTED AND WORKING):**
-
+**🚨 CRITICAL:** Z-Wave MQTT topic format must NOT be changed:
 ```
 zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
 ```
 
-**Example:**
+This format is tested and working with actual hardware. See the integration guide for complete details.
 
+### Deployment
+
+For systemd service setup, pre-deployment checklists, common issues, and service management, see:
+
+**📚 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**
+
+Quick service log commands:
 ```bash
-# Topic
-zwave/Demo/Switch_One/switch_binary/endpoint_0/targetValue/set
-
-# Payload
-{"value": true}   # Turn ON
-{"value": false}  # Turn OFF
-```
-
-**Why This Format:**
-
-- ✅ Matches Z-Wave JS UI configuration with `nodeNames=true`
-- ✅ Human-readable device names and locations
-- ✅ Tested and confirmed working with actual hardware
-- ✅ Easier debugging and monitoring
-
-**WRONG Format (DO NOT USE):**
-
-```
-zwave/{nodeId}/{commandClass}/0/targetValue/set  # ❌ WRONG - numeric format
-```
-
-**Z-Wave JS UI Configuration Required:**
-
-```json
-{
-  "gateway": {
-    "type": 1,
-    "payloadType": 1,
-    "nodeNames": true
-    // ← REQUIRED for human-readable topics
-  }
-}
-```
-
-**Command Class Mapping:**
-
-- 37 → `switch_binary` (On/Off switches)
-- 38 → `switch_multilevel` (Dimmers)
-- 49 → `sensor_multilevel` (Sensors)
-- 64 → `thermostat_mode` (Thermostats)
-
-**See Also:**
-
-- `apps/zwave-mcp-server/README.md` - Complete MQTT topic documentation
-- `apps/zwave-mcp-server/src/device-registry.js` - Topic building implementation
-
-### MQTT Integration (Dual Approach for Presentation)
-
-**Presentation Strategy:** Demonstrate BOTH simple custom tools AND enterprise MCP architecture
-
-**Part 1: Custom Tool (5 minutes)**
-
-- Build simple MQTT tool live on stage (~15 lines)
-- Show: User request → Tool call → Physical device responds
-- Highlight limitations: code duplication, no reusability across AI clients
-
-**Part 2: MCP Server (5 minutes)**
-
-- Introduce custom TypeScript MCP server (Anthropic's Model Context Protocol)
-- Demo same functionality with better architecture
-- Show: MCP Inspector, Claude Desktop integration, separation of concerns
-
-**Implementation Requirements:**
-
-- **Week 1-2:** Implement custom mqtt.js tool (for demo Part 1)
-- **Week 3:** Add TypeScript MCP server (for demo Part 2)
-- **Week 4:** Practice switching between approaches live
-
-**Technical Details:**
-
-- **Broker:** HiveMQ (existing setup at https://github.com/jrgleason/home-infra/tree/main/mqtt)
-    - MQTT Port: 31883 (NodePort)
-    - WebSocket Port: 30000 (path: /mqtt)
-    - Control Center: 30080 (HTTP)
-    - Authentication: Anonymous (demo mode, TECH DEBT: Enable RBAC)
-- **Custom Tool:** MQTT.js + LangChain tool decorator
-- **MCP Server:** Custom TypeScript using @modelcontextprotocol/sdk + mqtt.js
-- **Authentication:** Anonymous for demo (TECH DEBT: Configure secure auth)
-- **Note:** Using existing HiveMQ broker running in Kubernetes. Custom TypeScript MCP server works with any MQTT broker.
-
-**When to Use Each:**
-
-- Custom Tools: Prototypes, learning, simple integrations
-- MCP Servers: Production, multiple AI clients, enterprise systems
-
-See `docs/notes.md` "MQTT Integration - Dual Approach Strategy" for complete implementation guide.
-
-### Auth0
-
-- **Type:** OIDC SPA authentication
-- **SDK:** @auth0/nextjs-auth0
-- **Storage:** Server-side sessions
-
-### Ollama
-
-- **Connection:** HTTP API (default port 11434)
-- **Models:** Downloaded locally, not bundled
-- **Configuration:** Model selection configurable via env vars
-- **Voice Gateway Model:** `qwen2.5:0.5b` (optimized for speed)
-- **Oracle Model:** `qwen2.5:3b` or larger (optimized for accuracy)
-
----
-
-### 9. Environment Variables
-
-**All environment variables MUST be:**
-
-- Documented in `.env.example`
-- Never committed with real values
-- Loaded via Next.js env system
-- Validated at startup
-
-**Required variables:**
-
-```bash
-# Auth0
-AUTH0_SECRET=
-AUTH0_BASE_URL=
-AUTH0_ISSUER_BASE_URL=
-AUTH0_CLIENT_ID=
-AUTH0_CLIENT_SECRET=
-
-# Database
-DATABASE_URL=file:./dev.db
-
-# MQTT (Local Mosquitto broker)
-MQTT_BROKER_URL=mqtt://localhost:1883
-MQTT_USERNAME=
-MQTT_PASSWORD=
-
-# Ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:0.5b  # For voice-gateway-oww (speed optimized)
-# OLLAMA_MODEL=qwen2.5:3b   # For oracle module (accuracy optimized)
-
-# App
-NODE_ENV=development
-PORT=3000
-```
-
----
-
-### 10. Testing Requirements
-
-**Testing Strategy:**
-
-- Unit tests for utilities and tools
-- Integration tests for API endpoints
-- E2E tests for critical user flows
-- Manual tests for hardware integration
-
-**Coverage Goals:**
-
-- Minimum 60% overall
-- 80%+ for critical paths (auth, device control, LangChain tools)
-
-**Running tests:**
-
-```bash
-# Run unit tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-
-# Run E2E tests
-npm run test:e2e
-```
-
----
-
-### 11. Code Style
-
-### JavaScript (NO TypeScript!)
-
-```javascript
-// ✅ Good: Clear function with JSDoc comments
-/**
- * Controls a smart home device
- * @param {Object} command - Device command object
- * @param {string} command.deviceId - Device identifier
- * @param {'on'|'off'|'dim'} command.action - Action to perform
- * @param {number} [command.value] - Optional value for dimming
- */
-async function controlDevice(command) {
-    // Implementation with Zod validation
-    const schema = z.object({
-        deviceId: z.string(),
-        action: z.enum(['on', 'off', 'dim']),
-        value: z.number().optional()
-    });
-    const validated = schema.parse(command);
-    // ... rest of implementation
-}
-
-// ❌ Avoid: TypeScript syntax
-async function controlDevice(command: DeviceCommand): Promise<void> {
-    // NO! This is TypeScript - NEVER use this!
-}
-```
-
-### React Components
-
-```javascript
-// ✅ Good: Server component by default
-export default async function DevicesPage() {
-    const devices = await getDevices();
-    return <DeviceList devices={devices}/>;
-}
-
-// ✅ Good: Client component when needed
-'use client';
-
-export function ChatInput() {
-    const [message, setMessage] = useState('');
-    // ... interactive logic
-}
-```
-
-### LangChain Tools
-
-```javascript
-// ✅ Good: Well-documented tool with clear description
-export const listDevicesTool = new DynamicTool({
-    name: 'list_devices',
-    description: 'Lists all available smart home devices. Returns device ID, name, type, and current state.',
-    func: async () => {
-        const devices = await deviceService.listAll();
-        return JSON.stringify(devices);
-    },
-});
-```
-
----
-
-### 12. Error Handling
-
-**Always handle errors gracefully:**
-
-```javascript
-// ✅ Good: Comprehensive error handling
-try {
-    await mqttClient.publish(topic, message);
-} catch (error) {
-    logger.error('Failed to publish MQTT message', {topic, error});
-    throw new MQTTPublishError('Device control failed', {cause: error});
-}
-
-// ❌ Avoid: Swallowing errors
-try {
-    await mqttClient.publish(topic, message);
-} catch (error) {
-    console.log('Error:', error);
-}
-```
-
-**Error response format:**
-
-```javascript
-{
-    error: {
-        code: 'DEVICE_UNAVAILABLE',
-            message
-    :
-        'The device is currently offline',
-            details
-    :
-        {
-            deviceId: '123', lastSeen
-        :
-            '2025-09-29T12:00:00Z'
-        }
-    }
-}
-```
-
----
-
-### 13. Logging
-
-**Use structured logging:**
-
-```javascript
-import {logger} from '@/lib/logger';
-
-// ✅ Good: Structured logs with context
-logger.info('Device command sent', {
-    deviceId: device.id,
-    command: 'turn_on',
-    user: userId,
-});
-
-logger.error('Database connection failed', {
-    error: error.message,
-    stack: error.stack,
-    attempt: retryCount,
-});
-
-// ❌ Avoid: Console.log in production code
-console.log('Device turned on');
-```
-
----
-
-### 14. Security Considerations
-
-**Authentication:**
-
-- All API routes MUST be protected
-- Validate JWTs on every request
-- Check token expiration
-- Handle refresh tokens properly
-
-**MQTT:**
-
-- Use authentication (even for dev)
-- Consider TLS for production
-- Validate all incoming messages
-- Sanitize device IDs and topics
-
-**Database:**
-
-- Use parameterized queries (ORM handles this)
-- Never store passwords (Auth0 handles auth)
-- Encrypt sensitive user data
-- Validate all inputs with Zod
-
-**Secrets:**
-
-- Never commit secrets to Git
-- Use environment variables
-- Rotate keys regularly
-- Use different keys for dev/prod
-
----
-
-### 15. Performance Optimization
-
-**Next.js:**
-
-- Use server components for data fetching
-- Implement streaming for LLM responses
-- Use React Suspense for async components
-- Optimize images with next/image
-
-**Ollama:**
-
-- **Choose the right model size:** Use `qwen2.5:0.5b` for speed, `qwen2.5:1.5b`+ for accuracy
-- **System prompts matter:** Explicitly disable verbose output (e.g., `<think>` tags)
-- Cache model responses when appropriate
-- Use streaming for real-time responses
-- All Qwen2.5 models are already quantized (Q4_K_M)
-- Monitor token usage
-- **Performance tip:** First query after model load is always slower (cold start)
-
-**MQTT:**
-
-- Batch multiple commands when possible
-- Use QoS levels appropriately (0 or 1, not 2)
-- Implement connection pooling
-- Clean up subscriptions
-
-**Database:**
-
-- Use indexes on frequently queried fields
-- Implement pagination for large lists
-- Cache frequent queries
-- Use transactions for multi-step operations
-
----
-
-### 16. Presentation-Specific Guidelines
-
-**Demo Stability:**
-
-- Always have mock devices as fallback
-- Test demo script 10+ times
-- Have backup video ready
-- Document failure recovery steps
-
-**Code for Presentation:**
-
-- Keep code examples clean and readable
-- Add comments explaining key concepts
-- Use meaningful variable names
-- Avoid deeply nested logic in demos
-
-**Personality System:**
-
-- Keep responses family-friendly
-- Balance humor with helpfulness
-- Avoid offensive content
-- Test personality variations
-
----
-
-### 17. Common Patterns
-
-### API Route (App Router)
-
-```javascript
-// app/api/devices/route.js
-import {NextResponse} from 'next/server';
-import {getSession} from '@auth0/nextjs-auth0';
-
-export async function GET(request) {
-    const session = await getSession();
-    if (!session) {
-        return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-    }
-
-    const devices = await deviceService.listAll();
-    return NextResponse.json(devices);
-}
-```
-
-### LangChain Tool
-
-```javascript
-import {DynamicTool} from '@langchain/core/tools';
-
-export function createDeviceControlTool(mqttClient) {
-    return new DynamicTool({
-        name: 'control_device',
-        description: 'Controls a smart home device. Parameters: deviceId (string), action (on|off|dim), value (number, optional for dim)',
-        func: async (input) => {
-            const params = JSON.parse(input);
-            await mqttClient.publish(`home/device/${params.deviceId}/set`, {
-                action: params.action,
-                value: params.value,
-            });
-            return `Device ${params.deviceId} ${params.action} command sent`;
-        },
-    });
-}
-```
-
-### MQTT Subscribe
-
-```javascript
-mqttClient.on('connect', () => {
-    mqttClient.subscribe('home/+/status', (err) => {
-        if (err) {
-            logger.error('Subscribe failed', {error: err});
-        }
-    });
-});
-
-mqttClient.on('message', (topic, message) => {
-    const deviceId = topic.split('/')[1];
-    const state = JSON.parse(message.toString());
-    deviceStateCache.set(deviceId, state);
-});
-```
-
----
-
-### 18. Troubleshooting Tips
-
-**If Ollama is slow:**
-
-- **Switch to smaller model:** `qwen2.5:0.5b` (3s) vs `qwen3:1.7b` (14s)
-- **Optimize system prompt:** Add "Keep answers under 2 sentences. Do not include <think> tags"
-- Verify CPU/RAM usage with `htop`
-- Check if it's cold start (first query is always slower)
-- Consider GPU acceleration (if available, but not required for qwen2.5:0.5b)
-
-**If MQTT is unreliable:**
-
-- Check broker logs
-- Verify network connectivity
-- Check QoS levels
-- Implement reconnection logic
-
-**If Auth0 fails:**
-
-- Verify callback URLs
-- Check environment variables
-- Clear browser cookies/cache
-- Check Auth0 dashboard logs
-
-**If Z-Wave devices don't respond:**
-
-- Check zwave-js-ui logs
-- Verify device is paired
-- Check MQTT topic structure
-- Test with MQTT client directly
-
----
-
-### 19. Resources
-
-**Official Documentation:**
-
-- Next.js: https://nextjs.org/docs
-- LangChain.js: https://js.langchain.com/docs
-- Ollama: https://ollama.ai/docs
-- zwave-js-ui: https://github.com/zwave-js/zwave-js-ui
-- Auth0: https://auth0.com/docs/quickstart/webapp/nextjs
-- MQTT.js: https://github.com/mqttjs/MQTT.js
-
-**Learning Resources:**
-
-- LangChain University: https://docs.langchain.com/docs/
-- Home Assistant Year of Voice: https://www.home-assistant.io/voice_control/
-- Ollama Model Library: https://ollama.ai/library
-
----
-
-### 20. Getting Help
-
-**When stuck:**
-
-1. Check docs/tasks.md for related tasks
-2. Review docs/requirements.md for specifications
-3. Search official documentation
-4. Check GitHub issues for similar problems
-5. Ask clarifying questions in docs/questions.md
-
-**Before asking for help:**
-
-- Describe what you tried
-- Include error messages
-- Specify which module/file
-- Note your environment (OS, Node version, etc.)
-
----
-
-### 21. Deployment & Production
-
-**IMPORTANT: Before deploying to production (systemd service, Docker, etc.):**
-
-### Quick Reference: Service Log Commands
-
-**Check Oracle (Next.js) service:**
-
-```bash
-# View status
+# Oracle service
 systemctl status oracle.service
-
-# View logs (last 100 lines)
-journalctl -u oracle.service -n 100 --no-pager
-
-# Follow logs in real-time
-journalctl -u oracle.service -f
-```
-
-**Check Voice Gateway service:**
-
-```bash
-# View status
-systemctl status voice-gateway-oww.service
-
-# View logs (last 100 lines)
-journalctl -u voice-gateway-oww.service -n 100 --no-pager
-
-# Follow logs in real-time
-journalctl -u voice-gateway-oww.service -f
-```
-
-**Check all running services:**
-
-```bash
-# List all active services
-systemctl list-units --type=service --state=running
-
-# Check failed services
-systemctl list-units --type=service --state=failed
-```
-
----
-
-### Pre-Deployment Checklist
-
-**For Oracle (Next.js App):**
-
-- [ ] Run `npm run build` in `/apps/oracle` directory
-- [ ] Verify `.next` directory was created successfully
-- [ ] Test the production build locally with `npm start`
-- [ ] Check all environment variables are set correctly
-- [ ] Verify database migrations are up to date
-- [ ] Test MQTT connection and device control
-- [ ] Verify Ollama is accessible and models are downloaded
-
-**For Systemd Service Setup:**
-
-- [ ] Verify working directory path is correct (`/apps/oracle` not `/oracle`)
-- [ ] Check Node.js binary path is correct (especially if using NVM)
-- [ ] Verify all environment variables are defined in service file
-- [ ] Test service starts successfully: `systemctl status oracle.service`
-- [ ] Check logs for errors: `journalctl -u oracle.service -n 100 --no-pager`
-- [ ] Verify service restarts on failure
-- [ ] Test service survives system reboot
-
-**Common Deployment Issues:**
-
-1. **"Could not find a production build in the '.next' directory"**
-    - **Cause:** Missing production build
-    - **Fix:** Run `npm run build` in the application directory before starting
-    - **Prevention:** Add build step to deployment automation
-
-2. **"Changing to the requested working directory failed: No such file or directory"**
-    - **Cause:** Incorrect `WorkingDirectory` path in systemd service file
-    - **Fix:** Update service file to use correct path (e.g., `/home/pi/code/mqtt-ollama-presentation/apps/oracle`)
-    - **Prevention:** Always verify directory structure before creating service files
-
-3. **Service fails silently or restarts continuously**
-    - **Check logs:** `journalctl -u oracle.service -n 100 --no-pager`
-    - **Common causes:** Missing env vars, database not accessible, MQTT broker unreachable
-    - **Debug:** Run the ExecStart command manually to see real-time errors
-
-### Systemd Service Template
-
-**Location:** `/etc/systemd/system/oracle.service`
-
-**Correct configuration:**
-
-```ini
-[Unit]
-Description=Oracle - AI Home Automation Assistant
-After=network.target ollama.service
-Wants=ollama.service
-
-[Service]
-Type=simple
-User=pi
-WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/oracle
-Environment="NODE_ENV=production"
-Environment="PORT=3000"
-Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-Environment="OLLAMA_BASE_URL=http://localhost:11434"
-Environment="OLLAMA_MODEL=llama3.2:3b"
-Environment="DATABASE_URL=file:./dev.db"
-Environment="MQTT_BROKER_URL=mqtt://127.0.0.1:1883"
-ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/oracle/node_modules/.bin/next start
-Restart=on-failure
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**Key points:**
-
-- ✅ `WorkingDirectory` must point to `/apps/oracle` (NOT `/oracle`)
-- ✅ `ExecStart` must use absolute path to Node.js binary
-- ✅ `ExecStart` must use absolute path to `next` executable
-- ✅ Must run `npm run build` BEFORE starting the service
-- ✅ All required environment variables must be defined
-- ✅ Service should depend on network and ollama being ready
-
-**Service management:**
-
-```bash
-# After creating/editing service file
-sudo systemctl daemon-reload
-sudo systemctl enable oracle.service
-sudo systemctl start oracle.service
-
-# Check status
-systemctl status oracle.service
-
-# Check logs (most recent 100 lines)
-journalctl -u oracle.service -n 100 --no-pager
-
-# Follow logs in real-time
 journalctl -u oracle.service -f
 
-# Restart after code changes
-sudo systemctl restart oracle.service
-```
-
-**Verifying the service is running correctly:**
-
-```bash
-# 1. Check service status (should show "active (running)")
-systemctl status oracle.service
-
-# 2. View recent logs to check for errors
-journalctl -u oracle.service -n 100 --no-pager
-
-# 3. Look for these success indicators in logs:
-# ✅ "Server started on http://localhost:3000"
-# ✅ "ready - started server on"
-# ❌ Look for ERROR, ECONNREFUSED, or exit codes
-
-# 4. Test the application is accessible
-curl http://localhost:3000
-
-# 5. Check if Next.js is listening on port 3000
-sudo netstat -tlnp | grep 3000
-# OR
-ss -tlnp | grep 3000
-```
-
-**Nginx reverse proxy setup:**
-
-If using nginx to proxy to the Next.js app:
-
-- Next.js runs on port 3000
-- Nginx should proxy to `http://127.0.0.1:3000`
-- If nginx returns 502 Bad Gateway, check if oracle.service is running
-- Check nginx logs: `sudo tail -50 /var/log/nginx/error.log`
-
-**Docker deployment:**
-
-See README.md for Docker Compose and Kubernetes/Helm deployment options.
-
----
-
-### Voice Gateway OWW Deployment
-
-**IMPORTANT: Voice Gateway requires audio devices and Python dependencies**
-
-### Pre-Deployment Checklist
-
-**For Voice Gateway OWW:**
-
-- [ ] Download Whisper model (e.g., `ggml-tiny.bin` or `ggml-base.bin`)
-- [ ] Download OpenWakeWord models (melspectrogram, embedding, wake word model)
-- [ ] **Configure ElevenLabs API key** in `.env` file
-- [ ] **Install ffmpeg:** `brew install ffmpeg` (macOS) or `apt-get install ffmpeg` (Linux)
-- [ ] **Verify internet connection** (required for ElevenLabs TTS)
-- [ ] Test audio devices: `arecord -l` and `aplay -l`
-- [ ] Verify ALSA device names in `.env` file
-- [ ] Test MQTT connection to broker
-- [ ] Verify Ollama is running and model is downloaded
-- [ ] Test microphone: `arecord -D plughw:3,0 -f S16_LE -r 16000 -d 3 test.wav`
-
-### Systemd Service Template
-
-**Location:** `/etc/systemd/system/voice-gateway-oww.service`
-
-**Correct configuration:**
-
-```ini
-[Unit]
-Description=Voice Gateway OWW - Wake Word Detection and Voice Commands
-After=network.target ollama.service
-Wants=ollama.service
-
-[Service]
-Type=simple
-User=pi
-WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww
-Environment="NODE_ENV=production"
-Environment="LOG_LEVEL=info"
-Environment="VIRTUAL_ENV=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv"
-Environment="PATH=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv/bin:/usr/local/bin:/usr/bin:/bin"
-
-# OpenWakeWord Configuration
-Environment="OWW_MODEL_PATH=models/hey_jarvis_v0.1.onnx"
-Environment="OWW_THRESHOLD=0.25"
-Environment="OWW_INFERENCE_FRAMEWORK=onnx"
-
-# Audio Configuration
-Environment="AUDIO_MIC_DEVICE=plughw:3,0"
-Environment="AUDIO_SPEAKER_DEVICE=plughw:2,0"
-Environment="AUDIO_SAMPLE_RATE=16000"
-Environment="AUDIO_CHANNELS=1"
-
-# Voice Activity Detection (VAD)
-Environment="VAD_TRAILING_SILENCE_MS=1500"
-Environment="VAD_MAX_UTTERANCE_MS=10000"
-
-# Whisper Speech-to-Text
-Environment="WHISPER_MODEL=tiny"
-Environment="WHISPER_MODEL_PATH=models/ggml-tiny.bin"
-
-# MQTT Broker
-Environment="MQTT_BROKER_URL=mqtt://localhost:1883"
-Environment="MQTT_CLIENT_ID=voice-gateway-oww"
-Environment="MQTT_USERNAME="
-Environment="MQTT_PASSWORD="
-
-# Health Check
-Environment="HEALTHCHECK_PORT=3002"
-
-# Ollama AI Configuration
-Environment="OLLAMA_BASE_URL=http://localhost:11434"
-Environment="OLLAMA_MODEL=qwen2.5:0.5b"
-
-# Text-to-Speech (ElevenLabs)
-Environment="TTS_ENABLED=true"
-Environment="TTS_VOLUME=1.0"
-Environment="TTS_SPEED=1.0"
-Environment="ELEVENLABS_API_KEY=your_api_key_here"
-Environment="ELEVENLABS_VOICE_ID=JBFqnCBsd6RMkjVDRZzb"
-Environment="ELEVENLABS_MODEL_ID=eleven_multilingual_v2"
-
-ExecStart=/home/pi/.nvm/versions/node/current/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
-Restart=on-failure
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**Key points:**
-
-- ✅ **CRITICAL:** Set `ELEVENLABS_API_KEY` environment variable with your API key
-- ✅ **CRITICAL:** Internet connection required for TTS (fallback: disable with `TTS_ENABLED=false`)
-- ✅ `WorkingDirectory` must point to `/apps/voice-gateway-oww`
-- ✅ `ExecStart` must use absolute path to Node.js binary
-- ✅ All audio device names must match your hardware (use `arecord -l` to find)
-- ✅ Service should depend on network and ollama being ready
-- ✅ Adjust `OWW_THRESHOLD` based on your environment (0.01-0.5)
-- ✅ Ensure `ffmpeg` is installed for audio format conversion
-
-### Installation Steps
-
-```bash
-# 1. Create service file in the app directory (for version control)
-cd /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww
-
-# 2. Copy service file to systemd directory
-sudo cp voice-gateway-oww.service /etc/systemd/system/
-
-# 3. Reload systemd daemon
-sudo systemctl daemon-reload
-
-# 4. Enable service to start on boot
-sudo systemctl enable voice-gateway-oww.service
-
-# 5. Start the service
-sudo systemctl start voice-gateway-oww.service
-
-# 6. Check status
+# Voice Gateway service
 systemctl status voice-gateway-oww.service
-```
-
-### Viewing Logs
-
-**Real-time log monitoring:**
-
-```bash
-# Follow logs in real-time (most useful)
 journalctl -u voice-gateway-oww.service -f
-
-# Follow logs with timestamps
-journalctl -u voice-gateway-oww.service -f --output=short-iso
 ```
-
-**Historical logs:**
-
-```bash
-# Show last 50 lines
-journalctl -u voice-gateway-oww.service -n 50 --no-pager
-
-# Show last 100 lines
-journalctl -u voice-gateway-oww.service -n 100 --no-pager
-
-# Show logs since last boot
-journalctl -u voice-gateway-oww.service -b
-
-# Show logs from specific time range
-journalctl -u voice-gateway-oww.service --since "2025-10-17 20:00:00" --until "2025-10-17 21:00:00"
-
-# Show logs from last hour
-journalctl -u voice-gateway-oww.service --since "1 hour ago"
-```
-
-**Filtering logs:**
-
-```bash
-# Search for errors only
-journalctl -u voice-gateway-oww.service -p err
-
-# Search for specific keywords
-journalctl -u voice-gateway-oww.service --no-pager | grep "wake word"
-journalctl -u voice-gateway-oww.service --no-pager | grep "TTS"
-journalctl -u voice-gateway-oww.service --no-pager | grep "ElevenLabs"
-
-# Show logs with context (before/after)
-journalctl -u voice-gateway-oww.service --no-pager | grep -C 5 "error"
-```
-
-**Exporting logs:**
-
-```bash
-# Export to file
-journalctl -u voice-gateway-oww.service --no-pager > voice-gateway-logs.txt
-
-# Export last 1000 lines to file
-journalctl -u voice-gateway-oww.service -n 1000 --no-pager > voice-gateway-logs.txt
-```
-
-### Service Management
-
-```bash
-# Start service
-sudo systemctl start voice-gateway-oww.service
-
-# Stop service
-sudo systemctl stop voice-gateway-oww.service
-
-# Restart service (after config changes)
-sudo systemctl restart voice-gateway-oww.service
-
-# Check status
-systemctl status voice-gateway-oww.service
-
-# Enable auto-start on boot
-sudo systemctl enable voice-gateway-oww.service
-
-# Disable auto-start on boot
-sudo systemctl disable voice-gateway-oww.service
-
-# Reload service file after editing
-sudo systemctl daemon-reload
-sudo systemctl restart voice-gateway-oww.service
-```
-
-### Common Deployment Issues
-
-1. **"ElevenLabs TTS not ready" or API key errors**
-    - **Cause:** Missing or invalid ElevenLabs API key
-    - **Fix:** Set `ELEVENLABS_API_KEY` in `.env` or systemd service file
-    - **Get API key:** https://elevenlabs.io/app/settings/api-keys
-    - **Verify:** Check logs for "✅ ElevenLabs TTS health check passed"
-
-2. **"arecord: device not found" or microphone errors**
-    - **Cause:** Incorrect ALSA device name
-    - **Fix:** Find correct device with `arecord -l`, update `AUDIO_MIC_DEVICE` in service file
-    - **Common devices:** `hw:2,0`, `plughw:3,0`, `default`
-    - **Test:** `arecord -D plughw:3,0 -f S16_LE -r 16000 -d 3 test.wav`
-
-3. **Wake word not detected**
-    - **Cause:** Threshold too high or microphone level too low
-    - **Fix:** Lower `OWW_THRESHOLD` (try 0.01 for testing, then increase to 0.25-0.5)
-    - **Check logs:** Look for detection scores in logs to see if wake word is being heard
-    - **Test mic:** `arecord -D plughw:3,0 -f S16_LE -r 16000 test.wav` and play back
-
-4. **"spawn whisper-cli ENOENT" or transcription fails**
-    - **Cause:** whisper-cli not in PATH
-    - **Fix:** Add whisper.cpp build directory to PATH in service file
-    - **Update PATH:** `Environment="PATH=/home/pi/code/whisper.cpp/build/bin:..."`
-    - **Verify:** Check that whisper-cli exists: `ls -l /home/pi/code/whisper.cpp/build/bin/whisper-cli`
-    - **Symptom:** Wake word detected (beep), but no transcription or AI response
-
-5. **Service fails silently or restarts continuously**
-    - **Check logs:** `journalctl -u voice-gateway-oww.service -n 100 --no-pager`
-    - **Common causes:**
-        - Missing models (whisper, OpenWakeWord)
-        - Missing ElevenLabs API key
-        - No internet connection (for TTS)
-        - MQTT broker unreachable
-        - Ollama not running
-        - Audio device permissions
-    - **Debug:** Run command manually:
-      `cd /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww && node src/main.js`
-
-6. **TTS not working (no spoken responses)**
-    - **Cause:** Missing ElevenLabs API key, no internet, or ffmpeg not installed
-    - **Fix:** Set `ELEVENLABS_API_KEY`, verify internet connection, install ffmpeg
-    - **Install ffmpeg:** `brew install ffmpeg` (macOS) or `apt-get install ffmpeg` (Linux)
-    - **Verify:** Check logs for "✅ Welcome message spoken" on startup
-    - **Test:** `curl -I https://api.elevenlabs.io` (should return HTTP 200)
-    - **Fallback:** Set `TTS_ENABLED=false` to disable voice output
-
-7. **High CPU usage or slow responses**
-    - **Cause:** Using large Ollama model or Whisper model
-    - **Fix:**
-        - Use `qwen2.5:0.5b` for Ollama (fastest)
-        - Use `ggml-tiny.bin` for Whisper (1.5s vs 6s for base)
-    - **Monitor:** `htop` to check CPU usage
-
-### Testing the Deployment
-
-After deploying, verify everything works:
-
-```bash
-# 1. Check service status (should show "active (running)")
-systemctl status voice-gateway-oww.service
-
-# 2. View recent logs to verify startup
-journalctl -u voice-gateway-oww.service -n 100 --no-pager
-
-# 3. Look for these success indicators in logs:
-# ✅ "Voice Gateway (OpenWakeWord) starting..."
-# ✅ "ZWave MCP client ready"
-# ✅ "OpenWakeWord initialized"
-# ✅ "Voice Gateway (OpenWakeWord) is ready"
-# ✅ "Listening for wake word..."
-# ✅ "Welcome message spoken" (if TTS enabled)
-#
-# ❌ Look for these error indicators:
-# ❌ "spawn whisper-cli ENOENT" - whisper-cli not in PATH
-# ❌ "ElevenLabs TTS not ready" - API key missing or internet down
-# ❌ "ALSA device check failed" - audio device issues
-# ❌ "Failed to connect to MQTT broker" - MQTT connection issues
-# ❌ "ffmpeg conversion failed" - ffmpeg not installed
-
-# 4. Follow logs in real-time for testing
-journalctl -u voice-gateway-oww.service -f
-
-# 5. Test wake word detection
-# Say "Hey Jarvis" followed by a question
-# Watch logs for the complete flow:
-# 🎤 "Wake word detected!" - wake word heard
-# 📝 "You said: [your question]" - transcription succeeded
-# 🤖 "AI Response: [response]" - Ollama responded
-# ✅ "AI response playback complete" - TTS played audio
-#
-# If you hear beeps but nothing else, check logs for errors
-
-# 6. Verify all components
-# Check Ollama is running
-curl http://localhost:11434/api/tags
-
-# Check MQTT broker (if configured)
-# Use MQTT client to subscribe to topics and verify messages
-
-# Check audio devices
-arecord -l  # List microphones
-aplay -l    # List speakers
-```
-
-**Quick verification checklist:**
-
-- [ ] Service shows "active (running)" in status
-- [ ] Logs show "Voice Gateway (OpenWakeWord) is ready"
-- [ ] Logs show "Listening for wake word..."
-- [ ] Wake word detection triggers beep
-- [ ] Speech is transcribed (check logs for "You said:")
-- [ ] AI responds (check logs for "AI Response:")
-- [ ] TTS plays audio (if enabled)
 
 ---
 
@@ -1397,11 +315,52 @@ Before committing code, verify:
 **Before deploying to production:**
 
 - [ ] Run `npm run build` successfully
-- [ ] Verify `.next` directory exists
 - [ ] Verify correct directory paths in systemd service file
 - [ ] Test service starts and runs successfully
 - [ ] Check logs for errors
-- [ ] Test the application is accessible
+- [ ] All environment variables configured correctly
 
-**Remember:** This project is for a presentation. Code quality, demo reliability, and documentation are equally
-important!
+**Remember:** This project is for a presentation. Code quality, demo reliability, and documentation are equally important!
+
+---
+
+## Documentation Index
+
+This project has comprehensive documentation organized by purpose:
+
+### For AI Assistants
+- **CLAUDE.md** (this file) - AI assistant guidelines and project rules
+- **openspec/project.md** - Project context for OpenSpec workflow
+
+### For Developers
+- **README.md** - Project overview and quick start
+- **docs/GETTING-STARTED.md** - Detailed setup instructions
+- **docs/TECH-STACK.md** - Technology stack reference
+- **docs/EXTERNAL-INTEGRATIONS.md** - Integration patterns and configuration
+- **docs/DEPLOYMENT.md** - Production deployment guide
+
+### Troubleshooting & Optimization
+- **docs/voice-gateway-troubleshooting.md** - Voice gateway debugging
+- **docs/performance-analysis.md** - Performance optimization tips
+- **docs/optimization-summary.md** - Model selection and benchmarks
+
+### Module-Specific
+- **apps/voice-gateway-oww/README.md** - Voice gateway architecture
+- **apps/zwave-mcp-server/README.md** - Z-Wave MQTT integration
+
+### Getting Help
+
+**When stuck:**
+
+1. Check docs/tasks.md for related tasks
+2. Review appropriate documentation (TECH-STACK, EXTERNAL-INTEGRATIONS, DEPLOYMENT)
+3. Search official documentation (links in docs/TECH-STACK.md)
+4. Check GitHub issues for similar problems
+5. Ask clarifying questions in docs/questions.md
+
+**Before asking for help:**
+
+- Describe what you tried
+- Include error messages
+- Specify which module/file
+- Note your environment (OS, Node version, etc.)

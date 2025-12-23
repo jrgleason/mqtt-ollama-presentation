@@ -4,7 +4,7 @@
  * Allows the AI to search Google for information when it doesn't know the answer
  */
 
-import {logger} from '../logger.js';
+import {logger} from '../util/Logger.js';
 import {getCurrentDateTime} from './datetime-tool.js';
 
 /**

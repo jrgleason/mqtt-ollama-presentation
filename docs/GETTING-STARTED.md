@@ -32,7 +32,7 @@ you need deeper detail.
 
 1. Copy the example environment file and supply Auth0 + MQTT credentials:
    ```bash
-   cp apps/oracle/.env.example apps/oracle/.env.local
+   cp apps/oracle/.env.tmp.example apps/oracle/.env.tmp.local
    ```
    Required values:
     - `AUTH0_SECRET`, `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`

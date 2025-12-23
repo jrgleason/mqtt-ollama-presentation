@@ -138,8 +138,8 @@ See `deployment/docker-compose.yml` for configuration.
 ```bash
 cd apps/oracle
 npm install
-cp .env.example .env.local
-# Edit .env.local with Auth0, MQTT, Ollama settings
+cp .env.tmp.example .env.tmp.local
+# Edit .env.tmp.local with Auth0, MQTT, Ollama settings
 npm run db:seed
 npm run dev
 ```
@@ -152,8 +152,8 @@ Access at: http://localhost:3000
 cd apps/voice-gateway-oww
 npm install
 ./setup.sh  # Downloads models
-cp .env.example .env
-# Edit .env with configuration
+cp .env.tmp.example .env.tmp
+# Edit .env.tmp with configuration
 npm run dev
 ```
 

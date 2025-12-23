@@ -5,7 +5,7 @@
 
 import dotenv from 'dotenv';
 
-// Load .env file
+// Load .env.tmp file
 dotenv.config();
 
 // Parse command-line arguments
@@ -13,17 +13,29 @@ dotenv.config();
 const cliArgs = process.argv.slice(2);
 const useOllama = cliArgs.includes('--ollama');
 
-// Model-specific configurations (different models have different embedding frame requirements)
+// Model registry - maps short aliases to full configuration
+// Use short aliases like 'jarvis' or 'robot' in OWW_MODEL_PATH
 const MODEL_CONFIGS = {
-    'hey_jarvis_v0.1.onnx': {
+    'jarvis': {
+        filename: 'hey_jarvis_v0.1.onnx',
+        path: 'models/hey_jarvis_v0.1.onnx',
         embeddingFrames: 16,
         description: 'Hey Jarvis wake word',
     },
-    'hello_robot.onnx': {
+    'robot': {
+        filename: 'hello_robot.onnx',
+        path: 'models/hello_robot.onnx',
         embeddingFrames: 28,
         description: 'Hello Robot wake word',
     },
     // Add more models here as needed
+    // Example:
+    // 'mycroft': {
+    //     filename: 'hey_mycroft.onnx',
+    //     path: 'models/hey_mycroft.onnx',
+    //     embeddingFrames: 16,
+    //     description: 'Hey Mycroft wake word',
+    // },
 };
 
 const config = {
@@ -56,7 +68,8 @@ const config = {
     },
     mqtt: {
         brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
-        clientId: process.env.MQTT_CLIENT_ID || `voice-gateway-oww-${Math.random().toString(16).slice(2, 8)}`,
+        // Always append random suffix to prevent connection cycling when running multiple instances
+        clientId: `${process.env.MQTT_CLIENT_ID || 'voice-gateway-oww'}-${Math.random().toString(16).slice(2, 8)}`,
         username: process.env.MQTT_USERNAME,
         password: process.env.MQTT_PASSWORD,
     },
@@ -95,40 +108,66 @@ const config = {
 };
 
 /**
- * Get model-specific configuration
- * @param {string} modelPath - Path to the wake word model (e.g., "models/hey_jarvis_v0.1.onnx")
- * @returns {Object} Model configuration with embeddingFrames
+ * Resolve model alias or path to full configuration
+ * @param {string} input - Model alias (e.g., "jarvis") or full path (e.g., "models/hey_jarvis_v0.1.onnx")
+ * @returns {Object} Model configuration with path, filename, embeddingFrames, description
  */
-function getModelConfig(modelPath) {
-    if (!modelPath) {
+function resolveModelConfig(input) {
+    if (!input) {
         throw new Error('OWW_MODEL_PATH is required');
     }
 
-    // Extract model filename from path
-    const modelFileName = modelPath.split('/').pop();
-
-    // Look up model-specific config
-    const modelConfig = MODEL_CONFIGS[modelFileName];
-
-    if (!modelConfig) {
-        console.warn(`⚠️  Unknown wake word model: ${modelFileName}`);
-        console.warn('   Using default embedding frames: 16');
-        console.warn('   Supported models:', Object.keys(MODEL_CONFIGS).join(', '));
+    // First, check if input is a known alias (case-insensitive)
+    const lowerInput = input.toLowerCase();
+    if (MODEL_CONFIGS[lowerInput]) {
+        const config = MODEL_CONFIGS[lowerInput];
+        console.log(`✅ Resolved model alias '${input}' → ${config.path}`);
         return {
-            embeddingFrames: 16,
-            description: 'Unknown model',
+            resolvedPath: config.path,
+            filename: config.filename,
+            embeddingFrames: config.embeddingFrames,
+            description: config.description,
         };
     }
 
-    return modelConfig;
+    // Not an alias, treat as a path - extract filename and try to look it up
+    const filename = input.split('/').pop();
+
+    // Search MODEL_CONFIGS by filename
+    for (const [alias, config] of Object.entries(MODEL_CONFIGS)) {
+        if (config.filename === filename) {
+            console.log(`✅ Recognized model file '${filename}' (alias: ${alias})`);
+            return {
+                resolvedPath: input, // Use provided path
+                filename: config.filename,
+                embeddingFrames: config.embeddingFrames,
+                description: config.description,
+            };
+        }
+    }
+
+    // Unknown model - use defaults and warn
+    console.warn(`⚠️  Unknown wake word model: ${input}`);
+    console.warn('   Using default embedding frames: 16');
+    console.warn('   Available aliases:', Object.keys(MODEL_CONFIGS).join(', '));
+    console.warn('   Recognized filenames:', Object.values(MODEL_CONFIGS).map(c => c.filename).join(', '));
+
+    return {
+        resolvedPath: input, // Use as-is
+        filename: filename,
+        embeddingFrames: 16,
+        description: 'Custom model',
+    };
 }
 
-// Add computed model-specific settings
-const modelConfig = getModelConfig(config.openWakeWord.modelPath);
+// Resolve model alias/path and add computed model-specific settings
+const modelConfig = resolveModelConfig(config.openWakeWord.modelPath);
+config.openWakeWord.modelPath = modelConfig.resolvedPath; // Update to resolved full path
+config.openWakeWord.modelFilename = modelConfig.filename;
 config.openWakeWord.embeddingFrames = config.openWakeWord.embeddingFrames || modelConfig.embeddingFrames;
 config.openWakeWord.modelDescription = modelConfig.description;
 
-export {config, getModelConfig, MODEL_CONFIGS};
+export {config, resolveModelConfig, MODEL_CONFIGS};
 
 // Validate configuration
 if (config.openWakeWord.threshold < 0 || config.openWakeWord.threshold > 1) {

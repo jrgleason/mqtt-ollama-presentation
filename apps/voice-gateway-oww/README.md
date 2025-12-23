@@ -93,7 +93,7 @@ npm run setup   # Calls ./setup.sh
 ### 4. Configure Environment
 
 ```bash
-cp .env.example .env
+cp .env.tmp.example .env.tmp
 ```
 
 **IMPORTANT: Set your ElevenLabs API key:**
@@ -200,7 +200,7 @@ The voice gateway provides audio feedback through different beeps to indicate sy
 Beep volume can be adjusted via the `BEEP_VOLUME` environment variable (default: 0.3, range: 0.0-1.0):
 
 ```bash
-# In .env file
+# In .env.tmp file
 BEEP_VOLUME=0.5  # 50% volume
 ```
 
@@ -485,7 +485,7 @@ voice-gateway-oww/
 ├── src/
 │   ├── main.js          # Entry point with OpenWakeWord
 │   ├── config.js        # Environment configuration
-│   └── logger.js        # Structured logging
+│   └── Logger.js        # Structured logging
 ├── scripts/
 │   └── setup.js         # Model download script
 ├── models/              # Downloaded models (gitignored)

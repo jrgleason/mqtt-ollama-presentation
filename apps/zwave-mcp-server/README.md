@@ -211,7 +211,7 @@ unauthorized access to your Z-Wave network.
 Copy the example environment file and configure it:
 
 ```bash
-cp .env.example .env
+cp .env.tmp.example .env.tmp
 ```
 
 Edit `.env` and set the following variables:

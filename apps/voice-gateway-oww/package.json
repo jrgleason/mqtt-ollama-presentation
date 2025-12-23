@@ -31,6 +31,7 @@
     "@jrg-voice/common": "file:../voice-gateway-common",
     "@langchain/anthropic": "latest",
     "@langchain/core": "latest",
+    "@langchain/mcp-adapters": "^1.1.1",
     "@modelcontextprotocol/sdk": "latest",
     "dotenv": "latest",
     "fft-js": "latest",

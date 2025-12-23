@@ -20,10 +20,16 @@ Use this guide to navigate project documentation. Each section links to detailed
 ## 📚 Core Documentation
 
 ### Project Guidelines
-- **[/CLAUDE.md](/CLAUDE.md)** - Complete project guidelines (in root directory)
+- **[/CLAUDE.md](/CLAUDE.md)** - AI assistant guidelines and project rules (in root directory)
+- **[/openspec/project.md](/openspec/project.md)** - Project context for OpenSpec workflow
 - **[repository-guidelines.md](repository-guidelines.md)** - Coding standards and conventions
 - **[requirements.md](requirements.md)** - Project requirements and specifications
 - **[network-dependencies.md](network-dependencies.md)** - Network dependencies and local-first architecture
+
+### Technology & Integration Reference
+- **[TECH-STACK.md](TECH-STACK.md)** - 🆕 Technology stack reference (models, coding standards, patterns)
+- **[EXTERNAL-INTEGRATIONS.md](EXTERNAL-INTEGRATIONS.md)** - 🆕 Integration guide (Z-Wave, MQTT, Auth0, Ollama)
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - 🆕 Production deployment guide (systemd services, troubleshooting)
 
 ### Architecture
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture: components, MQTT, AI, data flow
@@ -121,8 +127,12 @@ docs/
 ├── README.md                       # This file - navigation index
 ├── GETTING-STARTED.md              # Quick start guide
 │
+├── TECH-STACK.md                   # 🆕 Technology stack reference
+├── EXTERNAL-INTEGRATIONS.md        # 🆕 Integration guide (Z-Wave, MQTT, Auth0, Ollama)
+├── DEPLOYMENT.md                   # 🆕 Production deployment guide
+│
 ├── ARCHITECTURE.md                 # Complete system architecture
-├── SETUP.md                        # 🆕 Comprehensive setup guide (all services)
+├── SETUP.md                        # Comprehensive setup guide (all services)
 ├── mcp-architecture.md             # MCP integration details
 ├── performance-optimization.md     # Pi 5 performance tuning
 │
@@ -146,6 +156,11 @@ docs/
 ```
 
 **Recent Consolidations:**
+- ✅ **CLAUDE.md & project.md** → Consolidated and streamlined (December 2025)
+  - CLAUDE.md: 1426 → 367 lines (74% reduction)
+  - project.md: 416 → 321 lines (23% reduction)
+  - Created 3 new reference docs: TECH-STACK.md, EXTERNAL-INTEGRATIONS.md, DEPLOYMENT.md
+  - Eliminated duplication while maintaining single source of truth
 - ✅ 5 setup guides → 1 `SETUP.md` (Pi, MQTT, ALSA, Oracle, Voice Gateway)
   - `zwave-setup-guide.md` kept separate due to complexity (453 lines)
   - SETUP.md references zwave-setup-guide.md for detailed Z-Wave instructions

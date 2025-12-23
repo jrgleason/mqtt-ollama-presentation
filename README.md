@@ -24,7 +24,7 @@ LAN so you can prototype voice-driven home routines without shipping data to the
    ```
 2. Copy the example environment file and fill in Auth0 + MQTT credentials.
    ```bash
-   cp apps/oracle/.env.example apps/oracle/.env.local
+   cp apps/oracle/.env.tmp.example apps/oracle/.env.tmp.local
    ```
 3. Start the stack. Mosquitto and zwave-js-ui run locally; Ollama is expected on the host.
    ```bash
