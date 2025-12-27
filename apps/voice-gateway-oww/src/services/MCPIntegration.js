@@ -14,8 +14,11 @@ import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
+<<<<<<< HEAD
 import { logger } from '../util/Logger.js';
 import { MCP_STDERR_CAPTURE_MS, MCP_RETRY_BASE_DELAY_MS } from '../constants/timing.js';
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +58,11 @@ async function captureStderr(mcpClient, logger) {
             const capturePromise = new Promise((resolve) => {
                 const timeout = setTimeout(() => {
                     resolve();
+<<<<<<< HEAD
                 }, MCP_STDERR_CAPTURE_MS);
+=======
+                }, 1000); // Capture stderr for 1 second
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
                 stderrStream.on('data', (chunk) => {
                     const text = chunk.toString().trim();
@@ -161,7 +168,11 @@ export async function createMCPClient(config, logger) {
  */
 export async function initializeMCPIntegration(config, logger) {
     const maxAttempts = config.mcp?.retryAttempts || 3;
+<<<<<<< HEAD
     const baseDelay = config.mcp?.retryBaseDelay || MCP_RETRY_BASE_DELAY_MS;
+=======
+    const baseDelay = config.mcp?.retryBaseDelay || 2000;
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
     let lastError = null;
     let stderrOutput = [];

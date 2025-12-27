@@ -10,5 +10,8 @@ export default {
         '!src/**/__tests__/**',
     ],
     transform: {},
+<<<<<<< HEAD
     setupFiles: ['<rootDir>/tests/setup.js'],
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 };

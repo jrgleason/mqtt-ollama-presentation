@@ -232,6 +232,21 @@ See **[docs/TECH-STACK.md](docs/TECH-STACK.md)** for complete details:
 - **Stack:** Next.js, LangChain.js, MQTT, Z-Wave, Auth0, ElevenLabs TTS
 - **Testing:** Jest + React Testing Library
 
+### Demo Modes (Voice Gateway)
+
+The voice gateway supports **4 configuration-driven demo modes** with independent AI and TTS provider selection:
+
+- **Offline:** Ollama + Piper (no internet required)
+- **Online:** Anthropic + ElevenLabs (best quality)
+- **Hybrid A:** Ollama + ElevenLabs (local AI + cloud TTS)
+- **Hybrid B:** Anthropic + Piper (cloud AI + local TTS)
+
+**Important for AI assistants:**
+- Provider selection is **configuration-driven** (no code changes)
+- Never hardcode AI or TTS provider choices
+- Respect `AI_PROVIDER` and `TTS_PROVIDER` environment variables
+- See `apps/voice-gateway-oww/.env.example` for all provider options
+
 ### Integrations
 
 See **[docs/EXTERNAL-INTEGRATIONS.md](docs/EXTERNAL-INTEGRATIONS.md)** for Z-Wave, MQTT, Auth0, Ollama config.

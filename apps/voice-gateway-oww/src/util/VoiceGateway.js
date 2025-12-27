@@ -23,10 +23,13 @@ function setupVoiceStateMachine() {
             },
             listening: {
 <<<<<<< HEAD
+<<<<<<< HEAD
                 entry: () => logger.info('🎧 Listening for wake word'),
 =======
                 entry: () => logger.debug('🎧 Listening for wake word...'),
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
                 on: {
                     TRIGGER: [{
                         cond: 'canTrigger',
@@ -41,6 +44,9 @@ function setupVoiceStateMachine() {
                 entry: () => logger.debug('🎙️ Recording user speech...'),
                 on: {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
                     SILENCE_DETECTED: 'processing',
                     MAX_LENGTH_REACHED: 'processing'
                 }
@@ -49,6 +55,7 @@ function setupVoiceStateMachine() {
                 entry: () => logger.debug('⚙️ Processing voice interaction...'),
                 on: {
                     INTERACTION_COMPLETE: 'cooldown'
+<<<<<<< HEAD
                 }
             },
             cooldown: {
@@ -67,10 +74,12 @@ function setupVoiceStateMachine() {
 =======
                     SILENCE_DETECTED: 'cooldown',
                     MAX_LENGTH_REACHED: 'cooldown'
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
                 }
             },
             cooldown: {
-                entry: () => logger.debug('⏸️ Cooldown period before re-arming'),
+                entry: () => logger.debug('⏸️ Cooldown (can interrupt)'),
                 after: {
                     [config.audio.triggerCooldownMs || 1500]: 'listening'
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)

@@ -194,6 +194,7 @@ AI clients (AnthropicClient, OllamaClient) SHALL use ToolExecutor for all tool c
 
 ### Requirement: Logging Context
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 Tool execution logs SHALL include sufficient context for debugging and monitoring **on the appropriate output stream**.
 
@@ -205,19 +206,24 @@ Tool execution logs SHALL include sufficient context for debugging and monitorin
 **Rationale:** Clarifies that MCP servers MUST use stderr for logs, not stdout.
 =======
 Tool execution logs SHALL include sufficient context for debugging and monitoring.
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
-#### Scenario: Log successful execution
-- **WHEN** a tool executes successfully
-- **THEN** logs include tool name, arguments (sanitized), duration, and result summary
+Tool execution logs SHALL include sufficient context for debugging and monitoring **on the appropriate output stream**.
 
-#### Scenario: Log failed execution
-- **WHEN** a tool execution fails
-- **THEN** logs include tool name, arguments (sanitized), error message, and stack trace
+#### Scenario: MCP server debug logs (MODIFIED)
+- **GIVEN** a Z-Wave MCP server tool is executing
+- **WHEN** debug information needs to be logged
+- **THEN** the debug output is written to stderr using `console.error()` or equivalent
 
+<<<<<<< HEAD
 #### Scenario: Sanitize sensitive data
 - **WHEN** logging tool arguments
 - **THEN** ToolExecutor redacts sensitive fields like API keys, passwords, and tokens
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+**Rationale:** Clarifies that MCP servers MUST use stderr for logs, not stdout.
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
 ### Requirement: Error Recovery
 ToolExecutor SHALL provide graceful error recovery and user-friendly error messages.
@@ -235,6 +241,9 @@ ToolExecutor SHALL provide graceful error recovery and user-friendly error messa
 - **THEN** ToolExecutor cancels the operation and returns a timeout error message
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 ### Requirement: MCP Server Logging Compliance
 
 MCP servers SHALL use stderr for all diagnostic output to maintain stdout protocol compliance.
@@ -272,6 +281,7 @@ MCP clients SHALL provide clear error messages when JSON-RPC parsing fails.
 
 **Rationale:** Parsing errors should be logged but shouldn't crash the system. The client should be resilient to malformed messages.
 
+<<<<<<< HEAD
 ### Requirement: MCP Tool Parameter Name Normalization
 The system SHALL normalize parameter names when executing MCP tools to ensure compatibility between LangChain's snake_case convention and MCP server's camelCase convention.
 
@@ -524,3 +534,5 @@ Tools passed to Ollama SHALL comply with the Qwen function calling specification
 
 =======
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)

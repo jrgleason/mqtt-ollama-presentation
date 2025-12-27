@@ -3,9 +3,13 @@ node_modules
 
 # Environment variables
 <<<<<<< HEAD
+<<<<<<< HEAD
 .env
 =======
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+.env
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 .env.tmp
 .env.local
 secrets.env

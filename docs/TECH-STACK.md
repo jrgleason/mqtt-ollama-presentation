@@ -18,6 +18,7 @@ This document provides comprehensive information about the technology stack, mod
 - **Wake Word Detection:** OpenWakeWord with ONNX runtime
 - **Speech-to-Text:** Whisper (whisper.cpp implementation)
 <<<<<<< HEAD
+<<<<<<< HEAD
 - **Text-to-Speech:** ElevenLabs API (cloud) or Piper TTS (local)
 - **Audio I/O:** ALSA (Linux), afplay (macOS), node-mic
 - **State Management:** XState v5
@@ -45,6 +46,29 @@ The voice gateway supports 4 configuration-driven demo modes with independent AI
 - **State Management:** XState v5
 
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+- **Text-to-Speech:** ElevenLabs API (cloud) or Piper TTS (local)
+- **Audio I/O:** ALSA (Linux), afplay (macOS), node-mic
+- **State Management:** XState v5
+
+### Demo Modes (Voice Gateway)
+
+The voice gateway supports 4 configuration-driven demo modes with independent AI and TTS provider selection:
+
+| Mode | AI Provider | TTS Provider | Dependencies | Use Case |
+|------|-------------|--------------|--------------|----------|
+| **Offline** | Ollama | Piper | Ollama running, Python + piper-tts | No internet required, complete privacy |
+| **Online** | Anthropic | ElevenLabs | API keys (ANTHROPIC_API_KEY, ELEVENLABS_API_KEY) | Best quality, cloud-based |
+| **Hybrid A** | Ollama | ElevenLabs | Ollama running, ELEVENLABS_API_KEY | Local AI privacy + cloud TTS quality |
+| **Hybrid B** | Anthropic | Piper | ANTHROPIC_API_KEY, Python + piper-tts | Cloud AI quality + local TTS privacy |
+
+**Mode switching:** Use `./switch-mode.sh [offline|online|hybrid-a|hybrid-b]` to copy preset configurations to `.env.tmp`. No code changes required.
+
+**Provider configuration:**
+- AI: Set `AI_PROVIDER=anthropic` or `AI_PROVIDER=ollama`
+- TTS: Set `TTS_PROVIDER=ElevenLabs` or `TTS_PROVIDER=Piper`
+
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 ## Ollama Model Recommendations
 
 ### For Voice Gateway (Conversational AI)

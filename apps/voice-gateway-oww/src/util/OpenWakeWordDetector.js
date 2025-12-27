@@ -4,6 +4,7 @@ import ort from 'onnxruntime-node';
 import {logger} from './Logger.js';
 import path from 'path';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import {EventEmitter} from 'events';
 
 const MEL_SPEC_MODEL_INPUT_SIZE = 1280;
@@ -12,12 +13,19 @@ export class OpenWakeWordDetector extends EventEmitter {
     constructor(modelsPath, wakeWordModel, threshold = 0.5, embeddingFrames = 16, warmupMs = 1500) {
         super();
 =======
+=======
+import {EventEmitter} from 'events';
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
 const MEL_SPEC_MODEL_INPUT_SIZE = 1280;
 
-export class OpenWakeWordDetector {
+export class OpenWakeWordDetector extends EventEmitter {
     constructor(modelsPath, wakeWordModel, threshold = 0.5, embeddingFrames = 16) {
+<<<<<<< HEAD
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+        super();
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
         this.modelsPath = modelsPath;
         this.wakeWordModel = wakeWordModel;
         this.threshold = threshold;
@@ -42,13 +50,19 @@ export class OpenWakeWordDetector {
         this._owwInfoLogged = false;
         this._detectionsLogged = 0;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
         // Warm-up state tracking
         this.warmUpComplete = false;
         this._warmUpPromise = null;
         this._warmUpResolve = null;
+<<<<<<< HEAD
 =======
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
     }
 
     async initialize() {
@@ -80,6 +94,9 @@ export class OpenWakeWordDetector {
         this.embeddingBufferFilled = false;
         this.framesSinceLastPrediction = 0;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
         // Don't reset warmUpComplete - once warmed up, it stays ready
         logger.debug('OpenWakeWord detector buffers reset');
         logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector.reset() complete (buffers cleared, will need to refill)');
@@ -106,6 +123,26 @@ export class OpenWakeWordDetector {
 =======
         logger.debug('OpenWakeWord detector buffers reset');
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+    }
+
+    /**
+     * Get a promise that resolves when detector warm-up is complete
+     * @returns {Promise<void>} Resolves when detector is fully warmed up
+     */
+    getWarmUpPromise() {
+        // If already warmed up, return resolved promise
+        if (this.warmUpComplete) {
+            return Promise.resolve();
+        }
+
+        // Create promise if it doesn't exist
+        if (!this._warmUpPromise) {
+            this._warmUpPromise = new Promise((resolve) => {
+                this._warmUpResolve = resolve;
+            });
+        }
+
+        return this._warmUpPromise;
     }
 
     async detect(audioChunk) {
@@ -158,6 +195,7 @@ export class OpenWakeWordDetector {
         if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= this.embeddingFrames) {
             this.embeddingBufferFilled = true;
 <<<<<<< HEAD
+<<<<<<< HEAD
             logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Embedding buffer filled');
             logger.debug(`🎧 Embedding buffer filled, starting warm-up period (${this.warmupMs}ms)...`);
 
@@ -165,16 +203,27 @@ export class OpenWakeWordDetector {
             setTimeout(() => {
                 this.warmUpComplete = true;
                 logger.debug(`🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Warm-up period complete (${this.warmupMs}ms elapsed)`);
+=======
+            logger.debug('🎧 Embedding buffer filled, starting warm-up period...');
+
+            // Start warm-up timer (2.5 seconds after buffers filled)
+            setTimeout(() => {
+                this.warmUpComplete = true;
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
                 logger.debug('✅ Detector warm-up complete');
                 this.emit('warmup-complete');
                 if (this._warmUpResolve) {
                     this._warmUpResolve();
                     this._warmUpResolve = null;
                 }
+<<<<<<< HEAD
             }, this.warmupMs);
 =======
             logger.info('🎧 Listening for wake word...');
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+            }, 2500);
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
         }
         if (!this.embeddingBufferFilled) return 0;
 

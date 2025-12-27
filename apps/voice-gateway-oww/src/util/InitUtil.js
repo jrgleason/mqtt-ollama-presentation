@@ -14,9 +14,12 @@ import {safeDetectorReset} from "./XStateHelpers.js";
 import {checkAlsaDevice} from "../audio/AudioUtils.js";
 import {AudioPlayer} from "../audio/AudioPlayer.js";
 import {safeDetectorReset} from "./XStateHelpers.js";
+<<<<<<< HEAD
 import {getDevicesForAI} from "zwave-mcp-server/client";
 import {initializeMCPClient} from "../mcpZWaveClient.js";
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 import {OpenWakeWordDetector} from "./OpenWakeWordDetector.js";
 
 // Platform helpers
@@ -32,10 +35,14 @@ async function initServices() {
     await checkTTSHealth();
     if (isLinux) await checkAlsa();
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Note: Z-Wave MCP initialization is now handled in main.js with tool registry
 =======
     await initZWave();
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
+=======
+    // Note: Z-Wave MCP initialization is now handled in main.js with tool registry
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 }
 
 async function initMQTT() {
@@ -89,6 +96,7 @@ async function checkAlsa() {
     }
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 async function setupWakeWordDetector(wakeWordMachine = null) {
     const modelsDir = path.dirname(config.openWakeWord.modelPath);
@@ -187,11 +195,17 @@ async function initZWave() {
     }
 }
 
+=======
+>>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 async function setupWakeWordDetector() {
     const modelsDir = path.dirname(config.openWakeWord.modelPath);
     const modelFile = path.basename(config.openWakeWord.modelPath);
     const detector = new OpenWakeWordDetector(modelsDir, modelFile, config.openWakeWord.threshold, config.openWakeWord.embeddingFrames);
     await detector.initialize();
+
+    // Warm-up will happen automatically in background once mic starts feeding audio
+    logger.info('✅ Detector initialized (warm-up will occur automatically)');
+
     return detector;
 }
 
