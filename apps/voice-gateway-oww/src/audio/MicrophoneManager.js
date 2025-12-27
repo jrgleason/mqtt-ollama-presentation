@@ -117,12 +117,18 @@ export class MicrophoneManager {
             // Transition FROM recording state
             else if (value !== 'recording' && this.recordingState.isRecording) {
                 const audioSnapshot = this.recordingState.stopRecording();
+                const hasSpoken = this.vadDetector.getState().hasSpokenDuringRecording;
 
-                // Process voice interaction in background (transcribe + AI + TTS)
-                if (audioSnapshot.length > 0) {
+                // Check if speech was detected during recording
+                if (audioSnapshot.length > 0 && hasSpoken) {
+                    // Process voice interaction in background (transcribe + AI + TTS)
                     this.orchestrator.processVoiceInteraction(audioSnapshot).catch(err => {
                         this.logger.error('Voice interaction error', { error: errMsg(err) });
                     });
+                } else if (audioSnapshot.length > 0 && !hasSpoken) {
+                    // Skip transcription when no speech detected (false wake word trigger)
+                    this.logger.info('⏩ Skipping transcription - no speech detected');
+                    // State machine automatically returns to listening (no action needed)
                 }
             }
         });

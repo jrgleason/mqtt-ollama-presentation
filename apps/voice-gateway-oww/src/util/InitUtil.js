@@ -8,8 +8,6 @@ import {ElevenLabsTTS} from "./ElevenLabsTTS.js";
 import {checkAlsaDevice} from "../audio/AudioUtils.js";
 import {AudioPlayer} from "../audio/AudioPlayer.js";
 import {safeDetectorReset} from "./XStateHelpers.js";
-import {getDevicesForAI} from "zwave-mcp-server/client";
-import {initializeMCPClient} from "../mcpZWaveClient.js";
 import {OpenWakeWordDetector} from "./OpenWakeWordDetector.js";
 
 // Platform helpers
@@ -24,7 +22,7 @@ async function initServices() {
     await checkAIHealth();
     await checkTTSHealth();
     if (isLinux) await checkAlsa();
-    await initZWave();
+    // Note: Z-Wave MCP initialization is now handled in main.js with tool registry
 }
 
 async function initMQTT() {
@@ -78,23 +76,15 @@ async function checkAlsa() {
     }
 }
 
-async function initZWave() {
-    try {
-        logger.info('🔌 Initializing ZWave MCP client...');
-        await initializeMCPClient();
-        const deviceInfo = await getDevicesForAI();
-        logger.info('✅ Z-Wave connection successful!');
-        logger.debug('📋 Devices:', deviceInfo);
-    } catch (err) {
-        logger.error('❌ ZWave MCP client initialization failed', {error: errMsg(err)});
-    }
-}
-
 async function setupWakeWordDetector() {
     const modelsDir = path.dirname(config.openWakeWord.modelPath);
     const modelFile = path.basename(config.openWakeWord.modelPath);
     const detector = new OpenWakeWordDetector(modelsDir, modelFile, config.openWakeWord.threshold, config.openWakeWord.embeddingFrames);
     await detector.initialize();
+
+    // Warm-up will happen automatically in background once mic starts feeding audio
+    logger.info('✅ Detector initialized (warm-up will occur automatically)');
+
     return detector;
 }
 

@@ -43,7 +43,7 @@ MCP clients SHALL provide clear error messages when JSON-RPC parsing fails.
 
 ## MODIFIED Requirements
 
-### Requirement: Logging Context (Modified)
+### Requirement: Logging Context
 
 Tool execution logs SHALL include sufficient context for debugging and monitoring **on the appropriate output stream**.
 

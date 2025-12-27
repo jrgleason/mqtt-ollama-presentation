@@ -179,6 +179,61 @@ mosquitto_sub -h 10.0.0.58 -p 31883 -t 'voice/#' -v
 # voice/ai-response {"question":"What is the capital of France?","answer":"Paris is the capital of France.","model":"Qwen3:1.7b","timestamp":"..."}
 ```
 
+## Switching Demo Modes
+
+The voice gateway supports 4 demo modes that can be easily switched using preset configurations:
+
+### Available Demo Modes
+
+| Mode | AI | TTS | Dependencies | Command |
+|------|-----|-----|--------------|---------|
+| **Offline** | Ollama | Piper | Ollama, Python + piper-tts | `./switch-mode.sh offline` |
+| **Online** | Anthropic | ElevenLabs | API keys | `./switch-mode.sh online` |
+| **Hybrid A** | Ollama | ElevenLabs | Ollama, ELEVENLABS_API_KEY | `./switch-mode.sh hybrid-a` |
+| **Hybrid B** | Anthropic | Piper | ANTHROPIC_API_KEY, Python + piper-tts | `./switch-mode.sh hybrid-b` |
+
+### How to Switch Modes
+
+```bash
+# Navigate to voice-gateway-oww directory
+cd voice-gateway-oww
+
+# Switch to desired mode (copies preset to .env.tmp)
+./switch-mode.sh [offline|online|hybrid-a|hybrid-b]
+
+# Restart the service
+npm run dev
+```
+
+### Mode Dependencies
+
+**Offline Mode:**
+- Ollama server running: `ollama serve`
+- Piper TTS installed: `pip install piper-tts` (in venv)
+- Downloaded voice model (see TTS setup above)
+
+**Online Mode:**
+- Anthropic API key: Get from https://console.anthropic.com/settings/keys
+- ElevenLabs API key: Get from https://elevenlabs.io/app/settings/api-keys
+- Set keys in `.env.online` before switching
+
+**Hybrid Modes:**
+- Combine dependencies from offline and online modes as needed
+
+### Manual Configuration
+
+You can also manually edit `.env.tmp` to customize provider settings:
+
+```bash
+# Set AI provider
+AI_PROVIDER=anthropic  # or 'ollama'
+
+# Set TTS provider
+TTS_PROVIDER=ElevenLabs  # or 'Piper'
+```
+
+See `.env.example` for all available configuration options.
+
 ## Quick Configuration Changes
 
 ### Use Different Wake Word

@@ -5,8 +5,8 @@
 
 import dotenv from 'dotenv';
 
-// Load .env.tmp file
-dotenv.config();
+// Load .env file (quiet mode to suppress verbose logging)
+dotenv.config({ quiet: true });
 
 // Parse command-line arguments
 // Support: npm run dev --ollama (default is Anthropic)
@@ -76,9 +76,15 @@ const config = {
     healthCheck: {
         port: process.env.HEALTHCHECK_PORT ? Number(process.env.HEALTHCHECK_PORT) : 3002,
     },
+    mcp: {
+        retryAttempts: process.env.MCP_RETRY_ATTEMPTS ? Number(process.env.MCP_RETRY_ATTEMPTS) : 3,
+        retryBaseDelay: process.env.MCP_RETRY_BASE_DELAY ? Number(process.env.MCP_RETRY_BASE_DELAY) : 2000,
+    },
     ai: {
         // Default to Anthropic unless --ollama flag is passed or AI_PROVIDER is set to 'ollama'
         provider: useOllama ? 'ollama' : (process.env.AI_PROVIDER || 'anthropic'),
+        // Custom system prompt (optional) - if not set, uses default from AIRouter
+        systemPrompt: process.env.AI_SYSTEM_PROMPT,
     },
     anthropic: {
         apiKey: process.env.ANTHROPIC_API_KEY,
@@ -179,14 +185,15 @@ if (config.audio.sampleRate !== 16000) {
     console.warn('⚠️  Warning: Sample rate is not 16000 Hz. OpenWakeWord expects 16kHz audio.');
 }
 
-// Log AI provider configuration
+// Config logging removed - health checks in InitUtil.js provide this information
+// Uncomment below for detailed config debugging if needed
+/*
 console.log('🤖 AI Provider:', {
     provider: config.ai.provider,
     model: config.ai.provider === 'anthropic' ? config.anthropic.model : config.ollama.model,
     hasApiKey: config.ai.provider === 'anthropic' ? !!config.anthropic.apiKey : 'N/A (local)',
 });
 
-// Log Anthropic API key details for debugging (if using Anthropic)
 if (config.ai.provider === 'anthropic') {
     console.log('🔑 Anthropic API Key Configuration:', {
         hasApiKey: !!config.anthropic.apiKey,
@@ -198,7 +205,6 @@ if (config.ai.provider === 'anthropic') {
     });
 }
 
-// Log TTS configuration for debugging
 console.log('🔊 TTS Configuration:', {
     enabled: config.tts.enabled,
     speed: config.tts.speed,
@@ -219,3 +225,4 @@ if (config.tts.provider === 'ElevenLabs') {
         useSpeakerBoost: config.elevenlabs.useSpeakerBoost,
     });
 }
+*/

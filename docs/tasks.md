@@ -98,6 +98,25 @@
 - **TTS:** Piper
 
 ### 5.1 Voice Gateway Stability 🔴
+- ✅ **Beep Audio Isolation** - Prevent microphone feedback loops (2025-12-26)
+  - Suppress beeps during recording state only
+  - Preserve wake word interruption during cooldown
+  - Comprehensive test coverage (14 test cases)
+  - Documentation: `BEEP_ISOLATION.md`
+- ✅ **LangChain MCP Auto-Discovery** - Replace custom MCP client with standard LangChain integration (2025-12-27)
+  - Use MultiServerMCPClient from @langchain/mcp-adapters
+  - Auto-discover Z-Wave tools from MCP server (eliminates duplicate tool definitions)
+  - Mixed tool sources: MCP tools (auto-discovered) + local tools (manual registration)
+  - Exponential backoff retry logic with graceful degradation
+  - Comprehensive test coverage for MCP integration
+  - Deleted obsolete files: mcpZWaveClient.js, zwave-control-tool.js
+- ✅ **MCP Tool Parameter Schema Fix** - Resolve snake_case to camelCase parameter mismatch (2025-12-27)
+  - Fixed schema impedance mismatch between LangChain adapter (snake_case) and MCP server (camelCase)
+  - Added parameter normalization layer in ToolRegistry
+  - Static mappings for known MCP tools (control_zwave_device, get_device_sensor_data)
+  - Heuristic fallback for unmapped tools
+  - Comprehensive test coverage (13 test cases)
+  - Device control now works: "Turn on switch one" successfully controls devices
 - 🔄 Fix "stuck on transcribing" edge case:
   - Ensure transcription promise resolves/rejects with timeout (10s)
   - On failure: publish `{state: "idle"}`, re-enable wake word
@@ -175,16 +194,24 @@
 - [ ] API Route Tests (chat endpoint, streaming)
 
 #### apps/voice-gateway-oww (Wake Word + STT/TTS)
-- ✅ Jest configured with `--passWithNoTests` flag
-- ⚠️ **0 tests** - No test files exist
-- **Coverage: 0%**
-- **CI Status:** ✅ PASSES (but with no real tests)
+- ✅ Jest configured with ESM support (NODE_OPTIONS="--experimental-vm-modules")
+- ✅ **Beep Isolation Tests** - 14 tests covering audio feedback prevention
+- **Coverage: ~5%** (beep isolation system fully covered)
+- **CI Status:** ✅ PASSES with real tests
+
+**Completed Tests:**
+- [x] Beep isolation tests (14 test cases) - Prevents microphone feedback loops
+  - Wake word beep suppression during recording
+  - Processing/response beep suppression during recording
+  - State machine recording flag tracking
+  - Wake word interruption during cooldown
+  - Complete interaction scenario testing
 
 **Required Tests:**
 - [ ] Wake word detection tests
 - [ ] STT/TTS integration tests
 - [ ] MQTT communication tests
-- [ ] XState machine logic tests
+- [ ] XState machine state transition tests
 - [ ] Audio processing tests (mocked)
 
 #### apps/voice-gateway-common (Shared Utils)

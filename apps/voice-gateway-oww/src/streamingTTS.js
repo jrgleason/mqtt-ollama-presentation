@@ -34,44 +34,87 @@ function splitIntoSpeakableChunks(text) {
 }
 
 // Simple PCM player: converts PCM to WAV in temp and plays via afplay/aplay quickly
-async function playPcmNow(pcmBuffer, sampleRate = 16000) {
-    if (!pcmBuffer || pcmBuffer.length === 0) return;
-    return new Promise((resolve, reject) => {
-        const wavPath = join(tmpdir(), `tts_stream_${Date.now()}.wav`);
+// Returns {promise, cancel} for interruption support
+function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
+    if (!pcmBuffer || pcmBuffer.length === 0) {
+        return {
+            promise: Promise.resolve(),
+            cancel: () => {}
+        };
+    }
+
+    let player = null;
+    let wavPath = null;
+    let cancelled = false;
+
+    const promise = new Promise((resolve, reject) => {
+        // Check if already aborted
+        if (abortSignal?.aborted) {
+            reject(new Error('Playback cancelled before start'));
+            return;
+        }
+
+        wavPath = join(tmpdir(), `tts_stream_${Date.now()}.wav`);
         const writer = new wav.FileWriter(wavPath, {channels: 1, sampleRate, bitDepth: 16});
         writer.write(pcmBuffer);
         writer.end();
+
         writer.on('finish', () => {
-            const player = process.platform === 'darwin'
+            if (cancelled || abortSignal?.aborted) {
+                try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+                reject(new Error('Playback cancelled'));
+                return;
+            }
+
+            player = process.platform === 'darwin'
                 ? spawn('afplay', [wavPath])
                 : spawn('aplay', ['-f', 'S16_LE', '-r', String(sampleRate), '-c', '1', wavPath]);
+
             const startedAt = Date.now();
+
             player.on('close', (code) => {
                 const dur = Date.now() - startedAt;
                 logger.debug('🔊 Player closed', {code, durationMs: dur});
-                try {
-                    fs.unlinkSync(wavPath);
-                } catch { /* ignore */
+                try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+                if (cancelled || abortSignal?.aborted) {
+                    reject(new Error('Playback cancelled'));
+                } else if (code === 0) {
+                    resolve();
+                } else {
+                    reject(new Error(`player exit ${code}`));
                 }
-                if (code === 0) resolve(); else reject(new Error(`player exit ${code}`));
             });
+
             player.on('error', (e) => {
                 logger.error('🔊 Player error', {error: e.message});
-                try {
-                    fs.unlinkSync(wavPath);
-                } catch { /* ignore */
-                }
+                try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
                 reject(e);
             });
         });
+
         writer.on('error', (e) => {
             logger.error('🔊 WAV writer error', {error: e.message});
             reject(e);
         });
     });
+
+    const cancel = () => {
+        cancelled = true;
+        if (player && !player.killed) {
+            player.kill('SIGTERM');
+        }
+        if (wavPath) {
+            try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+        }
+    };
+
+    return { promise, cancel };
 }
 
-export async function streamSpeak(text) {
+export async function streamSpeak(text, options = {}) {
+    const { abortController = null } = options;
+    const abortSignal = abortController?.signal;
+
     const provider = config.tts.provider || 'ElevenLabs';
     const enabled = config.tts.enabled !== false;
     const streaming = config.tts.streaming !== false;
@@ -91,7 +134,8 @@ export async function streamSpeak(text) {
         const t0 = Date.now();
         const pcm = await synth(text, {volume: config.tts.volume, speed: config.tts.speed});
         logger.debug('🔊 streamSpeak: batch synth complete', {provider, ms: Date.now() - t0});
-        await playPcmNow(pcm, 16000);
+        const playback = playPcmNow(pcm, 16000, abortSignal);
+        await playback.promise;
         return;
     }
 
@@ -101,6 +145,7 @@ export async function streamSpeak(text) {
     let buffer = '';
     let firstTokenAt = 0;
     let debounceTimer = null;
+    const activePlayers = []; // Track active playback for cancellation
 
     async function flush() {
         if (flushing) return; // prevent overlap
@@ -108,14 +153,36 @@ export async function streamSpeak(text) {
         logger.debug('🔊 streamSpeak: flush start', {queueLen: queue.length});
         try {
             while (queue.length) {
+                // Check if aborted before processing next chunk
+                if (abortSignal?.aborted) {
+                    logger.info('🛑 streamSpeak: flush aborted');
+                    break;
+                }
+
                 const chunk = queue.shift();
                 const synth = provider === 'ElevenLabs' ? elevenSynthesize : piperSynthesize;
                 const t1 = Date.now();
                 const pcm = await synth(chunk, {volume: config.tts.volume, speed: config.tts.speed});
                 logger.debug('🔊 streamSpeak: chunk synth complete', {len: chunk.length, ms: Date.now() - t1});
+
                 const t2 = Date.now();
-                await playPcmNow(pcm, 16000);
-                logger.debug('🔊 streamSpeak: chunk played', {ms: Date.now() - t2});
+                const playback = playPcmNow(pcm, 16000, abortSignal);
+                activePlayers.push(playback);
+
+                try {
+                    await playback.promise;
+                    logger.debug('🔊 streamSpeak: chunk played', {ms: Date.now() - t2});
+                } catch (playErr) {
+                    if (playErr.message.includes('cancelled')) {
+                        logger.info('🛑 streamSpeak: playback cancelled');
+                        break; // Stop processing remaining queue
+                    }
+                    throw playErr;
+                } finally {
+                    // Remove from active players after completion/cancellation
+                    const idx = activePlayers.indexOf(playback);
+                    if (idx !== -1) activePlayers.splice(idx, 1);
+                }
             }
         } catch (e) {
             logger.error('streamSpeak flush failed', {error: e instanceof Error ? e.message : String(e)});
@@ -180,6 +247,7 @@ export async function streamSpeak(text) {
     }
 
     const pushText = async (partial) => {
+        if (abortSignal?.aborted) return; // Don't process new text if aborted
         if (!partial) return;
         if (!firstTokenAt) firstTokenAt = Date.now();
 
@@ -191,6 +259,11 @@ export async function streamSpeak(text) {
     };
 
     const finalize = async () => {
+        if (abortSignal?.aborted) {
+            logger.info('🛑 streamSpeak: finalize aborted');
+            return; // Don't finalize if aborted
+        }
+
         if (debounceTimer) {
             clearTimeout(debounceTimer);
             debounceTimer = null;
@@ -211,5 +284,29 @@ export async function streamSpeak(text) {
         await flush();
     };
 
-    return {pushText, finalize};
+    const cancel = () => {
+        logger.info('🛑 streamSpeak: cancelling streaming TTS');
+
+        // Clear debounce timer
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+        }
+
+        // Clear queue (don't process remaining chunks)
+        queue.length = 0;
+        buffer = '';
+
+        // Cancel all active players
+        for (const playback of activePlayers) {
+            try {
+                playback.cancel();
+            } catch (err) {
+                logger.warn('Failed to cancel playback', { error: err.message });
+            }
+        }
+        activePlayers.length = 0;
+    };
+
+    return {pushText, finalize, cancel};
 }

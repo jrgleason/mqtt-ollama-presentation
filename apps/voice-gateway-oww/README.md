@@ -151,6 +151,82 @@ npm run dev
 npm start
 ```
 
+## Demo Modes
+
+The voice gateway supports 4 demo modes for different use cases, showcasing the flexibility of independent AI and TTS provider configuration. All modes are **configuration-driven** - no code changes needed!
+
+### Offline Mode (Ollama + Piper)
+
+- **AI:** Ollama (local)
+- **TTS:** Piper (local)
+- **Dependencies:** Ollama running, Python + piper-tts
+- **Use case:** Complete privacy, no internet required after initial setup
+- **Setup:**
+  ```bash
+  ./switch-mode.sh offline
+  npm run dev
+  ```
+
+### Online Mode (Anthropic + ElevenLabs)
+
+- **AI:** Anthropic Claude (cloud)
+- **TTS:** ElevenLabs (cloud)
+- **Dependencies:** ANTHROPIC_API_KEY, ELEVENLABS_API_KEY
+- **Use case:** Best quality AI and TTS, cloud-powered
+- **Setup:**
+  ```bash
+  ./switch-mode.sh online
+  npm run dev
+  ```
+
+### Hybrid Mode A (Ollama + ElevenLabs)
+
+- **AI:** Ollama (local)
+- **TTS:** ElevenLabs (cloud)
+- **Dependencies:** Ollama running, ELEVENLABS_API_KEY
+- **Use case:** Local AI for privacy, cloud TTS for quality
+- **Setup:**
+  ```bash
+  ./switch-mode.sh hybrid-a
+  npm run dev
+  ```
+
+### Hybrid Mode B (Anthropic + Piper)
+
+- **AI:** Anthropic Claude (cloud)
+- **TTS:** Piper (local)
+- **Dependencies:** ANTHROPIC_API_KEY, Python + piper-tts
+- **Use case:** Cloud AI for quality, local TTS for privacy
+- **Setup:**
+  ```bash
+  ./switch-mode.sh hybrid-b
+  npm run dev
+  ```
+
+### Quick Switch
+
+To switch between demo modes:
+
+```bash
+# Copy preset to .env.tmp and restart
+./switch-mode.sh [offline|online|hybrid-a|hybrid-b]
+npm run dev
+```
+
+**Note:** The switch-mode.sh script copies the preset configuration to .env.tmp. You can also manually edit .env.tmp to customize provider settings.
+
+### Provider Configuration
+
+**AI Providers:**
+- `AI_PROVIDER=anthropic` - Use Anthropic Claude API (requires ANTHROPIC_API_KEY)
+- `AI_PROVIDER=ollama` - Use local Ollama server (requires Ollama running)
+
+**TTS Providers:**
+- `TTS_PROVIDER=ElevenLabs` - Use ElevenLabs API (requires ELEVENLABS_API_KEY)
+- `TTS_PROVIDER=Piper` - Use local Piper TTS (requires Python + piper-tts)
+
+See `.env.example` for full configuration options.
+
 ## Architecture
 
 ```
@@ -175,7 +251,32 @@ USB Speaker (plughw:2,0) - Audio playback (~3s)
 
 - **Before optimization:** 27 seconds (base Whisper + qwen3:1.7b)
 - **After optimization:** 7 seconds (74% improvement)
+- **False trigger optimization:** <1 second (skips transcription when no speech detected)
 - See [Performance Optimization Guide](../../docs/performance-optimization.md) for details
+
+## Smart Transcription Skipping
+
+The voice gateway includes an intelligent optimization that skips transcription when no speech is detected during recording. This prevents wasted processing on false wake word triggers (e.g., beep feedback, background noise).
+
+**How it works:**
+1. Voice Activity Detection (VAD) tracks whether actual speech occurred during recording
+2. If no speech detected (`hasSpokenDuringRecording = false`), transcription is skipped
+3. System immediately returns to listening state (~1s vs ~8s for full processing)
+
+**Benefits:**
+- ✅ **87% latency improvement** for false triggers (~8s → <1s)
+- ✅ Eliminates confusing AI responses to noise (e.g., "(bell dings)" → silence)
+- ✅ Reduces unnecessary transcription and AI API calls
+- ✅ Improves overall system responsiveness
+
+**Log output when triggered:**
+```
+🎤 Wake word detected! (score: 0.987)
+🎙️ Recording started
+🛑 Recording stopped (samples: 29376)
+⏩ Skipping transcription - no speech detected
+[System returns to listening]
+```
 
 ## Audio Feedback Beeps
 
@@ -347,6 +448,15 @@ See `.env.example` for all available options.
 
 - `MQTT_BROKER_URL` - MQTT broker (default: mqtt://localhost:1883)
 
+**MCP Server (Z-Wave Integration):**
+
+- `MCP_RETRY_ATTEMPTS` - Number of connection attempts before giving up (default: 3)
+- `MCP_RETRY_BASE_DELAY` - Base delay in milliseconds for exponential backoff (default: 2000)
+  - Retry timing: attempt 1 (0ms), attempt 2 (2000ms), attempt 3 (4000ms)
+  - Total max retry time: 6 seconds
+  - The voice gateway uses exponential backoff to handle transient MCP server connection failures
+  - If all retries fail, the gateway continues with local tools only (graceful degradation)
+
 **VAD:**
 
 - `VAD_TRAILING_SILENCE_MS` - Silence before stopping (default: 1500ms)
@@ -428,6 +538,67 @@ grep "ERROR\|❌" logs
 1. Test broker: `mosquitto_sub -h 10.0.0.58 -p 31883 -t 'voice/#'`
 2. Check firewall rules
 3. Verify Oracle is subscribed to `voice/req`
+
+### MCP Server (Z-Wave) connection issues
+
+**Error: `MCP connection failed after 3 attempts`**
+
+The voice gateway uses exponential backoff retry logic to handle transient MCP server connection failures. If you see this error, it means all retry attempts failed.
+
+**Symptoms:**
+- Log shows: `❌ MCP connection attempt 1/3 failed`
+- Log shows: `⏳ Retrying MCP connection in 2000ms...`
+- Final error: `❌ MCP integration permanently failed`
+- Voice gateway continues running but Z-Wave control is unavailable
+
+**Common Causes:**
+
+1. **Z-Wave MCP server not running**
+   - Verify the zwave-mcp-server is installed: `ls -la ../zwave-mcp-server`
+   - Check Node.js version: `node --version` (requires Node.js 24+)
+
+2. **MQTT broker unavailable**
+   - Test MQTT connection: `mosquitto_sub -h localhost -p 1883 -t 'test'`
+   - Verify `MQTT_BROKER_URL` in `.env` is correct
+   - Check if MQTT broker is running: `systemctl status mosquitto` (Linux)
+
+3. **Z-Wave JS UI not accessible**
+   - Verify Z-Wave JS UI is running
+   - Check `ZWAVE_UI_URL` in zwave-mcp-server `.env`
+   - Test URL: `curl http://localhost:8091` (or your configured URL)
+
+**Debugging:**
+
+1. **Check MCP server logs for stderr output:**
+   ```bash
+   # The voice gateway captures stderr from MCP server subprocess
+   # Look for "MCP stderr:" in logs
+   grep "MCP stderr" logs
+   ```
+
+2. **Manually test Z-Wave MCP server:**
+   ```bash
+   cd ../zwave-mcp-server
+   npm run dev
+   # Should connect to MQTT and Z-Wave JS UI without errors
+   ```
+
+3. **Adjust retry configuration** (if needed):
+   ```bash
+   # Increase retry attempts
+   MCP_RETRY_ATTEMPTS=5
+
+   # Increase base delay for slower connections
+   MCP_RETRY_BASE_DELAY=3000
+   ```
+
+**Expected Behavior:**
+
+- **Success on first attempt:** No retry messages, Z-Wave tools available
+- **Transient failure:** Retries succeed within 6 seconds, logs show retry attempts
+- **Permanent failure:** All retries exhausted, voice gateway continues with local tools only (datetime, search, volume control)
+
+**Note:** The voice gateway implements graceful degradation. If the MCP server is unavailable, the system will continue operating with local tools but Z-Wave device control will not be available.
 
 ### Performance issues on Raspberry Pi
 

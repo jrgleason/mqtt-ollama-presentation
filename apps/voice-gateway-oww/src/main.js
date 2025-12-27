@@ -8,7 +8,7 @@ import {config} from './config.js';
 import {VoiceInteractionOrchestrator} from "./services/VoiceInteractionOrchestrator.js";
 import {initServices, setupWakeWordDetector, startTTSWelcome} from "./util/InitUtil.js";
 import {setupVoiceStateMachine} from "./util/VoiceGateway.js";
-import {shutdownMCPClient} from "./mcpZWaveClient.js";
+import {initializeMCPIntegration, shutdownMCPClient} from "./services/MCPIntegration.js";
 import mic from 'mic';
 import {SAMPLE_RATE, CHUNK_SIZE} from "./audio/constants.js";
 import {getServiceSnapshot, safeDetectorReset} from "./util/XStateHelpers.js";
@@ -16,6 +16,7 @@ import {AudioPlayer} from "./audio/AudioPlayer.js";
 import {BeepUtil} from "./util/BeepUtil.js";
 import {ToolRegistry} from './services/ToolRegistry.js';
 import {ToolExecutor} from './services/ToolExecutor.js';
+import {validateProviders} from './util/ProviderHealthCheck.js';
 import {
     dateTimeTool,
     executeDateTimeTool
@@ -28,10 +29,6 @@ import {
     volumeControlTool,
     executeVolumeControlTool
 } from './tools/volume-control-tool.js';
-import {
-    zwaveControlTool,
-    executeZWaveControlTool
-} from './tools/zwave-control-tool.js';
 
 // Initialize audio player and beep util
 const audioPlayer = new AudioPlayer(config, logger);
@@ -41,7 +38,7 @@ const BEEPS = beepUtil.BEEPS;
 /**
  * Voice Gateway Microphone Setup
  */
-function setupMic(voiceService, orchestrator, detector) {
+function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady = null) {
     const micInstance = mic({
         rate: String(config.audio.sampleRate),
         channels: String(config.audio.channels),
@@ -61,6 +58,9 @@ function setupMic(voiceService, orchestrator, detector) {
     let silenceSampleCount = 0;
     let recordingStartedAt = 0;
     let hasSpokenDuringRecording = false;
+
+    // Track state machine recording state for beep isolation
+    let stateIsRecording = false;
 
     /**
      * Voice Activity Detection (VAD) Configuration Constants
@@ -184,6 +184,10 @@ function setupMic(voiceService, orchestrator, detector) {
     // Setup state machine listeners (XState v5 uses .subscribe instead of .onTransition)
     voiceService.subscribe((state) => {
         const value = state.value;
+
+        // Track recording state for beep isolation (prevent beep feedback loops)
+        stateIsRecording = (value === 'recording');
+
         if (value === 'recording' && !isRecording) {
             // Start recording
             isRecording = true;
@@ -199,14 +203,24 @@ function setupMic(voiceService, orchestrator, detector) {
             recordedAudio = [];
             logger.debug('🛑 Recording stopped', {samples: audioSnapshot.length});
 
-            // Process voice interaction in background
-            if (audioSnapshot.length > 0) {
+            // Check if speech was detected during recording
+            if (audioSnapshot.length > 0 && hasSpokenDuringRecording) {
+                // Process voice interaction in background (transcribe + AI + TTS)
                 orchestrator.processVoiceInteraction(audioSnapshot).catch(err => {
                     logger.error('Voice interaction error', {error: errMsg(err)});
                 });
+            } else if (audioSnapshot.length > 0 && !hasSpokenDuringRecording) {
+                // Skip transcription when no speech detected (false wake word trigger)
+                logger.info('⏩ Skipping transcription - no speech detected');
+                // State machine automatically returns to listening (no action needed)
             }
         }
     });
+
+    // Provide isRecording checker callback to orchestrator (for beep isolation)
+    if (onRecordingCheckerReady) {
+        onRecordingCheckerReady(() => stateIsRecording);
+    }
 
     // Microphone data handler
     micInputStream.on('data', async (data) => {
@@ -222,7 +236,12 @@ function setupMic(voiceService, orchestrator, detector) {
                 audioBuffer = audioBuffer.slice(CHUNK_SIZE);
                 continue;
             }
-            if (!snapshot.matches('listening')) break;
+            // Allow wake word detection in 'listening' and 'cooldown' states
+            // Cooldown allows interruption (barge-in during TTS playback)
+            const inListening = snapshot.matches('listening');
+            const inCooldown = snapshot.matches('cooldown');
+
+            if (!inListening && !inCooldown) break;
 
             const chunk = new Float32Array(audioBuffer.slice(0, CHUNK_SIZE));
             audioBuffer = audioBuffer.slice(CHUNK_SIZE);
@@ -234,10 +253,21 @@ function setupMic(voiceService, orchestrator, detector) {
                     const wakeWord = config.openWakeWord.modelPath.includes('jarvis') ? 'Hey Jarvis' :
                         config.openWakeWord.modelPath.includes('robot') ? 'Hello Robot' : 'Wake word';
 
+                    // INTERRUPTION: Cancel active TTS if wake word triggered during cooldown
+                    if (inCooldown) {
+                        logger.info('🎤 Wake word detected during playback (interruption)!', {
+                            wakeWord,
+                            score: score.toFixed(3)
+                        });
+                        orchestrator.cancelActivePlayback(); // Stop TTS immediately
+                    } else {
+                        logger.info('🎤 Wake word detected!', {wakeWord, score: score.toFixed(3)});
+                    }
+
                     voiceService.send({type: 'TRIGGER', ts: Date.now()});
                     safeDetectorReset(detector, 'post-trigger');
 
-                    logger.info('🎤 Wake word detected!', {wakeWord, score: score.toFixed(3)});
+                    // Always play wake word beep - user needs this audible cue to start talking
                     audioPlayer.play(BEEPS.wakeWord).catch(err => logger.debug('Beep failed', {error: errMsg(err)}));
                 }
             } catch (err) {
@@ -294,36 +324,80 @@ function setupMic(voiceService, orchestrator, detector) {
 /**
  * Setup signal handlers for graceful shutdown
  */
-function handleSignals(micInstance) {
+function handleSignals(micInstance, mcpClient) {
     process.on('SIGINT', async () => {
         logger.info('SIGINT received, shutting down...');
         micInstance.stop();
-        await shutdownMCPClient();
+        if (mcpClient) {
+            await shutdownMCPClient(mcpClient, logger);
+        }
         process.exit(0);
     });
 
     process.on('uncaughtException', async (err) => {
         logger.error('Uncaught exception', {error: errMsg(err)});
         micInstance.stop();
-        await shutdownMCPClient();
+        if (mcpClient) {
+            await shutdownMCPClient(mcpClient, logger);
+        }
         process.exit(1);
     });
 }
 
 async function main() {
+    let mcpClient = null; // Store MCP client for cleanup
+
     try {
+        // ========================================
+        // Phase 1: Services and Health Checks
+        // ========================================
+        logger.info('🏥 Running provider health checks...');
+        const healthResults = await validateProviders(config, logger);
+
+        // Health checks are informational - we continue even if providers are unhealthy
+        // This allows the service to start and provide helpful error messages during operation
+
         await initServices();
+
+        // ========================================
+        // Phase 2: Wake Word Detector (with warm-up)
+        // ========================================
+        // setupWakeWordDetector now includes warm-up wait internally
         const detector = await setupWakeWordDetector();
 
-        // Initialize tool system BEFORE welcome message
+        // ========================================
+        // Phase 3: Tool System Initialization
+        // ========================================
         logger.info('🔧 Initializing tool system...');
         const toolRegistry = new ToolRegistry();
 
-        // Register all tools
+        // 1. Auto-discover MCP tools from Z-Wave MCP server
+        try {
+            const mcpIntegration = await initializeMCPIntegration(config, logger);
+            mcpClient = mcpIntegration.mcpClient;
+            const mcpTools = mcpIntegration.tools;
+
+            logger.info('🔍 Discovered MCP tools', {
+                count: mcpTools.length,
+                tools: mcpTools.map(t => t.lc_name || t.name)
+            });
+
+            // Register each MCP tool
+            for (const tool of mcpTools) {
+                toolRegistry.registerLangChainTool(tool);
+            }
+        } catch (error) {
+            logger.error('❌ Failed to initialize MCP tools', {
+                error: error.message,
+                stack: error.stack
+            });
+            logger.warn('⚠️ Continuing with local tools only...');
+        }
+
+        // 2. Manually register local tools (non-MCP)
         toolRegistry.registerTool(dateTimeTool, executeDateTimeTool);
         toolRegistry.registerTool(searchTool, executeSearchTool);
         toolRegistry.registerTool(volumeControlTool, executeVolumeControlTool);
-        toolRegistry.registerTool(zwaveControlTool, executeZWaveControlTool);
 
         const toolExecutor = new ToolExecutor(toolRegistry, logger);
 
@@ -332,24 +406,52 @@ async function main() {
             tools: toolRegistry.getToolNames()
         });
 
-        // Setup voice orchestrator and state machine
-        const orchestrator = new VoiceInteractionOrchestrator(config, logger, toolExecutor);
+        // ========================================
+        // Phase 4: Voice Service & Orchestrator
+        // ========================================
+        // Setup voice state machine (needed by orchestrator)
         const voiceService = setupVoiceStateMachine();
 
-        // Start microphone (buffers will be drained until READY signal)
-        const micInstance = setupMic(voiceService, orchestrator, detector);
-        handleSignals(micInstance);
+        // Create isRecording checker callback for beep isolation
+        let isRecordingChecker = null;
+        const getIsRecording = () => isRecordingChecker ? isRecordingChecker() : false;
 
-        // Activate wake word detection
+        // Setup voice orchestrator with state machine reference and isRecording checker
+        const orchestrator = new VoiceInteractionOrchestrator(config, logger, toolExecutor, voiceService, getIsRecording);
+
+        // ========================================
+        // Phase 5: Microphone Setup
+        // ========================================
+        // Start microphone (buffers will be drained until READY signal)
+        // setupMic will set isRecordingChecker after voiceService.subscribe is established
+        const micInstance = setupMic(voiceService, orchestrator, detector, (checker) => {
+            isRecordingChecker = checker;
+        });
+        handleSignals(micInstance, mcpClient);
+
+        // ========================================
+        // Phase 6: Welcome Message BEFORE Activation
+        // ========================================
+        // Speak welcome message while system is in startup state
+        // This ensures the message plays AFTER detector is fully warmed up
+        await startTTSWelcome(detector, audioPlayer);
+
+        // ========================================
+        // Phase 7: Final Activation
+        // ========================================
+        // Activate wake word detection (transitions from startup -> listening)
         logger.info('🎧 Activating wake word detection...');
         voiceService.send({type: 'READY'});
 
         logger.info('✅ Voice Gateway ready');
-
-        // Now speak welcome message - system is TRULY ready to respond!
-        await startTTSWelcome(detector, audioPlayer);
     } catch (err) {
         logger.error('Failed to initialize Voice Gateway', {error: errMsg(err)});
+
+        // Clean up MCP client if it exists
+        if (mcpClient) {
+            await shutdownMCPClient(mcpClient, logger);
+        }
+
         process.exit(1);
     }
 }

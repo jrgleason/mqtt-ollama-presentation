@@ -1,6 +1,5 @@
 import { OllamaClient } from '../OllamaClient.js';
 import { AnthropicClient } from '../AnthropicClient.js';
-import { getDevicesForAI } from 'zwave-mcp-server/client';
 import { conversationManager } from '../ConversationManager.js';
 import { errMsg } from '../util/Logger.js';
 
@@ -33,8 +32,9 @@ export class AIRouter {
         this.ollamaClient = null;
         this.anthropicClient = null;
 
-        // Default system prompt
-        this.defaultSystemPrompt = 'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
+        // System prompt (use config override if provided, otherwise use default)
+        this.defaultSystemPrompt = config.ai.systemPrompt ||
+            'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
     }
 
     /**
@@ -62,27 +62,22 @@ export class AIRouter {
     }
 
     /**
-     * Build system prompt with optional device context
+     * Build system prompt with optional device context hint
      *
-     * @param {boolean} includeDevices - Whether to include device information
-     * @returns {Promise<string>} System prompt with device info if requested
+     * With MCP tools integration, the AI queries devices on-demand using tools
+     * instead of receiving device info upfront. This reduces prompt size and
+     * ensures fresh data on every query.
+     *
+     * @param {boolean} includeDevices - Whether to hint that device tools are available
+     * @returns {Promise<string>} System prompt with optional device tool hint
      */
     async buildSystemPrompt(includeDevices = false) {
         let prompt = this.defaultSystemPrompt;
 
         if (includeDevices) {
-            try {
-                const deviceInfo = await getDevicesForAI();
-                prompt += `\n\n${deviceInfo}`;
-                this.logger.debug('AIRouter: Added device info to system prompt', {
-                    deviceInfoLength: deviceInfo.length
-                });
-            } catch (error) {
-                this.logger.warn('AIRouter: Failed to fetch devices for AI', {
-                    error: errMsg(error)
-                });
-                // Continue without device info (graceful degradation)
-            }
+            // Add hint that device tools are available (AI will use list_zwave_devices tool)
+            prompt += '\n\nYou have tools available to query and control Z-Wave devices. Use them when the user asks about devices.';
+            this.logger.debug('AIRouter: Added device tool hint to system prompt');
         }
 
         return prompt;

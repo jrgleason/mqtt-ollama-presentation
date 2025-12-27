@@ -2,8 +2,11 @@
 node_modules
 
 # Environment variables
+.env
 .env.tmp
 .env.local
+secrets.env
+**/secrets.env
 
 # Models (downloaded via setup script)
 models/

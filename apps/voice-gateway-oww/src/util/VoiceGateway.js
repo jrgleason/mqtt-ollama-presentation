@@ -22,7 +22,6 @@ function setupVoiceStateMachine() {
                 }
             },
             listening: {
-                entry: () => logger.debug('🎧 Listening for wake word...'),
                 on: {
                     TRIGGER: [{
                         cond: 'canTrigger',
@@ -36,12 +35,18 @@ function setupVoiceStateMachine() {
             recording: {
                 entry: () => logger.debug('🎙️ Recording user speech...'),
                 on: {
-                    SILENCE_DETECTED: 'cooldown',
-                    MAX_LENGTH_REACHED: 'cooldown'
+                    SILENCE_DETECTED: 'processing',
+                    MAX_LENGTH_REACHED: 'processing'
+                }
+            },
+            processing: {
+                entry: () => logger.debug('⚙️ Processing voice interaction...'),
+                on: {
+                    INTERACTION_COMPLETE: 'cooldown'
                 }
             },
             cooldown: {
-                entry: () => logger.debug('⏸️ Cooldown period before re-arming'),
+                entry: () => logger.debug('⏸️ Cooldown (can interrupt)'),
                 after: {
                     [config.audio.triggerCooldownMs || 1500]: 'listening'
                 }

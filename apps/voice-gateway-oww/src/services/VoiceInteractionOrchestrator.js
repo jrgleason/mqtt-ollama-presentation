@@ -8,7 +8,7 @@ import { conversationManager } from '../ConversationManager.js';
 import { publishTranscription, publishAIResponse } from '../mqttClient.js';
 import { ElevenLabsTTS } from '../util/ElevenLabsTTS.js';
 import { streamSpeak } from '../streamingTTS.js';
-import { executeDateTimeTool, executeZWaveControlTool } from '../util/tools.js';
+import { executeDateTimeTool } from '../util/tools.js';
 import { errMsg } from '../util/Logger.js';
 
 /**
@@ -28,10 +28,12 @@ import { errMsg } from '../util/Logger.js';
  *   await orchestrator.processVoiceInteraction(audioSamples);
  */
 export class VoiceInteractionOrchestrator {
-    constructor(config, logger, toolExecutor) {
+    constructor(config, logger, toolExecutor, voiceService = null, isRecordingChecker = null) {
         this.config = config;
         this.logger = logger;
         this.toolExecutor = toolExecutor;
+        this.voiceService = voiceService;
+        this.isRecordingChecker = isRecordingChecker || (() => false);
 
         // Initialize dependencies
         this.audioPlayer = new AudioPlayer(config, logger);
@@ -41,10 +43,14 @@ export class VoiceInteractionOrchestrator {
         this.aiRouter = new AIRouter(config, logger, toolExecutor);
         this.elevenLabsTTS = new ElevenLabsTTS(config, logger);
 
+        // Track active TTS playback for interruption support
+        this.activePlayback = null; // Stores {cancel, promise} from playInterruptible
+
         this.logger.info('VoiceInteractionOrchestrator initialized', {
             aiProvider: config.ai.provider,
             ttsEnabled: config.tts.enabled,
-            streamingEnabled: config.tts.streaming
+            streamingEnabled: config.tts.streaming,
+            beepIsolationEnabled: isRecordingChecker !== null
         });
     }
 
@@ -58,6 +64,13 @@ export class VoiceInteractionOrchestrator {
         const interactionStartTime = Date.now();
 
         try {
+            // ============================================
+            // STAGE 0: Cancel Previous TTS (Voice Interruption)
+            // ============================================
+            // If user triggers wake word while previous TTS is still playing,
+            // cancel it immediately (barge-in/interruption support)
+            this.cancelActivePlayback();
+
             // ============================================
             // STAGE 1: Transcription
             // ============================================
@@ -92,7 +105,12 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 3: Processing Beep (before AI query)
             // ============================================
-            await this.audioPlayer.play(this.beep.BEEPS.processing);
+            // Only play processing beep if not currently recording (prevents beep feedback)
+            if (!this.isRecordingChecker()) {
+                await this.audioPlayer.play(this.beep.BEEPS.processing);
+            } else {
+                this.logger.debug('🔇 Suppressed processing beep (recording in progress)');
+            }
 
             // ============================================
             // STAGE 4: AI Query or Direct Tool Execution
@@ -105,10 +123,15 @@ export class VoiceInteractionOrchestrator {
             conversationManager.addAssistantMessage(aiResponse);
 
             // ============================================
-            // STAGE 5: TTS Playback (if enabled)
+            // STAGE 5: TTS Playback (if enabled and not already streamed)
             // ============================================
-            if (this.config.tts.enabled) {
+            // Skip TTS if streaming already played the response
+            const streamingWasUsed = this.aiRouter.isStreamingEnabled();
+
+            if (this.config.tts.enabled && !streamingWasUsed) {
                 await this._speakResponse(aiResponse);
+            } else if (streamingWasUsed) {
+                this.logger.debug('VoiceInteractionOrchestrator: TTS already played via streaming, skipping');
             } else {
                 this.logger.debug('VoiceInteractionOrchestrator: TTS disabled, skipping speech');
             }
@@ -116,7 +139,12 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 6: Response Beep (after TTS)
             // ============================================
-            await this.audioPlayer.play(this.beep.BEEPS.response);
+            // Only play response beep if not currently recording (prevents beep feedback)
+            if (!this.isRecordingChecker()) {
+                await this.audioPlayer.play(this.beep.BEEPS.response);
+            } else {
+                this.logger.debug('🔇 Suppressed response beep (recording in progress)');
+            }
 
             // ============================================
             // STAGE 7: Publish AI Response to MQTT
@@ -149,6 +177,38 @@ export class VoiceInteractionOrchestrator {
 
             // Re-throw error for caller to handle if needed
             throw error;
+        } finally {
+            // ============================================
+            // STAGE 9: Signal Interaction Complete
+            // ============================================
+            // Notify state machine that interaction is done (transitions to cooldown → listening)
+            if (this.voiceService) {
+                this.voiceService.send({ type: 'INTERACTION_COMPLETE' });
+                this.logger.debug('✅ Signaled INTERACTION_COMPLETE to state machine');
+            }
+        }
+    }
+
+    /**
+     * Cancel any active TTS playback (voice interruption/barge-in)
+     *
+     * Called when:
+     * - New voice interaction starts (user interrupts current TTS)
+     * - Wake word detected during TTS playback
+     *
+     * @returns {void}
+     */
+    cancelActivePlayback() {
+        if (this.activePlayback) {
+            this.logger.info('🛑 Cancelling active TTS playback (interrupted by user)');
+            try {
+                this.activePlayback.cancel();
+            } catch (err) {
+                this.logger.warn('Failed to cancel active playback', {
+                    error: errMsg(err)
+                });
+            }
+            this.activePlayback = null;
         }
     }
 
@@ -167,12 +227,8 @@ export class VoiceInteractionOrchestrator {
             return await executeDateTimeTool({}, transcription);
         }
 
-        if (intent.isDeviceControlQuery) {
-            this.logger.debug('VoiceInteractionOrchestrator: Direct device control tool execution');
-            return await this._handleDeviceControl();
-        }
-
-        // Otherwise, use AI router for general queries
+        // Device control queries now go through AI + ToolExecutor (MCP tools)
+        // The AI will call control_zwave_device tool via MCP integration
         return await this._queryAI(transcription, intent);
     }
 
@@ -194,7 +250,7 @@ export class VoiceInteractionOrchestrator {
     }
 
     /**
-     * Query AI with streaming TTS (Anthropic only)
+     * Query AI with streaming TTS (Anthropic only) - with interruption support
      *
      * @param {string} transcription - User's transcribed speech
      * @param {Object} intent - Classified intent
@@ -202,20 +258,45 @@ export class VoiceInteractionOrchestrator {
      * @private
      */
     async _queryAIWithStreaming(transcription, intent) {
-        this.logger.debug('VoiceInteractionOrchestrator: Using streaming TTS');
+        this.logger.debug('VoiceInteractionOrchestrator: Using streaming TTS with cancellation support');
 
-        // Initialize streaming TTS
-        const tts = await streamSpeak('', {});
+        // Create AbortController for streaming cancellation
+        const abortController = new AbortController();
 
-        // Query AI with token streaming callback
-        const aiResponse = await this.aiRouter.query(transcription, intent, {
-            onToken: (token) => tts.pushText(token)
-        });
+        // Initialize streaming TTS with abort support
+        const tts = await streamSpeak('', { abortController });
 
-        // Finalize TTS stream
-        await tts.finalize();
+        // Track streaming TTS as active playback (for interruption)
+        this.activePlayback = {
+            cancel: () => {
+                this.logger.info('🛑 Aborting streaming TTS');
+                abortController.abort();
+                tts.cancel();
+            },
+            promise: Promise.resolve() // Placeholder, actual playback happens in streamSpeak
+        };
 
-        return aiResponse;
+        try {
+            // Query AI with token streaming callback
+            const aiResponse = await this.aiRouter.query(transcription, intent, {
+                onToken: (token) => tts.pushText(token)
+            });
+
+            // Finalize TTS stream (waits for all chunks to play)
+            await tts.finalize();
+
+            return aiResponse;
+        } catch (err) {
+            // Handle cancellation during streaming
+            if (err.name === 'AbortError' || err.message.includes('cancelled')) {
+                this.logger.info('🛑 Streaming TTS was cancelled');
+                throw err;
+            }
+            throw err;
+        } finally {
+            // Clear activePlayback after streaming completes or is cancelled
+            this.activePlayback = null;
+        }
     }
 
     /**
@@ -236,26 +317,7 @@ export class VoiceInteractionOrchestrator {
     }
 
     /**
-     * Handle device control query (simplified - delegates to tool)
-     *
-     * @returns {Promise<string>} Tool execution result
-     * @private
-     */
-    async _handleDeviceControl() {
-        // Simplified device control - extract device and action
-        // In a real implementation, you'd parse the transcription more carefully
-        // For now, just call the tool with example params
-        // TODO: Implement proper device/action parsing from transcription
-        this.logger.warn('VoiceInteractionOrchestrator: Device control parsing not fully implemented');
-
-        return await executeZWaveControlTool({
-            deviceName: 'example',
-            action: 'on'
-        });
-    }
-
-    /**
-     * Speak AI response using TTS
+     * Speak AI response using TTS with interruption support
      *
      * @param {string} aiResponse - AI response text to speak
      * @returns {Promise<void>}
@@ -269,8 +331,23 @@ export class VoiceInteractionOrchestrator {
             });
 
             if (audioBuffer && audioBuffer.length > 0) {
-                await this.audioPlayer.play(audioBuffer);
-                this.logger.info('✅ AI response playback complete');
+                // Use playInterruptible for cancellable playback
+                this.activePlayback = this.audioPlayer.playInterruptible(audioBuffer);
+
+                try {
+                    await this.activePlayback.promise;
+                    this.logger.info('✅ AI response playback complete');
+                } catch (playbackErr) {
+                    // Playback was cancelled or failed
+                    if (playbackErr.message.includes('cancelled')) {
+                        this.logger.info('🛑 TTS playback was interrupted');
+                    } else {
+                        throw playbackErr;
+                    }
+                } finally {
+                    // Clear activePlayback after completion or cancellation
+                    this.activePlayback = null;
+                }
             } else {
                 this.logger.warn('VoiceInteractionOrchestrator: Empty audio buffer from TTS');
             }
