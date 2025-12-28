@@ -38,7 +38,7 @@ const BEEPS = beepUtil.BEEPS;
 /**
  * Voice Gateway Microphone Setup
  */
-function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady = null) {
+function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady = null, getWelcomePlayback = null) {
     const micInstance = mic({
         rate: String(config.audio.sampleRate),
         channels: String(config.audio.channels),
@@ -84,15 +84,16 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
          * Audio below this threshold is considered silence.
          *
          * Typical ranges:
-         * - Background noise: < 0.01
+         * - Background noise: < 0.005
+         * - Very quiet speech: 0.005-0.01
          * - Normal speech: 0.05 - 0.2
          * - Loud speech: > 0.2
          *
          * Tuning guidance:
-         * - Lower values (e.g., 0.005): More sensitive, may capture background noise
+         * - Lower values (e.g., 0.003): More sensitive, may capture background noise
          * - Higher values (e.g., 0.02): Less sensitive, may cut off quiet speech
          */
-        SILENCE_THRESHOLD: 0.01,
+        SILENCE_THRESHOLD: 0.005,
 
         /**
          * Minimum speech duration in milliseconds
@@ -210,8 +211,15 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
                     logger.error('Voice interaction error', {error: errMsg(err)});
                 });
             } else if (audioSnapshot.length > 0 && !hasSpokenDuringRecording) {
+                // Calculate energy for logging (to help tune threshold)
+                const avgEnergy = rmsEnergy(audioSnapshot);
                 // Skip transcription when no speech detected (false wake word trigger)
-                logger.info('⏩ Skipping transcription - no speech detected');
+                logger.info('⏩ Skipping transcription - no speech detected', {
+                    recordedSamples: audioSnapshot.length,
+                    avgEnergy: avgEnergy.toFixed(6),
+                    threshold: VAD_CONSTANTS.SILENCE_THRESHOLD,
+                    suggestion: avgEnergy > 0.003 ? 'Energy close to threshold - may need adjustment' : 'True silence'
+                });
                 // State machine automatically returns to listening (no action needed)
             }
         }
@@ -253,7 +261,7 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
                     const wakeWord = config.openWakeWord.modelPath.includes('jarvis') ? 'Hey Jarvis' :
                         config.openWakeWord.modelPath.includes('robot') ? 'Hello Robot' : 'Wake word';
 
-                    // INTERRUPTION: Cancel active TTS if wake word triggered during cooldown
+                    // INTERRUPTION: Cancel active TTS if wake word triggered during cooldown OR welcome message
                     if (inCooldown) {
                         logger.info('🎤 Wake word detected during playback (interruption)!', {
                             wakeWord,
@@ -262,6 +270,15 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
                         orchestrator.cancelActivePlayback(); // Stop TTS immediately
                     } else {
                         logger.info('🎤 Wake word detected!', {wakeWord, score: score.toFixed(3)});
+                    }
+
+                    // Also cancel welcome message if still playing (during startup state)
+                    if (getWelcomePlayback) {
+                        const welcomePlayback = getWelcomePlayback();
+                        if (welcomePlayback) {
+                            logger.info('🛑 Interrupting welcome message');
+                            welcomePlayback.cancel();
+                        }
                     }
 
                     voiceService.send({type: 'TRIGGER', ts: Date.now()});
@@ -346,6 +363,7 @@ function handleSignals(micInstance, mcpClient) {
 
 async function main() {
     let mcpClient = null; // Store MCP client for cleanup
+    let activeWelcomePlayback = null; // Track welcome message playback for interruption
 
     try {
         // ========================================
@@ -426,7 +444,7 @@ async function main() {
         // setupMic will set isRecordingChecker after voiceService.subscribe is established
         const micInstance = setupMic(voiceService, orchestrator, detector, (checker) => {
             isRecordingChecker = checker;
-        });
+        }, () => activeWelcomePlayback); // Pass welcome playback getter for interruption
         handleSignals(micInstance, mcpClient);
 
         // ========================================
@@ -434,7 +452,14 @@ async function main() {
         // ========================================
         // Speak welcome message while system is in startup state
         // This ensures the message plays AFTER detector is fully warmed up
-        await startTTSWelcome(detector, audioPlayer);
+        activeWelcomePlayback = await startTTSWelcome(detector, audioPlayer);
+
+        // Clear welcome playback after it completes
+        if (activeWelcomePlayback) {
+            activeWelcomePlayback.promise.finally(() => {
+                activeWelcomePlayback = null;
+            });
+        }
 
         // ========================================
         // Phase 7: Final Activation

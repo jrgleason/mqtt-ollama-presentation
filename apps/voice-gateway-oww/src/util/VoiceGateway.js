@@ -22,6 +22,7 @@ function setupVoiceStateMachine() {
                 }
             },
             listening: {
+                entry: () => logger.info('🎧 Listening for wake word'),
                 on: {
                     TRIGGER: [{
                         cond: 'canTrigger',
@@ -46,9 +47,18 @@ function setupVoiceStateMachine() {
                 }
             },
             cooldown: {
-                entry: () => logger.debug('⏸️ Cooldown (can interrupt)'),
+                entry: () => logger.info('⏸️ Cooldown (can interrupt)'),
                 after: {
                     [config.audio.triggerCooldownMs || 1500]: 'listening'
+                },
+                on: {
+                    TRIGGER: [{
+                        cond: 'canTrigger',
+                        target: 'recording',
+                        actions: 'recordTriggered'
+                    }, {
+                        actions: 'logTriggerBlocked'
+                    }]
                 }
             }
         }

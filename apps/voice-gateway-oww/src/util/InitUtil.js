@@ -89,7 +89,7 @@ async function setupWakeWordDetector() {
 }
 
 async function startTTSWelcome(detector, audioPlayer) {
-    if (!config.tts.enabled) return;
+    if (!config.tts.enabled) return null;
 
     // Create AudioPlayer if not provided (for backward compatibility)
     const player = audioPlayer || new AudioPlayer(config, logger);
@@ -102,14 +102,33 @@ async function startTTSWelcome(detector, audioPlayer) {
             speed: config.tts.speed
         });
         if (audioBuffer && audioBuffer.length > 0) {
-            await player.play(audioBuffer);
-            logger.info('✅ Welcome message spoken');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            safeDetectorReset(detector, 'post-startup-tts');
+            // Use playInterruptible for cancellable welcome message
+            const playback = player.playInterruptible(audioBuffer);
+
+            // Play in background, handle completion/cancellation
+            playback.promise
+                .then(() => {
+                    logger.info('✅ Welcome message spoken');
+                    setTimeout(() => {
+                        safeDetectorReset(detector, 'post-startup-tts');
+                    }, 1000);
+                })
+                .catch(err => {
+                    if (err.message.includes('cancelled')) {
+                        logger.info('🛑 Welcome message interrupted');
+                    } else {
+                        logger.error('❌ Failed to speak welcome message', {error: err.message});
+                    }
+                });
+
+            // Return playback handle for interruption support
+            return playback;
         }
     } catch (err) {
         logger.error('❌ Failed to speak welcome message', {error: err.message});
     }
+
+    return null;
 }
 
 export {
