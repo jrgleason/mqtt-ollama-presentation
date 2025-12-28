@@ -76,28 +76,76 @@
 - [ ] 7.4 Manual testing: Sensor query ("What's the temperature?") - if implemented
 - [ ] 7.5 Verify demo script works end-to-end
 
-## 8. Documentation Updates (3 tasks)
+## 8. Documentation Organization (6 tasks)
 
-- [ ] 8.1 Update `openspec/project.md` - Remove resolved technical debt items
-- [ ] 8.2 Update code comments to reflect new organization (if needed)
-- [ ] 8.3 Update README.md if architecture changed significantly
+- [ ] 8.1 Find all markdown files at module roots: `find apps -maxdepth 2 -name "*.md" -not -name "README.md"`
+- [ ] 8.2 Create `docs/` directories in each module if they don't exist
+- [ ] 8.3 Move all non-README.md files to module-level `docs/` or project root `docs/`
+- [ ] 8.4 Update internal links in moved documentation files
+- [ ] 8.5 Verify no broken links: `rg -n '\[.*\]\(.*\.md\)' apps docs openspec`
+- [ ] 8.6 Update .gitignore if needed to track docs/ directories
+
+## 9. Script File Organization (5 tasks)
+
+- [ ] 9.1 Find all script files at module roots: `find apps -maxdepth 2 -name "*.sh" -o -name "*.py"  -o -name "switch-mode.sh"`
+- [ ] 9.2 Create `scripts/` directories in each module if they don't exist
+- [ ] 9.3 Move all script files to `scripts/` directory
+- [ ] 9.4 Update any references to script paths (systemd files, documentation, npm scripts)
+- [ ] 9.5 Verify scripts still execute correctly from new location
+
+## 10. CommonJS to ES Modules Migration (8 tasks)
+
+- [ ] 10.1 Search for CommonJS patterns: `rg -n 'module\.exports|require\(' apps --type js`
+- [ ] 10.2 Identify all files using CommonJS (create inventory)
+- [ ] 10.3 For each CommonJS file, convert `module.exports` to `export` statements
+- [ ] 10.4 For each CommonJS file, convert `require()` to `import` statements
+- [ ] 10.5 Update package.json to ensure `"type": "module"` is set
+- [ ] 10.6 Test imports after conversion (verify no breakage)
+- [ ] 10.7 Consider renaming .js to .mjs for clarity (optional, check if needed for Node version)
+- [ ] 10.8 Run full test suite after conversion
+
+## 11. Source File Organization (7 tasks)
+
+- [ ] 11.1 Find .js files at module roots (except index.js, main.js, config.js): `find apps -maxdepth 1 -name "*.js" -not -name "index.js" -not -name "main.js" -not -name "config.js"`
+- [ ] 11.2 Create inventory of files to move vs files to keep at root
+- [ ] 11.3 Verify each module has `src/` directory
+- [ ] 11.4 Move orphaned .js files into appropriate `src/` subdirectories (services/, util/, etc.)
+- [ ] 11.5 Update imports in all affected files
+- [ ] 11.6 Update package.json "main" field if needed
+- [ ] 11.7 Test: Verify all modules still load correctly
+
+## 12. Documentation Updates (3 tasks)
+
+- [ ] 12.1 Update `openspec/project.md` - Remove resolved technical debt items
+- [ ] 12.2 Update code comments to reflect new organization
+- [ ] 12.3 Update README.md files to document new file structure conventions
 
 ---
 
-**Total: 44 tasks**
+**Total: 70 tasks**
 
-**Estimated Duration:** 4-6 hours (spread over multiple sessions for safety)
+**Estimated Duration:** 8-12 hours (spread over multiple sessions for safety)
 
 **Critical Path:**
 1. Prerequisites must be complete FIRST
 2. Extract constants (Task 1) - Low risk, high value
 3. Resolve TODOs (Task 2) - Clarifies intentions
 4. Refactor setupMic() (Task 3) - Highest impact on maintainability
-5. Testing (Task 7) - Verify no regressions
+5. Documentation organization (Task 8) - File moves
+6. Script organization (Task 9) - File moves
+7. CommonJS to ES modules (Task 10) - Breaking change, needs careful testing
+8. Source file organization (Task 11) - File moves, import updates
+9. Testing (Task 7) - Verify no regressions
 
 **Parallelizable Work:**
 - Task 1 (constants) and Task 2 (TODOs) can be done in parallel
 - Task 4 (intent classifier) can be done independently
+- Task 8 (docs) and Task 9 (scripts) can be done in parallel
+- Task 5 (code cleanup) can be done alongside file organization
+
+**High-Risk Tasks** (require extra care):
+- Task 10: CommonJS → ES modules (breaking imports, needs thorough testing)
+- Task 11: Move source files (import path updates, easy to break)
 - Task 5 (cleanup) can be done anytime
 
 **Safe Stopping Points:**
