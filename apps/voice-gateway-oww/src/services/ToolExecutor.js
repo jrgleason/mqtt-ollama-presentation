@@ -3,17 +3,19 @@
  *
  * Centralized tool execution with logging, error handling, and timeout protection.
  * Handles all tool calls from AI models in a consistent manner.
+ *
+ * Uses ToolManager to access LangChain tools directly without unnecessary abstraction.
  */
 
 export class ToolExecutor {
     /**
-     * @param {ToolRegistry} registry - Tool registry instance
+     * @param {ToolManager} toolManager - Tool manager instance
      * @param {Object} logger - Logger instance
      * @param {Object} options - Configuration options
      * @param {number} options.timeout - Timeout in milliseconds (default: 30000)
      */
-    constructor(registry, logger, options = {}) {
-        this.registry = registry;
+    constructor(toolManager, logger, options = {}) {
+        this.toolManager = toolManager;
         this.logger = logger;
         this.timeout = options.timeout || 30000; // 30 seconds default
     }
@@ -28,26 +30,29 @@ export class ToolExecutor {
         const startTime = Date.now();
 
         try {
-            // Get executor from registry
-            const executor = this.registry.getExecutor(toolName);
+            // Find tool in manager
+            const tool = this.toolManager.findTool(toolName);
 
-            if (!executor) {
+            if (!tool) {
                 this.logger.warn(`Unknown tool requested: ${toolName}`, {
-                    availableTools: this.registry.getToolNames()
+                    availableTools: this.toolManager.getToolNames()
                 });
-                return `Error: Unknown tool "${toolName}". Available tools: ${this.registry.getToolNames().join(', ')}`;
+                return `Error: Unknown tool "${toolName}". Available tools: ${this.toolManager.getToolNames().join(', ')}`;
             }
 
+            // Normalize parameters if needed (for MCP tools)
+            const normalizedArgs = this.toolManager.normalizeParameters(toolName, args);
+
             // Sanitize arguments for logging (redact sensitive fields)
-            const sanitizedArgs = this.sanitizeForLogging(args);
+            const sanitizedArgs = this.sanitizeForLogging(normalizedArgs);
 
             this.logger.debug(`🔧 Executing tool: ${toolName}`, {
                 tool: toolName,
                 args: sanitizedArgs
             });
 
-            // Execute with timeout protection
-            const result = await this.executeWithTimeout(executor, args);
+            // Call LangChain tool directly: tool.invoke({ input: args })
+            const result = await this.executeWithTimeout(tool, normalizedArgs);
 
             const duration = Date.now() - startTime;
 
@@ -85,14 +90,16 @@ export class ToolExecutor {
     }
 
     /**
-     * Execute a tool function with timeout protection
-     * @param {Function} executor - Tool executor function
+     * Execute a LangChain tool with timeout protection
+     * @param {Object} tool - LangChain tool instance
      * @param {Object} args - Tool arguments
      * @returns {Promise<string>} Execution result
      */
-    async executeWithTimeout(executor, args) {
+    async executeWithTimeout(tool, args) {
         return Promise.race([
-            executor(args),
+            // LangChain MCP tools expect arguments passed directly (NOT wrapped in { input: args })
+            // Custom tools may also use this pattern, so we always pass args directly
+            tool.invoke(args),
             new Promise((_, reject) =>
                 setTimeout(
                     () => reject(new Error(`Tool execution timeout after ${this.timeout}ms`)),
@@ -158,8 +165,8 @@ export class ToolExecutor {
      */
     getStats() {
         return {
-            registeredTools: this.registry.toolCount,
-            toolNames: this.registry.getToolNames(),
+            registeredTools: this.toolManager.toolCount,
+            toolNames: this.toolManager.getToolNames(),
             timeout: this.timeout
         };
     }

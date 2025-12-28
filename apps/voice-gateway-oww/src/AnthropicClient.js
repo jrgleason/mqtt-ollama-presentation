@@ -39,22 +39,6 @@ export class AnthropicClient {
         return this.#client;
     }
 
-    /**
-     * Convert tool definition from Ollama format to LangChain/Anthropic format
-     * @param {Object} tool - Tool in Ollama format
-     * @returns {Object} Tool in LangChain format
-     */
-    static convertToolToLangChainFormat(tool) {
-        return {
-            name: tool.function.name,
-            description: tool.function.description,
-            input_schema: {
-                type: 'object',
-                properties: tool.function.parameters.properties || {},
-                required: tool.function.parameters.required || [],
-            },
-        };
-    }
 
     /**
      * Normalize Anthropic (LangChain) content into a plain string
@@ -189,19 +173,20 @@ export class AnthropicClient {
             const messageBuildTime = Date.now() - messageBuildStart;
             this.logger.debug(`⏱️ Message building took ${messageBuildTime}ms`);
 
-            // Convert tools to Anthropic format and bind to model if provided
+            // Bind LangChain tools to model if provided
+            // Tools from ToolManager are already in LangChain format (no conversion needed)
             const toolBindStart = Date.now();
             if (options.tools && options.tools.length > 0) {
-                const langchainTools = options.tools.map(AnthropicClient.convertToolToLangChainFormat);
                 this.logger.debug('🔧 Tools provided', {
-                    toolCount: langchainTools.length,
-                    tools: langchainTools.map(t => t.name),
+                    toolCount: options.tools.length,
+                    tools: options.tools.map(t => t.lc_name || t.name),
                     // Log full tool schema for first tool to debug format issues
-                    firstToolSchema: JSON.stringify(langchainTools[0], null, 2).substring(0, 500)
+                    firstToolSchema: JSON.stringify(options.tools[0], null, 2).substring(0, 500)
                 });
 
                 // Bind tools to the model using .bindTools()
-                client = client.bindTools(langchainTools);
+                // Tools are already LangChain-compatible from ToolManager
+                client = client.bindTools(options.tools);
             }
             const toolBindTime = Date.now() - toolBindStart;
             this.logger.debug(`⏱️ Tool binding took ${toolBindTime}ms`);

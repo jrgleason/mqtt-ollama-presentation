@@ -125,7 +125,7 @@ export class AIRouter {
             const queryOptions = {
                 messages,
                 systemPrompt,
-                tools: options.tools || (this.toolExecutor?.registry?.getDefinitions() || []),
+                tools: options.tools || (this.toolExecutor?.toolManager?.getTools() || []),
                 toolExecutor: this.executeTool.bind(this),
             };
 

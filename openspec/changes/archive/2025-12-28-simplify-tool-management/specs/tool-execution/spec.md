@@ -50,9 +50,9 @@ The system SHALL provide a simplified ToolManager that maintains a collection of
 
 **Rationale:** Simple array search replaces Map lookup.
 
-### Requirement: Tool Execution Interface
+### Requirement: Tool Executor Interface
 
-All tools SHALL follow LangChain's tool interface with `invoke({ input: args })` method instead of custom executor functions.
+All tools SHALL follow LangChain's tool interface with `invoke(args)` method instead of custom executor functions.
 
 **Previous Implementation:** Tools were wrapped with custom executor functions: `(args) => tool.invoke({ input: args })`
 
@@ -61,12 +61,12 @@ All tools SHALL follow LangChain's tool interface with `invoke({ input: args })`
 #### Scenario: Execute tool directly via invoke() (MODIFIED)
 
 - **WHEN** ToolExecutor executes a tool
-- **THEN** it calls `tool.invoke({ input: args })` directly
+- **THEN** it calls `tool.invoke(args)` directly
 - **AND** no executor wrapper function is used
 
 **Previous Behavior:** ToolExecutor retrieved executor function from registry and called `executor(args)`
 
-**Rationale:** Direct tool invocation eliminates unnecessary abstraction layer.
+**Rationale:** Direct tool invocation eliminates unnecessary abstraction layer. LangChain MCP tools expect args directly, not wrapped in `{ input: args }`.
 
 #### Scenario: Tool execution timeout and error handling (UNCHANGED)
 
@@ -77,47 +77,13 @@ All tools SHALL follow LangChain's tool interface with `invoke({ input: args })`
 
 **Rationale:** Keep existing error handling and monitoring logic.
 
-## REMOVED Requirements
+## Implementation Notes
 
-### Requirement: Schema Conversion (REMOVED)
+**Schema Conversion Removed:** The `AnthropicClient.convertToolToLangChainFormat()` method was removed (~15 lines) as it was redundant when using LangChain tools. Tools are now passed directly to `client.bindTools()`.
 
-**Previous Requirement:** Convert tool schemas between "Ollama format" and "LangChain format"
+**Executor Wrapping Removed:** The executor wrapper pattern `(args) => tool.invoke({ input: args })` was removed. Tools are now called directly via `tool.invoke(args)`.
 
-**Reason for Removal:** LangChain MCP tools are already in LangChain format. Schema conversion (`convertToolToLangChainFormat()`) is redundant when using LangChain tools.
-
-**Migration:**
-- Remove `AnthropicClient.convertToolToLangChainFormat()` method
-- Remove `ToolRegistry._convertLangChainSchema()` method
-- Pass tools directly to `client.bindTools(options.tools)` without conversion
-- Custom tools should be defined in LangChain format from the start
-
-**Impact:** ~50 lines of code removed from AI clients. No functional impact if all tools are LangChain-compatible.
-
-### Requirement: Executor Function Wrapping (REMOVED)
-
-**Previous Requirement:** Wrap tool invoke methods with executor functions stored in registry
-
-**Reason for Removal:** The executor wrapper `(args) => tool.invoke({ input: args })` adds no value. Tools can be called directly.
-
-**Migration:**
-- Remove executor wrapping in ToolRegistry
-- Call `tool.invoke({ input: args })` directly in ToolExecutor
-- No changes to tool implementations
-
-**Impact:** Simpler code, one fewer function call per tool execution.
-
-### Requirement: Map-Based Tool Storage (REMOVED)
-
-**Previous Requirement:** Store tools in Map with tool name as key
-
-**Reason for Removal:** Array storage with `Array.find()` is simpler and sufficient for <20 tools. No performance benefit from Map.
-
-**Migration:**
-- Replace `Map` with `Array` in ToolManager
-- Use `array.find(t => t.name === name || t.lc_name === name)` for lookup
-- No changes to external APIs
-
-**Impact:** Simpler implementation, easier to understand.
+**Map-Based Storage Removed:** ToolRegistry's Map storage was replaced with simple array storage in ToolManager. For <20 tools, array search performance is equivalent and implementation is simpler.
 
 ## ADDED Requirements
 

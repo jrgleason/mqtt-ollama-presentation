@@ -88,7 +88,7 @@ async function setupWakeWordDetector() {
     return detector;
 }
 
-async function startTTSWelcome(detector, audioPlayer) {
+async function startTTSWelcome(detector, audioPlayer, beeps = null) {
     if (!config.tts.enabled) return null;
 
     // Create AudioPlayer if not provided (for backward compatibility)
@@ -113,11 +113,22 @@ async function startTTSWelcome(detector, audioPlayer) {
                 .then(() => {
                     logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Playback completed');
                     logger.info('✅ Welcome message spoken');
-                    logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Scheduling detector reset in 1000ms...');
-                    setTimeout(() => {
-                        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Executing detector reset now');
-                        safeDetectorReset(detector, 'post-startup-tts');
-                    }, 1000);
+                    // REMOVED: Post-welcome detector reset (no longer needed with warm-up wait)
+                    // The detector is already warmed up before welcome message plays
+                    // Beep isolation prevents TTS audio from being recorded
+
+                    // Play ready-to-listen beep to signal system is ready for wake word
+                    if (beeps && beeps.ready) {
+                        logger.debug('🔔 Playing ready-to-listen beep');
+                        player.play(beeps.ready)
+                            .then(() => {
+                                logger.debug('✅ Ready beep played');
+                            })
+                            .catch(err => {
+                                logger.warn('⚠️ Failed to play ready beep', { error: err.message });
+                                // Non-critical failure - continue
+                            });
+                    }
                 })
                 .catch(err => {
                     if (err.message.includes('cancelled')) {

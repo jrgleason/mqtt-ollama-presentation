@@ -14,7 +14,7 @@ import {SAMPLE_RATE, CHUNK_SIZE} from "./audio/constants.js";
 import {getServiceSnapshot, safeDetectorReset} from "./util/XStateHelpers.js";
 import {AudioPlayer} from "./audio/AudioPlayer.js";
 import {BeepUtil} from "./util/BeepUtil.js";
-import {ToolRegistry} from './services/ToolRegistry.js';
+import {ToolManager} from './services/ToolManager.js';
 import {ToolExecutor} from './services/ToolExecutor.js';
 import {validateProviders} from './util/ProviderHealthCheck.js';
 import {
@@ -220,7 +220,8 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
                     threshold: VAD_CONSTANTS.SILENCE_THRESHOLD,
                     suggestion: avgEnergy > 0.003 ? 'Energy close to threshold - may need adjustment' : 'True silence'
                 });
-                // State machine automatically returns to listening (no action needed)
+                // Transition back to listening state
+                voiceService.send({type: 'INTERACTION_COMPLETE'});
             }
         }
     });
@@ -239,16 +240,25 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
         while (audioBuffer.length >= CHUNK_SIZE) {
             const snapshot = getServiceSnapshot(voiceService);
             if (!snapshot || typeof snapshot.matches !== 'function') break;
-            if (snapshot.matches('startup')) {
-                // Drain buffer during startup
-                audioBuffer = audioBuffer.slice(CHUNK_SIZE);
-                continue;
-            }
-            // Allow wake word detection in 'listening' and 'cooldown' states
-            // Cooldown allows interruption (barge-in during TTS playback)
+
+            const inStartup = snapshot.matches('startup');
             const inListening = snapshot.matches('listening');
             const inCooldown = snapshot.matches('cooldown');
 
+            // During startup: feed audio to detector for warm-up, but don't check for wake words
+            if (inStartup) {
+                const chunk = new Float32Array(audioBuffer.slice(0, CHUNK_SIZE));
+                audioBuffer = audioBuffer.slice(CHUNK_SIZE);
+                try {
+                    await detector.detect(chunk); // Feed audio for warm-up, ignore score
+                } catch (err) {
+                    logger.error('Wake word detection error during startup', {error: errMsg(err)});
+                }
+                continue; // Don't check for wake words during startup
+            }
+
+            // Allow wake word detection in 'listening' and 'cooldown' states
+            // Cooldown allows interruption (barge-in during TTS playback)
             if (!inListening && !inCooldown) break;
 
             const chunk = new Float32Array(audioBuffer.slice(0, CHUNK_SIZE));
@@ -388,7 +398,7 @@ async function main() {
         // Phase 3: Tool System Initialization
         // ========================================
         logger.info('🔧 Initializing tool system...');
-        const toolRegistry = new ToolRegistry();
+        const toolManager = new ToolManager();
 
         // 1. Auto-discover MCP tools from Z-Wave MCP server
         try {
@@ -401,10 +411,8 @@ async function main() {
                 tools: mcpTools.map(t => t.lc_name || t.name)
             });
 
-            // Register each MCP tool
-            for (const tool of mcpTools) {
-                toolRegistry.registerLangChainTool(tool);
-            }
+            // Add MCP tools to manager (no wrapping needed - already LangChain tools)
+            toolManager.addMCPTools(mcpTools);
         } catch (error) {
             logger.error('❌ Failed to initialize MCP tools', {
                 error: error.message,
@@ -413,16 +421,34 @@ async function main() {
             logger.warn('⚠️ Continuing with local tools only...');
         }
 
-        // 2. Manually register local tools (non-MCP)
-        toolRegistry.registerTool(dateTimeTool, executeDateTimeTool);
-        toolRegistry.registerTool(searchTool, executeSearchTool);
-        toolRegistry.registerTool(volumeControlTool, executeVolumeControlTool);
+        // 2. Wrap and add local tools (convert to LangChain-compatible format)
+        // These manual tools need invoke() method to match LangChain interface
+        toolManager.addCustomTool({
+            name: dateTimeTool.function.name,
+            description: dateTimeTool.function.description,
+            schema: dateTimeTool.function.parameters,
+            invoke: async ({ input }) => executeDateTimeTool(input)
+        });
 
-        const toolExecutor = new ToolExecutor(toolRegistry, logger);
+        toolManager.addCustomTool({
+            name: searchTool.function.name,
+            description: searchTool.function.description,
+            schema: searchTool.function.parameters,
+            invoke: async ({ input }) => executeSearchTool(input)
+        });
+
+        toolManager.addCustomTool({
+            name: volumeControlTool.function.name,
+            description: volumeControlTool.function.description,
+            schema: volumeControlTool.function.parameters,
+            invoke: async ({ input }) => executeVolumeControlTool(input)
+        });
+
+        const toolExecutor = new ToolExecutor(toolManager, logger);
 
         logger.info('✅ Tool system initialized', {
-            toolCount: toolRegistry.toolCount,
-            tools: toolRegistry.getToolNames()
+            toolCount: toolManager.toolCount,
+            tools: toolManager.getToolNames()
         });
 
         // ========================================
@@ -451,12 +477,33 @@ async function main() {
         logger.debug('🔧 [STARTUP-DEBUG] Phase 5: Microphone started, audio feeding to detector');
 
         // ========================================
-        // Phase 6: Welcome Message BEFORE Activation
+        // Phase 5.5: Detector Warm-up Wait (NEW)
+        // ========================================
+        // Wait for detector warm-up AFTER microphone starts feeding audio
+        // This ensures detector is ready BEFORE welcome message plays
+        // Timeout after 10 seconds to prevent indefinite hang
+        logger.info('⏳ Waiting for detector warm-up...');
+        try {
+            await Promise.race([
+                detector.getWarmUpPromise(),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Detector warm-up timeout')), 10000)
+                )
+            ]);
+            logger.info('✅ Detector fully warmed up and ready');
+        } catch (error) {
+            logger.warn('⚠️ Detector warm-up timeout - may experience initial detection issues', {
+                error: error.message
+            });
+        }
+
+        // ========================================
+        // Phase 6: Welcome Message AFTER Warm-up
         // ========================================
         logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Starting welcome message...');
         // Speak welcome message while system is in startup state
         // This ensures the message plays AFTER detector is fully warmed up
-        activeWelcomePlayback = await startTTSWelcome(detector, audioPlayer);
+        activeWelcomePlayback = await startTTSWelcome(detector, audioPlayer, BEEPS);
         logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Welcome message playback initiated');
 
         // Clear welcome playback after it completes

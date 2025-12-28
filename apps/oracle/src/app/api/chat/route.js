@@ -116,12 +116,14 @@ export async function POST(req) {
             content: `You are a helpful home automation assistant.
 
 IMPORTANT RULES:
-1. When user asks to list devices, you MUST call the list_devices tool. DO NOT make up device names.
+1. When user asks to list devices, you MUST call the list_zwave_devices tool. DO NOT make up device names.
 2. When user asks to control a device, you MUST:
-   a. First call list_devices to get exact device names
-   b. Then call control_device with the EXACT name from the list
-3. NEVER invent or guess device names. Always use list_devices first.
-4. For greetings or general questions, respond normally without tools.`
+   a. First call list_zwave_devices to get exact device names
+   b. Then call control_zwave_device with the EXACT name from the list
+3. When user asks about sensor data (temperature, etc), use get_device_sensor_data with the device name.
+4. NEVER invent or guess device names. Always use list_zwave_devices first.
+5. For greetings or general questions, respond normally without tools.
+6. list_zwave_devices takes NO parameters - just call it directly.`
         };
 
         const allMessages = [systemMessage, ...messages];
@@ -159,9 +161,24 @@ IMPORTANT RULES:
                                 let toolResult;
                                 try {
                                     toolResult = await tool.func(toolCall.args);
+
+                                    // Normalize tool result to string (LangChain requires string content)
+                                    // MCP tools may return [text, artifacts] arrays - extract just the text
+                                    let normalizedContent;
+                                    if (typeof toolResult === 'string') {
+                                        normalizedContent = toolResult;
+                                    } else if (Array.isArray(toolResult)) {
+                                        // MCP format: [text_content, artifacts_array]
+                                        normalizedContent = toolResult[0] || '';
+                                    } else if (typeof toolResult === 'object' && toolResult !== null) {
+                                        normalizedContent = JSON.stringify(toolResult);
+                                    } else {
+                                        normalizedContent = String(toolResult);
+                                    }
+
                                     toolResults.push({
                                         role: 'tool',
-                                        content: toolResult,
+                                        content: normalizedContent,
                                         tool_call_id: toolCall.id
                                     });
                                 } catch (toolError) {
