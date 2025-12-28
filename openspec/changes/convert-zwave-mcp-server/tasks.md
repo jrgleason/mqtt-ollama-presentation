@@ -70,12 +70,12 @@
   - **Validation**: Schema debug logs show correct parameters in converted schema
   - **Status**: ✅ FIXED - Changed to `parameters: schema || {...}`
 
-- [ ] **Task 1.9**: Test sensor data query after fix
+- [x] **Task 1.9**: Test sensor data query after fix
   - Ask "What is the temperature on temp sensor 1?"
   - Verify: MCP get_device_sensor_data tool is called successfully
   - Verify: Sensor data returned correctly
   - **Pass criteria**: Sensor query returns temperature reading
-  - **Status**: ⏳ Requires manual testing (after Task 1.8 fix)
+  - **Status**: ✅ PASS - Returns "68.5°F" successfully
 
 ### Phase 2: Oracle Backend - Vercel MCP Adapter
 
