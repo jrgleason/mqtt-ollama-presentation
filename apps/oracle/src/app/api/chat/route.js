@@ -1,10 +1,13 @@
 import {createOllamaClient} from '../../../lib/ollama/client.js';
-import {createDeviceListTool} from '../../../lib/langchain/tools/device-list-tool.js';
-import {createDeviceControlTool} from '../../../lib/langchain/tools/device-control-tool.js';
 import {createCalculatorTool} from '../../../lib/langchain/tools/calculator-tool.js';
+import {initializeMCPIntegration, shutdownMCPClient} from '../../../lib/mcp/integration.js';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 
 export const runtime = 'nodejs';
+
+// Global MCP client instance (reused across requests for performance)
+let globalMCPClient = null;
+let globalMCPTools = [];
 
 /**
  * Convert raw message objects to LangChain BaseMessage instances
@@ -79,10 +82,28 @@ export async function POST(req) {
             }
         }
 
-        // Create tools
+        // Initialize MCP client and get tools (only once per process)
+        if (!globalMCPClient) {
+            if (isDebug) {
+                console.log('[chat/route] Initializing MCP integration...');
+            }
+            try {
+                const { mcpClient, tools: mcpTools } = await initializeMCPIntegration({ debug: isDebug });
+                globalMCPClient = mcpClient;
+                globalMCPTools = mcpTools;
+                if (isDebug) {
+                    console.log('[chat/route] MCP tools discovered:', mcpTools.map(t => t.lc_name || t.name));
+                }
+            } catch (error) {
+                console.error('[chat/route] Failed to initialize MCP integration:', error);
+                // Fallback: Continue without MCP tools
+                globalMCPTools = [];
+            }
+        }
+
+        // Create tools: MCP tools + custom tools
         const tools = [
-            createDeviceListTool(),
-            createDeviceControlTool(),
+            ...globalMCPTools,
             createCalculatorTool(),
         ];
 

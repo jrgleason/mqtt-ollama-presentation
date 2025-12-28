@@ -4,7 +4,8 @@ import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {CallToolRequestSchema, ListToolsRequestSchema,} from '@modelcontextprotocol/sdk/types.js';
 import {DeviceRegistryBuilder} from './device-registry.js';
 import {ZWaveUIClient} from './zwave-client.js';
-import {getConfig} from './config.js';
+import {MQTTClientWrapper} from './mqtt-client.js';
+import {getConfig, getMQTTConfig} from './config.js';
 
 /**
  * IMPORTANT: MCP Server Logging Convention
@@ -23,8 +24,27 @@ import {getConfig} from './config.js';
 
 
 const zwaveConfig = getConfig();
+const mqttConfig = getMQTTConfig();
 const zwaveClient = new ZWaveUIClient(zwaveConfig);
 const registryBuilder = new DeviceRegistryBuilder();
+
+// Initialize MQTT client if enabled
+let mqttClient = null;
+if (mqttConfig.enabled) {
+    try {
+        mqttClient = new MQTTClientWrapper({
+            brokerUrl: mqttConfig.brokerUrl,
+            username: mqttConfig.username,
+            password: mqttConfig.password,
+        });
+        console.warn('[MCP Server] MQTT integration enabled (prefer MQTT:', mqttConfig.preferMqtt, ')');
+    } catch (error) {
+        console.error('[MCP Server] Failed to initialize MQTT client:', error);
+        console.warn('[MCP Server] Continuing without MQTT integration');
+    }
+} else {
+    console.warn('[MCP Server] MQTT integration disabled');
+}
 
 /**
  * @param {ZWaveNode[]} nodes
@@ -212,6 +232,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
                     },
                 },
                 required: ['deviceName', 'action'],
+            },
+        },
+        {
+            name: 'get_device_sensor_data',
+            description:
+                'Get current sensor readings from a Z-Wave sensor device (temperature, humidity, light level, etc.). ' +
+                'Uses MQTT cache for real-time data when available, falls back to Z-Wave JS UI API if needed.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    deviceName: {
+                        type: 'string',
+                        description: 'The name of the sensor device (e.g. "Temp Sensor 1" or "Office Temperature")',
+                    },
+                },
+                required: ['deviceName'],
             },
         },
     ],
@@ -441,6 +477,146 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     {
                         type: 'text',
                         text: `Failed to control device: ${message}`,
+                    },
+                ],
+                isError: true,
+            };
+        }
+    }
+
+    if (name === 'get_device_sensor_data') {
+        const args = rawArgs || {};
+        const {deviceName} = args;
+
+        if (!deviceName) {
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: 'Error: deviceName is required',
+                    },
+                ],
+                isError: true,
+            };
+        }
+
+        try {
+            let sensorData = null;
+            let source = 'unknown';
+
+            // Strategy: Try MQTT cache first if PREFER_MQTT is enabled, then fall back to API
+            if (mqttClient && mqttConfig.preferMqtt) {
+                console.warn(`[MCP Server] Checking MQTT cache for sensor: ${deviceName}`);
+                const cachedValue = mqttClient.getCachedSensorValue(deviceName);
+
+                if (cachedValue) {
+                    sensorData = {
+                        value: cachedValue.value,
+                        unit: cachedValue.unit,
+                        timestamp: new Date(cachedValue.timestamp).toISOString(),
+                        age: Math.round((Date.now() - cachedValue.timestamp) / 1000),
+                        commandClass: cachedValue.commandClass,
+                    };
+                    source = 'MQTT';
+                    console.warn(`[MCP Server] Found sensor data in MQTT cache (${sensorData.age}s old)`);
+                }
+            }
+
+            // Fall back to ZWave JS UI API if MQTT cache miss or MQTT disabled
+            if (!sensorData) {
+                console.warn(`[MCP Server] Querying Z-Wave JS UI API for sensor: ${deviceName}`);
+                const liveNodes = await zwaveClient.getLiveNodes();
+
+                // Find device by name (case-insensitive partial match)
+                const device = liveNodes.find(node => {
+                    const name = node.name || `Node ${node.id}`;
+                    return name.toLowerCase().includes(deviceName.toLowerCase()) ||
+                        deviceName.toLowerCase().includes(name.toLowerCase());
+                });
+
+                if (!device) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error: Sensor device "${deviceName}" not found. Use list_zwave_devices to see available devices.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+
+                if (!(device.ready && device.available)) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error: Sensor device "${device.name}" is offline or not ready.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+
+                // Extract sensor value from device values
+                // Look for sensor_multilevel command class (49)
+                if (device.values) {
+                    const sensorValues = Object.values(device.values).filter(v =>
+                        v.commandClass === 49 || // sensor_multilevel
+                        v.commandClassName === 'Multilevel Sensor' ||
+                        String(v.property).toLowerCase().includes('temperature') ||
+                        String(v.property).toLowerCase().includes('humidity') ||
+                        String(v.property).toLowerCase().includes('luminance')
+                    );
+
+                    if (sensorValues.length > 0) {
+                        // Use the first sensor value found (or prioritize currentValue)
+                        const primarySensor = sensorValues.find(v => v.property === 'currentValue') || sensorValues[0];
+
+                        sensorData = {
+                            value: primarySensor.value,
+                            unit: primarySensor.unit || 'unknown',
+                            timestamp: new Date().toISOString(),
+                            age: 0,
+                            commandClass: primarySensor.commandClassName || 'sensor_multilevel',
+                        };
+                        source = 'API';
+                        console.warn(`[MCP Server] Found sensor data from API:`, sensorData);
+                    }
+                }
+
+                if (!sensorData) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error: Device "${device.name}" does not have any sensor data available. It may not be a sensor device.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+            }
+
+            // Format response for AI
+            const responseText = `Sensor: "${deviceName}"\nValue: ${sensorData.value}${sensorData.unit ? ' ' + sensorData.unit : ''}\nSource: ${source}\nAge: ${sensorData.age} seconds\nTimestamp: ${sensorData.timestamp}`;
+
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: responseText,
+                    },
+                ],
+            };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error getting sensor data';
+            console.error('[MCP Server] Error getting sensor data:', error);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `Failed to get sensor data: ${message}`,
                     },
                 ],
                 isError: true,

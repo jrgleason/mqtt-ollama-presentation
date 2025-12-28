@@ -115,7 +115,7 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 4: AI Query or Direct Tool Execution
             // ============================================
-            const aiResponse = await this._handleAIOrDirectTools(transcription, intent);
+            const { response: aiResponse, streamingUsed } = await this._handleAIOrDirectTools(transcription, intent);
 
             this.logger.info(`🤖 AI Response: "${aiResponse}"`);
 
@@ -126,9 +126,13 @@ export class VoiceInteractionOrchestrator {
             // STAGE 5: TTS Playback (if enabled and not already streamed)
             // ============================================
             // Skip TTS if streaming already played the response
-            const streamingWasUsed = this.aiRouter.isStreamingEnabled();
+            const streamingWasUsed = streamingUsed === true;
 
-            if (this.config.tts.enabled && !streamingWasUsed) {
+            // Safety check: if streaming was used but response is empty, play error message
+            if (streamingWasUsed && aiResponse.trim().length === 0) {
+                this.logger.warn('⚠️ Streaming returned empty response - playing fallback message');
+                await this._speakResponse("I'm sorry, I didn't understand that or couldn't process your request.");
+            } else if (this.config.tts.enabled && !streamingWasUsed) {
                 await this._speakResponse(aiResponse);
             } else if (streamingWasUsed) {
                 this.logger.debug('VoiceInteractionOrchestrator: TTS already played via streaming, skipping');
@@ -224,7 +228,8 @@ export class VoiceInteractionOrchestrator {
         // Direct tool execution for simple queries (skip AI)
         if (intent.isDateTimeQuery) {
             this.logger.debug('VoiceInteractionOrchestrator: Direct datetime tool execution');
-            return await executeDateTimeTool({}, transcription);
+            const response = await executeDateTimeTool({}, transcription);
+            return { response, streamingUsed: false }; // Direct tool = no streaming
         }
 
         // Device control queries now go through AI + ToolExecutor (MCP tools)
@@ -243,9 +248,11 @@ export class VoiceInteractionOrchestrator {
     async _queryAI(transcription, intent) {
         // Check if streaming is enabled (Anthropic + TTS streaming)
         if (this.aiRouter.isStreamingEnabled()) {
-            return await this._queryAIWithStreaming(transcription, intent);
+            const response = await this._queryAIWithStreaming(transcription, intent);
+            return { response, streamingUsed: true }; // Streaming was used
         } else {
-            return await this._queryAIWithoutStreaming(transcription, intent);
+            const response = await this._queryAIWithoutStreaming(transcription, intent);
+            return { response, streamingUsed: false }; // No streaming
         }
     }
 

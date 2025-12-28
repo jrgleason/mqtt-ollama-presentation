@@ -95,12 +95,15 @@ async function startTTSWelcome(detector, audioPlayer) {
     const player = audioPlayer || new AudioPlayer(config, logger);
 
     try {
+        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Starting TTS synthesis...');
         const tts = new ElevenLabsTTS(config, logger);
         const welcomeMessage = 'Hello, I am Jarvis. How can I help?';
         const audioBuffer = await tts.synthesizeSpeech(welcomeMessage, {
             volume: config.tts.volume,
             speed: config.tts.speed
         });
+        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: TTS synthesis complete, starting playback...');
+
         if (audioBuffer && audioBuffer.length > 0) {
             // Use playInterruptible for cancellable welcome message
             const playback = player.playInterruptible(audioBuffer);
@@ -108,8 +111,11 @@ async function startTTSWelcome(detector, audioPlayer) {
             // Play in background, handle completion/cancellation
             playback.promise
                 .then(() => {
+                    logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Playback completed');
                     logger.info('✅ Welcome message spoken');
+                    logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Scheduling detector reset in 1000ms...');
                     setTimeout(() => {
+                        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Executing detector reset now');
                         safeDetectorReset(detector, 'post-startup-tts');
                     }, 1000);
                 })

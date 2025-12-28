@@ -50,6 +50,7 @@ export class OpenWakeWordDetector extends EventEmitter {
     }
 
     reset() {
+        logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector.reset() called');
         try {
             this.stateManager.fillMelBufferWithZeros(this.melBuffer);
         } catch {
@@ -62,6 +63,7 @@ export class OpenWakeWordDetector extends EventEmitter {
         this.framesSinceLastPrediction = 0;
         // Don't reset warmUpComplete - once warmed up, it stays ready
         logger.debug('OpenWakeWord detector buffers reset');
+        logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector.reset() complete (buffers cleared, will need to refill)');
     }
 
     /**
@@ -133,11 +135,13 @@ export class OpenWakeWordDetector extends EventEmitter {
         if (this.embeddingBuffer.length > this.embeddingFrames) this.embeddingBuffer.shift();
         if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= this.embeddingFrames) {
             this.embeddingBufferFilled = true;
+            logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Embedding buffer filled');
             logger.debug('🎧 Embedding buffer filled, starting warm-up period...');
 
             // Start warm-up timer (2.5 seconds after buffers filled)
             setTimeout(() => {
                 this.warmUpComplete = true;
+                logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Warm-up period complete (2.5s elapsed)');
                 logger.debug('✅ Detector warm-up complete');
                 this.emit('warmup-complete');
                 if (this._warmUpResolve) {

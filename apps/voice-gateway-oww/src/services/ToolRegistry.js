@@ -87,6 +87,9 @@ export class ToolRegistry {
         this.#tools.set(toolName, {
             definition: this._convertLangChainSchema(langchainTool),
             executor: async (args) => {
+                // ALWAYS log the raw arguments received from Claude
+                console.log(`🔍 [DEBUG] ${toolName} received args:`, JSON.stringify(args, null, 2));
+
                 // Normalize parameter names BEFORE invoking LangChain tool
                 const normalizedArgs = this._normalizeParameters(args, paramMapping);
 
@@ -98,8 +101,10 @@ export class ToolRegistry {
                     });
                 }
 
-                // LangChain tools expect input to be wrapped
-                const result = await langchainTool.invoke({ input: normalizedArgs });
+                console.log(`🔍 [DEBUG] ${toolName} invoking with:`, JSON.stringify(normalizedArgs, null, 2));
+
+                // LangChain MCP tools expect arguments passed directly (NOT wrapped in input)
+                const result = await langchainTool.invoke(normalizedArgs);
                 return result;
             },
             paramMapping  // Store for debugging
@@ -109,27 +114,48 @@ export class ToolRegistry {
     }
 
     /**
-     * Convert LangChain tool schema to Ollama format
+     * Convert LangChain tool schema to Anthropic/Ollama format
+     *
+     * LangChain MCP adapter structure:
+     *   langchainTool.schema = { type: "object", properties: {...}, required: [...] }
+     *
+     * We convert to Anthropic function calling format:
+     *   { type: "function", function: { name, description, parameters: {...} } }
+     *
      * @param {Object} langchainTool - LangChain tool instance
-     * @returns {Object} Tool definition in Ollama format
+     * @returns {Object} Tool definition in Anthropic/Ollama format
      * @private
      */
     _convertLangChainSchema(langchainTool) {
         const toolName = langchainTool.lc_name || langchainTool.name;
         const schema = langchainTool.schema || {};
 
-        return {
+        // DEBUG: Log the raw LangChain tool schema
+        console.log(`🔍 [SCHEMA-DEBUG] ${toolName} raw schema:`, JSON.stringify({
+            lc_name: langchainTool.lc_name,
+            name: langchainTool.name,
+            description: langchainTool.description,
+            schema: schema
+        }, null, 2));
+
+        const convertedSchema = {
             type: 'function',
             function: {
                 name: toolName,
                 description: schema.description || langchainTool.description || '',
-                parameters: schema.parameters || schema.input_schema || {
+                // LangChain MCP adapter stores schema directly in 'schema' field
+                parameters: schema || {
                     type: 'object',
                     properties: {},
                     required: []
                 }
             }
         };
+
+        // DEBUG: Log the converted schema
+        console.log(`🔍 [SCHEMA-DEBUG] ${toolName} converted to:`, JSON.stringify(convertedSchema, null, 2));
+
+        return convertedSchema;
     }
 
     /**

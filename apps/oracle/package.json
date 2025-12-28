@@ -16,10 +16,14 @@
     "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "^1.0.1",
+    "@ai-sdk/react": "^3.0.3",
     "@langchain/core": "latest",
+    "@langchain/mcp-adapters": "^1.1.1",
     "@langchain/ollama": "latest",
     "@modelcontextprotocol/sdk": "1.20.0",
     "@prisma/client": "latest",
+    "@vercel/mcp-adapter": "^1.0.0",
     "class-variance-authority": "latest",
     "clsx": "latest",
     "langchain": "latest",

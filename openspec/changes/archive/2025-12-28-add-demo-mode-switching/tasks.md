@@ -4,60 +4,63 @@
 
 ### Phase 1: Update .env.example Documentation
 
-- [ ] **Task 1.1**: Add TTS provider section to .env.example
+- [x] **Task 1.1**: Add TTS provider section to .env.example
   - File: `apps/voice-gateway-oww/.env.example`
   - Add `TTS_PROVIDER` environment variable documentation
   - Document valid values: 'ElevenLabs' (cloud) or 'Piper' (local)
   - Add comment explaining default is ElevenLabs
-  - **Validation**: TTS_PROVIDER clearly documented with both options
+  - **Validation**: TTS_PROVIDER clearly documented with both options ✅
+  - **Status**: Already complete - .env.example lines 104-150 have comprehensive TTS documentation
 
-- [ ] **Task 1.2**: Add Piper TTS configuration section
+- [x] **Task 1.2**: Add Piper TTS configuration section
   - File: `apps/voice-gateway-oww/.env.example`
   - Add "Piper TTS Configuration (Local)" section after ElevenLabs section
   - Document TTS_MODEL_PATH with default value
   - Document Piper dependencies: Python 3 + piper-tts
   - Add installation command: `pip install piper-tts`
-  - **Validation**: Piper config section exists with all required vars
+  - **Validation**: Piper config section exists with all required vars ✅
+  - **Status**: Already complete - .env.example lines 139-150 document Piper TTS
 
-- [ ] **Task 1.3**: Reorganize AI/TTS sections with headers
+- [x] **Task 1.3**: Reorganize AI/TTS sections with headers
   - Add section headers with visual separators (===)
   - Group AI Provider Configuration together
   - Group TTS Provider Configuration together
   - Add comments explaining online vs offline for each
-  - **Validation**: .env.example has clear AI and TTS sections
+  - **Validation**: .env.example has clear AI and TTS sections ✅
+  - **Status**: Already complete - .env.example has clear sections with ==== separators
 
 ### Phase 2: Create Demo Preset Files
 
-- [ ] **Task 2.1**: Create .env.offline preset
+- [x] **Task 2.1**: Create .env.offline preset
   - File: `apps/voice-gateway-oww/.env.offline` (new)
   - Set AI_PROVIDER=ollama
   - Set TTS_PROVIDER=Piper
   - Set TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx
   - Include all other required env vars from .env.example
   - Add header comment: "Offline Demo Mode - No Internet Required"
-  - **Validation**: File exists, uses Ollama + Piper, includes all vars
+  - **Validation**: File exists, uses Ollama + Piper, includes all vars ✅
 
-- [ ] **Task 2.2**: Create .env.online preset
+- [x] **Task 2.2**: Create .env.online preset
   - File: `apps/voice-gateway-oww/.env.online` (new)
   - Set AI_PROVIDER=anthropic
   - Set TTS_PROVIDER=ElevenLabs
   - Include API key placeholders (your_api_key_here)
   - Add header comment: "Online Demo Mode - Cloud-Based AI and TTS"
-  - **Validation**: File exists, uses Anthropic + ElevenLabs
+  - **Validation**: File exists, uses Anthropic + ElevenLabs ✅
 
-- [ ] **Task 2.3**: Create .env.hybrid-a preset
+- [x] **Task 2.3**: Create .env.hybrid-a preset
   - File: `apps/voice-gateway-oww/.env.hybrid-a` (new)
   - Set AI_PROVIDER=ollama (local AI)
   - Set TTS_PROVIDER=ElevenLabs (cloud TTS)
   - Add header comment: "Hybrid Mode A - Local AI + Cloud TTS"
-  - **Validation**: File exists, uses Ollama + ElevenLabs
+  - **Validation**: File exists, uses Ollama + ElevenLabs ✅
 
-- [ ] **Task 2.4**: Create .env.hybrid-b preset
+- [x] **Task 2.4**: Create .env.hybrid-b preset
   - File: `apps/voice-gateway-oww/.env.hybrid-b` (new)
   - Set AI_PROVIDER=anthropic (cloud AI)
   - Set TTS_PROVIDER=Piper (local TTS)
   - Add header comment: "Hybrid Mode B - Cloud AI + Local TTS"
-  - **Validation**: File exists, uses Anthropic + Piper
+  - **Validation**: File exists, uses Anthropic + Piper ✅
 
 - [ ] **Task 2.5**: Add .gitignore entry for .env.tmp
   - File: `apps/voice-gateway-oww/.gitignore`
@@ -67,20 +70,21 @@
 
 ### Phase 3: Mode Switching Script
 
-- [ ] **Task 3.1**: Create switch-mode.sh script
+- [x] **Task 3.1**: Create switch-mode.sh script
   - File: `apps/voice-gateway-oww/switch-mode.sh` (new)
   - Accept argument: offline | online | hybrid-a | hybrid-b
   - Validate argument and show usage if missing
   - Check if .env.$MODE file exists
   - Copy .env.$MODE to .env.tmp
   - Print success message with restart instructions
-  - **Validation**: Script exists, executable, accepts 4 modes
+  - **Validation**: Script exists, executable, accepts 4 modes ✅
+  - **Status**: Already complete - script exists with comprehensive features including API key validation
 
-- [ ] **Task 3.2**: Make script executable
+- [x] **Task 3.2**: Make script executable
   - Run: `chmod +x apps/voice-gateway-oww/switch-mode.sh`
   - Test script with invalid argument (should show usage)
   - Test script with valid argument (should copy file)
-  - **Validation**: Script is executable, handles errors gracefully
+  - **Validation**: Script is executable, handles errors gracefully ✅
 
 - [ ] **Task 3.3**: Test mode switching workflow
   - Run: `./switch-mode.sh offline`
@@ -88,6 +92,7 @@
   - Run: `./switch-mode.sh online`
   - Verify .env.tmp updated to online config
   - **Validation**: Switching between modes works
+  - **Status**: Pending user testing
 
 ### Phase 4: Provider Health Checks (Optional)
 
@@ -119,13 +124,14 @@
 
 ### Phase 5: Documentation Updates
 
-- [ ] **Task 5.1**: Add Demo Modes section to README
+- [x] **Task 5.1**: Add Demo Modes section to README
   - File: `apps/voice-gateway-oww/README.md`
   - Add "## Demo Modes" section after Quick Start
   - Document all 4 modes with emojis: 🔌 Offline, ☁️ Online, 🔄 Hybrid A, 🔄 Hybrid B
   - Include dependencies, setup commands, use cases for each
   - Add "Quick Switch" subsection with ./switch-mode.sh usage
-  - **Validation**: README explains all 4 modes clearly
+  - **Validation**: README explains all 4 modes clearly ✅
+  - **Status**: Already complete - README lines 154-228 have comprehensive demo modes section
 
 - [ ] **Task 5.2**: Update TECH-STACK.md
   - File: `docs/TECH-STACK.md`

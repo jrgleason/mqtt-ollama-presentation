@@ -2,6 +2,15 @@ import mqtt from 'mqtt';
 
 /** @typedef {import('./types.js').MQTTConfig} MQTTConfig */
 
+/**
+ * @typedef {Object} SensorCacheEntry
+ * @property {number|boolean} value - Sensor reading value
+ * @property {number} timestamp - Unix timestamp (ms) when value was received
+ * @property {string} commandClass - Command class name (e.g., 'sensor_multilevel')
+ * @property {string} [unit] - Unit of measurement (e.g., 'F', '%', 'lux')
+ * @property {string} topic - Full MQTT topic where value was received
+ */
+
 export class MQTTClientWrapper {
     /**
      * @param {MQTTConfig} config
@@ -9,6 +18,10 @@ export class MQTTClientWrapper {
     constructor(config) {
         this.config = config;
         this.connected = false;
+        /** @type {Map<string, SensorCacheEntry>} */
+        this.sensorCache = new Map();
+        this.sensorTopicPattern = 'zwave/+/+/sensor_multilevel/+/currentValue';
+
         this.client = mqtt.connect(config.brokerUrl, {
             username: config.username,
             password: config.password,
@@ -18,6 +31,9 @@ export class MQTTClientWrapper {
         this.client.on('connect', () => {
             console.warn('[MQTT] Connected to broker');
             this.connected = true;
+
+            // Subscribe to sensor data topics on connect
+            this._subscribeToSensors();
         });
 
         this.client.on('error', (err) => {
@@ -28,6 +44,136 @@ export class MQTTClientWrapper {
             console.warn('[MQTT] Disconnected');
             this.connected = false;
         });
+
+        this.client.on('reconnect', () => {
+            console.warn('[MQTT] Reconnecting to broker...');
+        });
+    }
+
+    /**
+     * Subscribe to sensor data topics and cache incoming values
+     * @private
+     */
+    _subscribeToSensors() {
+        this.client.subscribe(this.sensorTopicPattern, (err) => {
+            if (err) {
+                console.error(`[MQTT] Failed to subscribe to sensor topics:`, err);
+            } else {
+                console.warn(`[MQTT] Subscribed to sensor topic pattern: ${this.sensorTopicPattern}`);
+            }
+        });
+
+        // Listen for sensor messages and cache them
+        this.client.on('message', (topic, payload) => {
+            if (this.topicMatches(this.sensorTopicPattern, topic)) {
+                try {
+                    this._handleSensorMessage(topic, payload);
+                } catch (error) {
+                    console.error('[MQTT] Error handling sensor message:', error);
+                }
+            }
+        });
+    }
+
+    /**
+     * Parse sensor MQTT message and update cache
+     * Topic format: zwave/[Location/]Device_Name/sensor_multilevel/endpoint_0/currentValue
+     * @private
+     * @param {string} topic
+     * @param {Buffer} payload
+     */
+    _handleSensorMessage(topic, payload) {
+        try {
+            const message = JSON.parse(payload.toString());
+
+            // Extract device name from topic
+            // Format: zwave/[Location/]Device_Name/sensor_multilevel/endpoint_0/currentValue
+            const parts = topic.split('/');
+
+            // Remove 'zwave' prefix and 'sensor_multilevel/endpoint_0/currentValue' suffix
+            // This leaves us with either [Location, DeviceName] or [DeviceName]
+            const deviceParts = parts.slice(1, -3);
+
+            // If there are multiple parts, the last one is the device name
+            // If location is included, it's in the earlier parts
+            const deviceName = deviceParts[deviceParts.length - 1];
+
+            if (!deviceName) {
+                console.warn('[MQTT] Could not extract device name from topic:', topic);
+                return;
+            }
+
+            // Cache the sensor value
+            const cacheEntry = {
+                value: message.value,
+                timestamp: Date.now(),
+                commandClass: 'sensor_multilevel',
+                unit: message.unit,
+                topic
+            };
+
+            this.sensorCache.set(deviceName, cacheEntry);
+
+            console.warn(`[MQTT] Cached sensor value for "${deviceName}":`, {
+                value: message.value,
+                unit: message.unit || 'unknown'
+            });
+        } catch (error) {
+            console.error('[MQTT] Failed to parse sensor message:', error);
+        }
+    }
+
+    /**
+     * Get cached sensor value for a device
+     * @param {string} deviceName - Device name (case-insensitive)
+     * @param {number} maxAgeMs - Maximum age of cached value in milliseconds (default: 5 minutes)
+     * @returns {SensorCacheEntry | null} Cached sensor value or null if not found/stale
+     */
+    getCachedSensorValue(deviceName, maxAgeMs = 5 * 60 * 1000) {
+        // Try exact match first
+        let entry = this.sensorCache.get(deviceName);
+
+        // If no exact match, try case-insensitive search
+        if (!entry) {
+            const lowerName = deviceName.toLowerCase();
+            for (const [cachedName, cachedEntry] of this.sensorCache.entries()) {
+                if (cachedName.toLowerCase() === lowerName) {
+                    entry = cachedEntry;
+                    break;
+                }
+            }
+        }
+
+        if (!entry) {
+            console.warn(`[MQTT] No cached sensor value for device: ${deviceName}`);
+            return null;
+        }
+
+        // Check if value is stale
+        const age = Date.now() - entry.timestamp;
+        if (age > maxAgeMs) {
+            console.warn(`[MQTT] Cached value for ${deviceName} is stale (${Math.round(age / 1000)}s old)`);
+            return null;
+        }
+
+        console.warn(`[MQTT] Found cached sensor value for ${deviceName} (${Math.round(age / 1000)}s old)`);
+        return entry;
+    }
+
+    /**
+     * Get all cached sensor values (for debugging)
+     * @returns {Map<string, SensorCacheEntry>}
+     */
+    getAllCachedSensors() {
+        return new Map(this.sensorCache);
+    }
+
+    /**
+     * Clear the sensor cache
+     */
+    clearSensorCache() {
+        this.sensorCache.clear();
+        console.warn('[MQTT] Sensor cache cleared');
     }
 
     isConnected() {

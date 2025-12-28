@@ -380,8 +380,9 @@ async function main() {
         // ========================================
         // Phase 2: Wake Word Detector (with warm-up)
         // ========================================
-        // setupWakeWordDetector now includes warm-up wait internally
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 2: Initializing wake word detector...');
         const detector = await setupWakeWordDetector();
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 2: Detector initialized (warm-up will occur after mic starts)');
 
         // ========================================
         // Phase 3: Tool System Initialization
@@ -440,19 +441,23 @@ async function main() {
         // ========================================
         // Phase 5: Microphone Setup
         // ========================================
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 5: Starting microphone (will feed audio to detector)...');
         // Start microphone (buffers will be drained until READY signal)
         // setupMic will set isRecordingChecker after voiceService.subscribe is established
         const micInstance = setupMic(voiceService, orchestrator, detector, (checker) => {
             isRecordingChecker = checker;
         }, () => activeWelcomePlayback); // Pass welcome playback getter for interruption
         handleSignals(micInstance, mcpClient);
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 5: Microphone started, audio feeding to detector');
 
         // ========================================
         // Phase 6: Welcome Message BEFORE Activation
         // ========================================
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Starting welcome message...');
         // Speak welcome message while system is in startup state
         // This ensures the message plays AFTER detector is fully warmed up
         activeWelcomePlayback = await startTTSWelcome(detector, audioPlayer);
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Welcome message playback initiated');
 
         // Clear welcome playback after it completes
         if (activeWelcomePlayback) {
@@ -464,10 +469,12 @@ async function main() {
         // ========================================
         // Phase 7: Final Activation
         // ========================================
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 7: Activating wake word detection...');
         // Activate wake word detection (transitions from startup -> listening)
         logger.info('🎧 Activating wake word detection...');
         voiceService.send({type: 'READY'});
 
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 7: State machine transitioned to listening');
         logger.info('✅ Voice Gateway ready');
     } catch (err) {
         logger.error('Failed to initialize Voice Gateway', {error: errMsg(err)});

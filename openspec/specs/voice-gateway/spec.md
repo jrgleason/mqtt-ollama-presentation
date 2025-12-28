@@ -305,7 +305,7 @@ The system SHALL log performance metrics for voice interaction stages.
 
 ### Requirement: Startup Sequence
 
-The voice gateway SHALL initialize all subsystems in an order that ensures the system is fully ready before announcing readiness to the user.
+The voice gateway SHALL initialize all subsystems in an order that ensures the system is fully ready before announcing readiness to the user, with detector warm-up and promise orchestration.
 
 #### Scenario: Tool system ready before welcome message (MODIFIED)
 
@@ -314,15 +314,16 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 - **THEN** the tool system must already be initialized and registered
 - **AND** the voice orchestrator must be created
 - **AND** the state machine must be set up
+- **AND** the wake word detector must be warmed up and stable
 - **AND** only the microphone activation remains pending
 
-**Rationale:** The welcome message asks "How can I help?" which implies the system is ready to process commands. Saying this before tools are initialized creates user confusion and perceived system lag.
+**Rationale:** The welcome message asks "How can I help?" which implies the system is ready to process commands. Saying this before tools are initialized OR before detector is stable creates user confusion and perceived system lag.
 
 **Previous Behavior:**
 ```
 1. Services init
-2. Wake word detector init
-3. Welcome message: "How can I help?"
+2. Wake word detector init (buffers filling, not stable)
+3. Welcome message: "How can I help?" ← Too early!
 4. Tool system init ← Delay here!
 5. Orchestrator created
 6. State machine setup
@@ -332,12 +333,12 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 **New Behavior:**
 ```
 1. Services init
-2. Wake word detector init
-3. Tool system init
+2. Wake word detector init + WARM-UP (2-3 sec after buffers filled)
+3. Tool system init (with MCP retry)
 4. Orchestrator created
 5. State machine setup
 6. Welcome message: "How can I help?" ← Now truly ready!
-7. Microphone started
+7. Microphone started and listening activated
 ```
 
 #### Scenario: Immediate responsiveness after welcome
@@ -347,6 +348,7 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 - **THEN** the system responds without delay
 - **AND** all tools are available for command execution
 - **AND** no "initializing" or "not ready" errors occur
+- **AND** detector is fully stable (no cutoffs, no false negatives)
 
 **Rationale:** Users expect to interact immediately after hearing "How can I help?". Any delay creates confusion and breaks user trust in the system.
 
@@ -354,11 +356,22 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 
 - **GIVEN** the voice gateway is starting up
 - **WHEN** reviewing the startup logs
-- **THEN** tool initialization logs appear before TTS synthesis logs
-- **AND** "Tool system initialized" appears before "Welcome message spoken"
-- **AND** "Voice Gateway ready" appears after welcome message
+- **THEN** detector warm-up logs appear before tool initialization logs
+- **AND** tool initialization logs appear before welcome message logs
+- **AND** "Tool system initialized" appears before "TTS synthesis complete" (welcome message)
+- **AND** "Voice Gateway ready" appears after welcome message spoken
 
 **Rationale:** Logs should accurately reflect the initialization order so developers can diagnose timing issues.
+
+#### Scenario: Detector warm-up period enforced
+
+- **GIVEN** the wake word detector embedding buffers are filled (~2.24 seconds)
+- **WHEN** the detector emits buffer-filled event
+- **THEN** system waits an additional 2-3 seconds for embeddings to stabilize
+- **AND** detector emits warm-up-complete event after stabilization
+- **AND** only then does initialization proceed to next steps
+
+**Rationale:** Measured from logs showing initial embedding instability. Warm-up ensures detector is truly ready.
 
 ---
 
@@ -387,4 +400,81 @@ The voice gateway SHALL only announce readiness (via welcome message) when genui
 - **AND** only microphone activation and wake word listening remain to be started
 
 **Rationale:** Provides clear validation criteria for correct initialization order.
+
+### Requirement: Startup Readiness Validation
+
+The voice gateway SHALL only announce readiness (via welcome message) when genuinely ready to accept and process user commands without delays or errors.
+
+#### Scenario: No premature readiness announcements
+
+- **GIVEN** the voice gateway is initializing
+- **WHEN** any subsystem is still being set up (detector warming up, tools loading, orchestrator creating)
+- **THEN** the welcome message must NOT be spoken
+- **AND** no audio cues suggesting readiness should play
+
+**Rationale:** Announcing readiness before being ready damages user trust and creates perception that the system is slow or broken.
+
+#### Scenario: Welcome message timing validation
+
+- **GIVEN** the voice gateway has spoken the welcome message
+- **WHEN** a developer inspects the system state
+- **THEN** all of the following must be true:
+  - Wake word detector is warmed up and stable
+  - Tool registry is populated with all expected tools (local + MCP if available)
+  - ToolExecutor is instantiated and functional
+  - VoiceInteractionOrchestrator is created
+  - Voice state machine is initialized
+- **AND** only microphone activation and wake word listening remain to be started
+
+**Rationale:** Provides clear validation criteria for correct initialization order.
+
+#### Scenario: Graceful degradation with clear messaging
+
+- **GIVEN** MCP server connection fails after all retries
+- **WHEN** voice gateway continues with local tools only
+- **THEN** system logs clear warning message indicating degraded mode
+- **AND** welcome message is still spoken (system is functional, just missing Z-Wave tools)
+- **AND** user is NOT blocked from using local tools (datetime, search, volume control)
+
+**Rationale:** System should work with degraded functionality rather than failing completely.
+
+#### Scenario: Async orchestration with promises
+
+- **GIVEN** initialization sequence uses async/await promises
+- **WHEN** each initialization step completes
+- **THEN** the promise resolves and next step begins
+- **AND** errors in any step are caught and logged with context
+- **AND** initialization sequence is deterministic (no race conditions)
+
+**Rationale:** Promises provide clear dependency ordering and error handling for async initialization.
+
+### Requirement: Skip Transcription When No Speech Detected
+The system SHALL skip transcription and AI processing when no speech was detected during recording, immediately returning to the listening state.
+
+#### Scenario: False wake word trigger with no speech
+- **GIVEN** the wake word detector triggers but no speech is detected during recording (hasSpokenDuringRecording = false)
+- **WHEN** the recording stops due to silence or timeout
+- **THEN** the system SHALL skip transcription, log "⏩ Skipping transcription - no speech detected", and transition to listening state without querying the AI
+
+#### Scenario: Valid speech after wake word trigger
+- **GIVEN** the wake word detector triggers AND speech is detected during recording (hasSpokenDuringRecording = true)
+- **WHEN** the recording stops due to trailing silence
+- **THEN** the system SHALL process the voice interaction normally (transcription → AI query → TTS response)
+
+#### Scenario: Beep feedback captured during recording
+- **GIVEN** the wake word detector triggers AND only beep audio (no actual speech) is captured during recording
+- **WHEN** VAD determines no speech was present (hasSpokenDuringRecording = false)
+- **THEN** the system SHALL skip transcription and not send the beep audio to Whisper
+
+#### Scenario: User triggered but stayed silent during grace period
+- **GIVEN** the wake word detector triggers but user does not speak during the grace period (1200ms)
+- **WHEN** VAD timeout occurs without speech detection
+- **THEN** the system SHALL skip transcription and log the skip reason
+
+#### Scenario: Recording stopped at max length without speech
+- **GIVEN** recording reaches maximum length (10 seconds) without detecting speech
+- **WHEN** MAX_LENGTH_REACHED event is sent
+- **THEN** the system SHALL skip transcription (no speech detected) and transition to listening
+
+---
 

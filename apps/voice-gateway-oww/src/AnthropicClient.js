@@ -346,9 +346,10 @@ export class AnthropicClient {
                             contentLength: Array.isArray(chunk?.content) ? chunk.content.length : 'n/a',
                             rawContent: typeof chunk?.content === 'string'
                                 ? chunk.content.substring(0, 100)
-                                : JSON.stringify(chunk?.content).substring(0, 200),
+                                : JSON.stringify(chunk?.content),
                             hasAdditionalKwargs: !!chunk?.additional_kwargs,
-                            additionalKwargsKeys: chunk?.additional_kwargs ? Object.keys(chunk.additional_kwargs) : []
+                            additionalKwargsKeys: chunk?.additional_kwargs ? Object.keys(chunk.additional_kwargs) : [],
+                            fullChunk: JSON.stringify(chunk, null, 2).substring(0, 500)
                         });
                     }
 

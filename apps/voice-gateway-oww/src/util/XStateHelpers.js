@@ -25,6 +25,7 @@ export function getServiceSnapshot(voiceService) {
 export function safeDetectorReset(detector, context = '') {
     try {
         if (detector && typeof detector.reset === 'function') {
+            logger.debug(`🔧 [STARTUP-DEBUG] safeDetectorReset() called with context: ${context}`);
             detector.reset();
             logger.debug(`🔄 Detector reset (${context})`);
         }

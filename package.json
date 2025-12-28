@@ -1,0 +1,47 @@
+{
+  "name": "mqtt-ollama-presentation",
+  "version": "1.0.0",
+  "description": "CodeMash 2026 - Local AI-Powered Home Automation Demo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/oracle",
+    "apps/voice-gateway-oww",
+    "apps/zwave-mcp-server"
+  ],
+  "scripts": {
+    "test": "npm run test:all",
+    "test:all": "npm run test:voice-gateway && npm run test:oracle",
+    "test:voice-gateway": "cd apps/voice-gateway-oww && npm test",
+    "test:oracle": "cd apps/oracle && npm test",
+    "test:backend": "npm run test:voice-gateway",
+    "test:frontend": "npm run test:oracle",
+    "test:watch": "npm run test:watch:voice-gateway",
+    "test:watch:voice-gateway": "cd apps/voice-gateway-oww && npm run test:watch",
+    "test:watch:oracle": "cd apps/oracle && npm run test:watch",
+    "test:coverage": "npm run test:coverage:all",
+    "test:coverage:all": "npm run test:coverage:voice-gateway && npm run test:coverage:oracle",
+    "test:coverage:voice-gateway": "cd apps/voice-gateway-oww && npm run test:coverage",
+    "test:coverage:oracle": "cd apps/oracle && npm run test:coverage",
+    "lint": "npm run lint:voice-gateway && npm run lint:oracle",
+    "lint:voice-gateway": "cd apps/voice-gateway-oww && npm run lint",
+    "lint:oracle": "cd apps/oracle && npm run lint",
+    "dev:voice-gateway": "cd apps/voice-gateway-oww && npm run dev",
+    "dev:oracle": "cd apps/oracle && npm run dev",
+    "dev:zwave-mcp-server": "cd apps/zwave-mcp-server && npm start"
+  },
+  "keywords": [
+    "home-automation",
+    "mqtt",
+    "ollama",
+    "langchain",
+    "z-wave",
+    "voice-control"
+  ],
+  "author": "",
+  "license": "GPL-3.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  }
+}
