@@ -456,20 +456,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
 
-            // TODO: Send MQTT command - requires MQTT client initialization
-            // For now, return success message with the topic/value that would be sent
-            const response = action === 'dim'
-                ? `Dry-run: Would dim ${device.name} to ${level}% (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`
-                : `Dry-run: Would turn ${action} ${device.name} (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`;
+            // Publish MQTT command to control the device
+            if (mqttClient && mqttClient.connected) {
+                try {
+                    await mqttClient.publish(controlTopic, {value: mqttValue});
+                    const response = action === 'dim'
+                        ? `Successfully sent command to dim ${device.name} to ${level}%`
+                        : `Successfully sent command to turn ${action} ${device.name}`;
 
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: response,
-                    },
-                ],
-            };
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: response,
+                            },
+                        ],
+                    };
+                } catch (error) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error sending MQTT command: ${error.message}`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+            } else {
+                // MQTT not available - return informative message
+                const response = action === 'dim'
+                    ? `MQTT not connected. Would dim ${device.name} to ${level}% (topic: ${controlTopic}, value: ${mqttValue})`
+                    : `MQTT not connected. Would turn ${action} ${device.name} (topic: ${controlTopic}, value: ${mqttValue})`;
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: response,
+                        },
+                    ],
+                };
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error controlling device';
             return {

@@ -8,12 +8,13 @@ import {EventEmitter} from 'events';
 const MEL_SPEC_MODEL_INPUT_SIZE = 1280;
 
 export class OpenWakeWordDetector extends EventEmitter {
-    constructor(modelsPath, wakeWordModel, threshold = 0.5, embeddingFrames = 16) {
+    constructor(modelsPath, wakeWordModel, threshold = 0.5, embeddingFrames = 16, warmupMs = 1500) {
         super();
         this.modelsPath = modelsPath;
         this.wakeWordModel = wakeWordModel;
         this.threshold = threshold;
         this.embeddingFrames = embeddingFrames; // Configurable: 16 for hey_jarvis, 28 for hello_robot
+        this.warmupMs = warmupMs; // Warm-up duration after embedding buffer fills
         this.melSession = null;
         this.embeddingSession = null;
         this.wakeWordSession = null;
@@ -136,19 +137,19 @@ export class OpenWakeWordDetector extends EventEmitter {
         if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= this.embeddingFrames) {
             this.embeddingBufferFilled = true;
             logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Embedding buffer filled');
-            logger.debug('🎧 Embedding buffer filled, starting warm-up period...');
+            logger.debug(`🎧 Embedding buffer filled, starting warm-up period (${this.warmupMs}ms)...`);
 
-            // Start warm-up timer (2.5 seconds after buffers filled)
+            // Start warm-up timer (configurable duration after buffers filled)
             setTimeout(() => {
                 this.warmUpComplete = true;
-                logger.debug('🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Warm-up period complete (2.5s elapsed)');
+                logger.debug(`🔧 [STARTUP-DEBUG] OpenWakeWordDetector: Warm-up period complete (${this.warmupMs}ms elapsed)`);
                 logger.debug('✅ Detector warm-up complete');
                 this.emit('warmup-complete');
                 if (this._warmUpResolve) {
                     this._warmUpResolve();
                     this._warmUpResolve = null;
                 }
-            }, 2500);
+            }, this.warmupMs);
         }
         if (!this.embeddingBufferFilled) return 0;
 

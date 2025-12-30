@@ -76,11 +76,31 @@ async function checkAlsa() {
     }
 }
 
-async function setupWakeWordDetector() {
+async function setupWakeWordDetector(wakeWordMachine = null) {
     const modelsDir = path.dirname(config.openWakeWord.modelPath);
     const modelFile = path.basename(config.openWakeWord.modelPath);
-    const detector = new OpenWakeWordDetector(modelsDir, modelFile, config.openWakeWord.threshold, config.openWakeWord.embeddingFrames);
+    const detector = new OpenWakeWordDetector(
+        modelsDir,
+        modelFile,
+        config.openWakeWord.threshold,
+        config.openWakeWord.embeddingFrames,
+        config.openWakeWord.warmupMs
+    );
     await detector.initialize();
+
+    // Connect detector to WakeWordMachine if provided
+    if (wakeWordMachine) {
+        // Notify machine that detector is initialized
+        wakeWordMachine.send({ type: 'DETECTOR_INITIALIZED', detector });
+
+        // Listen for warmup-complete event and notify machine
+        detector.on('warmup-complete', () => {
+            logger.debug('[InitUtil] Detector warmup-complete event received, notifying WakeWordMachine');
+            wakeWordMachine.send({ type: 'WARMUP_COMPLETE' });
+        });
+
+        logger.debug('[InitUtil] Detector connected to WakeWordMachine');
+    }
 
     // Warm-up will happen automatically in background once mic starts feeding audio
     logger.info('✅ Detector initialized (warm-up will occur automatically)');
@@ -88,23 +108,52 @@ async function setupWakeWordDetector() {
     return detector;
 }
 
-async function startTTSWelcome(detector, audioPlayer, beeps = null) {
+/**
+ * Pre-synthesize welcome message audio (non-blocking)
+ * This allows synthesis to happen in parallel with other initialization tasks
+ *
+ * @returns {Promise<Float32Array|null>} Pre-synthesized audio buffer or null on failure
+ */
+async function synthesizeWelcomeMessage() {
     if (!config.tts.enabled) return null;
 
-    // Create AudioPlayer if not provided (for backward compatibility)
-    const player = audioPlayer || new AudioPlayer(config, logger);
-
     try {
-        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Starting TTS synthesis...');
+        logger.debug('🔧 [STARTUP-DEBUG] synthesizeWelcomeMessage: Starting TTS synthesis in background...');
         const tts = new ElevenLabsTTS(config, logger);
         const welcomeMessage = 'Hello, I am Jarvis. How can I help?';
         const audioBuffer = await tts.synthesizeSpeech(welcomeMessage, {
             volume: config.tts.volume,
             speed: config.tts.speed
         });
-        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: TTS synthesis complete, starting playback...');
+        logger.debug('🔧 [STARTUP-DEBUG] synthesizeWelcomeMessage: TTS synthesis complete');
+        return audioBuffer;
+    } catch (err) {
+        logger.error('❌ Failed to synthesize welcome message', {error: err.message});
+        return null;
+    }
+}
 
-        if (audioBuffer && audioBuffer.length > 0) {
+/**
+ * Play pre-synthesized welcome message
+ * @param {Float32Array|null} audioBuffer - Pre-synthesized audio buffer
+ * @param {Object} detector - Wake word detector instance (unused, kept for backwards compatibility)
+ * @param {Object} audioPlayer - Audio player instance
+ * @param {Object} beeps - Beep sounds object
+ * @returns {Object|null} Playback handle for interruption support
+ */
+async function startTTSWelcome(audioBuffer, detector, audioPlayer, beeps = null) {
+    if (!audioBuffer || !config.tts.enabled) {
+        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: No audio buffer or TTS disabled, skipping welcome');
+        return null;
+    }
+
+    // Create AudioPlayer if not provided (for backward compatibility)
+    const player = audioPlayer || new AudioPlayer(config, logger);
+
+    try {
+        logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Starting playback of pre-synthesized audio...');
+
+        if (audioBuffer.length > 0) {
             // Use playInterruptible for cancellable welcome message
             const playback = player.playInterruptible(audioBuffer);
 
@@ -134,7 +183,7 @@ async function startTTSWelcome(detector, audioPlayer, beeps = null) {
                     if (err.message.includes('cancelled')) {
                         logger.info('🛑 Welcome message interrupted');
                     } else {
-                        logger.error('❌ Failed to speak welcome message', {error: err.message});
+                        logger.error('❌ Failed to play welcome message', {error: err.message});
                     }
                 });
 
@@ -142,7 +191,7 @@ async function startTTSWelcome(detector, audioPlayer, beeps = null) {
             return playback;
         }
     } catch (err) {
-        logger.error('❌ Failed to speak welcome message', {error: err.message});
+        logger.error('❌ Failed to play welcome message', {error: err.message});
     }
 
     return null;
@@ -151,6 +200,7 @@ async function startTTSWelcome(detector, audioPlayer, beeps = null) {
 export {
     initServices,
     setupWakeWordDetector,
+    synthesizeWelcomeMessage,
     startTTSWelcome,
     checkAIHealth,
     checkAlsa,

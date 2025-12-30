@@ -39,7 +39,7 @@ GAP: 2.5-4.5 seconds where user thinks system is ready but it's not
 
 ## Code vs Documentation Mismatch
 
-### What Documentation Says (STARTUP_ORCHESTRATION.md)
+### What Documentation Says (docs/STARTUP_ORCHESTRATION.md)
 
 The documentation describes a system that:
 1. Waits for detector warm-up BEFORE welcome message
@@ -425,7 +425,7 @@ T+8.0s:   Beep plays (audible readiness cue)
    - Verify no wake word detection failures after startup
 
 4. Documentation:
-   - Update STARTUP_ORCHESTRATION.md to reflect actual implementation
+   - Update docs/STARTUP_ORCHESTRATION.md to reflect actual implementation
    - Add note about beep isolation preventing TTS feedback
 
 ---
@@ -492,7 +492,7 @@ This is slower but guaranteed reliable.
 
 ## References
 
-- **Current documentation:** `/apps/voice-gateway-oww/STARTUP_ORCHESTRATION.md`
+- **Current documentation:** `/apps/voice-gateway-oww/docs/STARTUP_ORCHESTRATION.md`
 - **Detector implementation:** `/apps/voice-gateway-oww/src/util/OpenWakeWordDetector.js`
 - **Startup sequence:** `/apps/voice-gateway-oww/src/main.js` (Phase 1-7)
 - **Welcome message:** `/apps/voice-gateway-oww/src/util/InitUtil.js` (startTTSWelcome)

@@ -32,7 +32,7 @@ The voice gateway supports 4 configuration-driven demo modes with independent AI
 | **Hybrid A** | Ollama | ElevenLabs | Ollama running, ELEVENLABS_API_KEY | Local AI privacy + cloud TTS quality |
 | **Hybrid B** | Anthropic | Piper | ANTHROPIC_API_KEY, Python + piper-tts | Cloud AI quality + local TTS privacy |
 
-**Mode switching:** Use `./switch-mode.sh [offline|online|hybrid-a|hybrid-b]` to copy preset configurations to `.env.tmp`. No code changes required.
+**Mode switching:** Use `./scripts/switch-mode.sh [offline|online|hybrid-a|hybrid-b]` to copy preset configurations to `.env.tmp`. No code changes required.
 
 **Provider configuration:**
 - AI: Set `AI_PROVIDER=anthropic` or `AI_PROVIDER=ollama`

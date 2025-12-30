@@ -106,7 +106,8 @@ export class ElevenLabsTTS {
     /** Generate speech from text (streaming) */
     async synthesizeSpeech(text, options = {}) {
         const volume = options.volume ?? 1.0;
-        // const speed = options.speed ?? 1.0; // TODO: Implement speed adjustment
+        // Note: ElevenLabs API does not support speed adjustment
+        // Speed control is only available through Piper TTS (local)
         const speechText = markdownToSpeech(text);
 
         if (!speechText) {

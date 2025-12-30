@@ -6,12 +6,15 @@
 import {errMsg, logger} from './util/Logger.js';
 import {config} from './config.js';
 import {VoiceInteractionOrchestrator} from "./services/VoiceInteractionOrchestrator.js";
-import {initServices, setupWakeWordDetector, startTTSWelcome} from "./util/InitUtil.js";
+import {initServices, setupWakeWordDetector, synthesizeWelcomeMessage, startTTSWelcome} from "./util/InitUtil.js";
 import {setupVoiceStateMachine} from "./util/VoiceGateway.js";
+import {setupWakeWordMachine} from "./state-machines/WakeWordMachine.js";
+import {setupPlaybackMachine, isPlaying as isPlaybackActive} from "./state-machines/PlaybackMachine.js";
 import {initializeMCPIntegration, shutdownMCPClient} from "./services/MCPIntegration.js";
 import mic from 'mic';
 import {SAMPLE_RATE, CHUNK_SIZE} from "./audio/constants.js";
 import {getServiceSnapshot, safeDetectorReset} from "./util/XStateHelpers.js";
+import {DETECTOR_WARMUP_TIMEOUT_MS} from './constants/timing.js';
 import {AudioPlayer} from "./audio/AudioPlayer.js";
 import {BeepUtil} from "./util/BeepUtil.js";
 import {ToolManager} from './services/ToolManager.js';
@@ -38,7 +41,7 @@ const BEEPS = beepUtil.BEEPS;
 /**
  * Voice Gateway Microphone Setup
  */
-function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady = null, getWelcomePlayback = null) {
+function setupMic(voiceService, orchestrator, detector, playbackMachine, onRecordingCheckerReady = null, getWelcomePlayback = null) {
     const micInstance = mic({
         rate: String(config.audio.sampleRate),
         channels: String(config.audio.channels),
@@ -61,6 +64,29 @@ function setupMic(voiceService, orchestrator, detector, onRecordingCheckerReady 
 
     // Track state machine recording state for beep isolation
     let stateIsRecording = false;
+
+    /**
+     * Check if beeps should be suppressed to prevent feedback loops
+     * Beeps are suppressed when:
+     * - Recording is active (prevents beep from being captured in user audio)
+     * - Playback is active (prevents beep overlap with TTS/other audio)
+     *
+     * @returns {boolean} True if beeps should be suppressed
+     */
+    const shouldSuppressBeep = () => {
+        const isRecordingActive = stateIsRecording;
+        const isPlaybackPlaying = playbackMachine ? isPlaybackActive(playbackMachine) : false;
+
+        if (isRecordingActive || isPlaybackPlaying) {
+            logger.debug('🔇 Suppressing beep', {
+                recording: isRecordingActive,
+                playback: isPlaybackPlaying
+            });
+            return true;
+        }
+
+        return false;
+    };
 
     /**
      * Voice Activity Detection (VAD) Configuration Constants
@@ -375,10 +401,17 @@ async function main() {
     let mcpClient = null; // Store MCP client for cleanup
     let activeWelcomePlayback = null; // Track welcome message playback for interruption
 
+    // Boot timing instrumentation
+    const bootTimings = {
+        startTime: Date.now(),
+        phases: {}
+    };
+
     try {
         // ========================================
         // Phase 1: Services and Health Checks
         // ========================================
+        const phase1Start = Date.now();
         logger.info('🏥 Running provider health checks...');
         const healthResults = await validateProviders(config, logger);
 
@@ -386,42 +419,59 @@ async function main() {
         // This allows the service to start and provide helpful error messages during operation
 
         await initServices();
+        bootTimings.phases.phase1_healthChecks = Date.now() - phase1Start;
 
         // ========================================
-        // Phase 2: Wake Word Detector (with warm-up)
+        // Phase 2: State Machines & Detector Initialization
         // ========================================
+        const phase2Start = Date.now();
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 2: Initializing state machines...');
+        const wakeWordMachine = setupWakeWordMachine();
+        const playbackMachine = setupPlaybackMachine();
+
         logger.debug('🔧 [STARTUP-DEBUG] Phase 2: Initializing wake word detector...');
-        const detector = await setupWakeWordDetector();
-        logger.debug('🔧 [STARTUP-DEBUG] Phase 2: Detector initialized (warm-up will occur after mic starts)');
+        const detector = await setupWakeWordDetector(wakeWordMachine);
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 2: Detector and state machines initialized');
+        bootTimings.phases.phase2_detectorInit = Date.now() - phase2Start;
 
         // ========================================
-        // Phase 3: Tool System Initialization
+        // Phase 3: Tool System Initialization & Welcome Synthesis (Parallel)
         // ========================================
+        const phase3Start = Date.now();
         logger.info('🔧 Initializing tool system...');
         const toolManager = new ToolManager();
 
-        // 1. Auto-discover MCP tools from Z-Wave MCP server
-        try {
-            const mcpIntegration = await initializeMCPIntegration(config, logger);
-            mcpClient = mcpIntegration.mcpClient;
-            const mcpTools = mcpIntegration.tools;
+        // Start welcome message synthesis in parallel (don't await yet)
+        // This allows synthesis to happen during detector warm-up
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 3: Starting welcome message synthesis in parallel...');
+        const welcomeSynthesisPromise = synthesizeWelcomeMessage();
 
-            logger.info('🔍 Discovered MCP tools', {
-                count: mcpTools.length,
-                tools: mcpTools.map(t => t.lc_name || t.name)
-            });
+        // Start MCP initialization in parallel (don't await yet)
+        // This allows detector warm-up and microphone setup to proceed concurrently
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 3: Starting MCP initialization in parallel...');
+        const mcpInitPromise = (async () => {
+            try {
+                const mcpIntegration = await initializeMCPIntegration(config, logger);
+                mcpClient = mcpIntegration.mcpClient;
+                const mcpTools = mcpIntegration.tools;
 
-            // Add MCP tools to manager (no wrapping needed - already LangChain tools)
-            toolManager.addMCPTools(mcpTools);
-        } catch (error) {
-            logger.error('❌ Failed to initialize MCP tools', {
-                error: error.message,
-                stack: error.stack
-            });
-            logger.warn('⚠️ Continuing with local tools only...');
-        }
+                logger.info('🔍 Discovered MCP tools', {
+                    count: mcpTools.length,
+                    tools: mcpTools.map(t => t.lc_name || t.name)
+                });
 
-        // 2. Wrap and add local tools (convert to LangChain-compatible format)
+                return mcpTools;
+            } catch (error) {
+                logger.error('❌ Failed to initialize MCP tools', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                logger.warn('⚠️ Continuing with local tools only...');
+                return []; // Return empty array on failure
+            }
+        })();
+
+        // Add local tools immediately (these are always available)
         // These manual tools need invoke() method to match LangChain interface
         toolManager.addCustomTool({
             name: dateTimeTool.function.name,
@@ -444,16 +494,15 @@ async function main() {
             invoke: async ({ input }) => executeVolumeControlTool(input)
         });
 
-        const toolExecutor = new ToolExecutor(toolManager, logger);
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 3: Local tools registered, MCP init and welcome synthesis running in background...');
 
-        logger.info('✅ Tool system initialized', {
-            toolCount: toolManager.toolCount,
-            tools: toolManager.getToolNames()
-        });
+        const toolExecutor = new ToolExecutor(toolManager, logger);
+        bootTimings.phases.phase3_toolSystemSetup = Date.now() - phase3Start;
 
         // ========================================
         // Phase 4: Voice Service & Orchestrator
         // ========================================
+        const phase4Start = Date.now();
         // Setup voice state machine (needed by orchestrator)
         const voiceService = setupVoiceStateMachine();
 
@@ -461,24 +510,28 @@ async function main() {
         let isRecordingChecker = null;
         const getIsRecording = () => isRecordingChecker ? isRecordingChecker() : false;
 
-        // Setup voice orchestrator with state machine reference and isRecording checker
-        const orchestrator = new VoiceInteractionOrchestrator(config, logger, toolExecutor, voiceService, getIsRecording);
+        // Setup voice orchestrator with state machine references and isRecording checker
+        const orchestrator = new VoiceInteractionOrchestrator(config, logger, toolExecutor, voiceService, getIsRecording, playbackMachine);
+        bootTimings.phases.phase4_voiceServiceSetup = Date.now() - phase4Start;
 
         // ========================================
         // Phase 5: Microphone Setup
         // ========================================
+        const phase5Start = Date.now();
         logger.debug('🔧 [STARTUP-DEBUG] Phase 5: Starting microphone (will feed audio to detector)...');
         // Start microphone (buffers will be drained until READY signal)
         // setupMic will set isRecordingChecker after voiceService.subscribe is established
-        const micInstance = setupMic(voiceService, orchestrator, detector, (checker) => {
+        const micInstance = setupMic(voiceService, orchestrator, detector, playbackMachine, (checker) => {
             isRecordingChecker = checker;
         }, () => activeWelcomePlayback); // Pass welcome playback getter for interruption
         handleSignals(micInstance, mcpClient);
         logger.debug('🔧 [STARTUP-DEBUG] Phase 5: Microphone started, audio feeding to detector');
+        bootTimings.phases.phase5_microphoneSetup = Date.now() - phase5Start;
 
         // ========================================
-        // Phase 5.5: Detector Warm-up Wait (NEW)
+        // Phase 5.5: Detector Warm-up Wait & MCP Tool Finalization
         // ========================================
+        const phase5_5Start = Date.now();
         // Wait for detector warm-up AFTER microphone starts feeding audio
         // This ensures detector is ready BEFORE welcome message plays
         // Timeout after 10 seconds to prevent indefinite hang
@@ -487,7 +540,7 @@ async function main() {
             await Promise.race([
                 detector.getWarmUpPromise(),
                 new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Detector warm-up timeout')), 10000)
+                    setTimeout(() => reject(new Error('Detector warm-up timeout')), DETECTOR_WARMUP_TIMEOUT_MS)
                 )
             ]);
             logger.info('✅ Detector fully warmed up and ready');
@@ -497,13 +550,63 @@ async function main() {
             });
         }
 
+        // Ensure MCP tools are registered before voice gateway becomes ready
+        // This typically completes during detector warm-up (parallel execution)
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 5.5: Finalizing MCP tool registration...');
+        const mcpTools = await mcpInitPromise;
+        if (mcpTools.length > 0) {
+            // Add MCP tools to manager (no wrapping needed - already LangChain tools)
+            toolManager.addMCPTools(mcpTools);
+            logger.info('✅ MCP tools registered', {
+                toolCount: toolManager.toolCount,
+                tools: toolManager.getToolNames()
+            });
+        } else {
+            logger.info('✅ Tool system ready (local tools only)', {
+                toolCount: toolManager.toolCount,
+                tools: toolManager.getToolNames()
+            });
+        }
+        bootTimings.phases.phase5_5_warmupAndMCP = Date.now() - phase5_5Start;
+
         // ========================================
-        // Phase 6: Welcome Message AFTER Warm-up
+        // Phase 6: Welcome Message AFTER WakeWordMachine Ready
         // ========================================
-        logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Starting welcome message...');
-        // Speak welcome message while system is in startup state
-        // This ensures the message plays AFTER detector is fully warmed up
-        activeWelcomePlayback = await startTTSWelcome(detector, audioPlayer, BEEPS);
+        const phase6Start = Date.now();
+        logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Waiting for WakeWordMachine ready state...');
+        // Wait for WakeWordMachine to be in 'ready' state before playing welcome message
+        // This ensures the detector is fully warmed up
+        const waitForReady = new Promise((resolve) => {
+            const checkState = () => {
+                const snapshot = wakeWordMachine.getSnapshot();
+                if (snapshot.matches('ready')) {
+                    logger.debug('🔧 [STARTUP-DEBUG] Phase 6: WakeWordMachine ready, playing welcome message...');
+                    resolve();
+                }
+            };
+
+            // Subscribe to state changes
+            const subscription = wakeWordMachine.subscribe(checkState);
+
+            // Check immediately in case already ready
+            checkState();
+
+            // Clean up subscription after resolving
+            resolve = ((originalResolve) => {
+                return () => {
+                    subscription.unsubscribe();
+                    originalResolve();
+                };
+            })(resolve);
+        });
+
+        await waitForReady;
+
+        // Get pre-synthesized welcome audio (should be ready by now)
+        const welcomeAudio = await welcomeSynthesisPromise;
+
+        // Speak welcome message now that detector is ready
+        activeWelcomePlayback = await startTTSWelcome(welcomeAudio, detector, audioPlayer, BEEPS);
         logger.debug('🔧 [STARTUP-DEBUG] Phase 6: Welcome message playback initiated');
 
         // Clear welcome playback after it completes
@@ -512,17 +615,37 @@ async function main() {
                 activeWelcomePlayback = null;
             });
         }
+        bootTimings.phases.phase6_welcomeMessage = Date.now() - phase6Start;
 
         // ========================================
         // Phase 7: Final Activation
         // ========================================
+        const phase7Start = Date.now();
         logger.debug('🔧 [STARTUP-DEBUG] Phase 7: Activating wake word detection...');
         // Activate wake word detection (transitions from startup -> listening)
         logger.info('🎧 Activating wake word detection...');
         voiceService.send({type: 'READY'});
 
         logger.debug('🔧 [STARTUP-DEBUG] Phase 7: State machine transitioned to listening');
+        bootTimings.phases.phase7_finalActivation = Date.now() - phase7Start;
+
+        // Boot timing summary
+        const totalBootTime = Date.now() - bootTimings.startTime;
         logger.info('✅ Voice Gateway ready');
+        logger.info('⏱️  Boot Time Performance Summary', {
+            totalBootTimeMs: totalBootTime,
+            totalBootTimeSec: (totalBootTime / 1000).toFixed(2),
+            phases: {
+                'Phase 1 (Health Checks)': `${bootTimings.phases.phase1_healthChecks}ms`,
+                'Phase 2 (Detector Init)': `${bootTimings.phases.phase2_detectorInit}ms`,
+                'Phase 3 (Tool System Setup)': `${bootTimings.phases.phase3_toolSystemSetup}ms`,
+                'Phase 4 (Voice Service Setup)': `${bootTimings.phases.phase4_voiceServiceSetup}ms`,
+                'Phase 5 (Microphone Setup)': `${bootTimings.phases.phase5_microphoneSetup}ms`,
+                'Phase 5.5 (Warmup & MCP)': `${bootTimings.phases.phase5_5_warmupAndMCP}ms`,
+                'Phase 6 (Welcome Message)': `${bootTimings.phases.phase6_welcomeMessage}ms`,
+                'Phase 7 (Final Activation)': `${bootTimings.phases.phase7_finalActivation}ms`
+            }
+        });
     } catch (err) {
         logger.error('Failed to initialize Voice Gateway', {error: errMsg(err)});
 

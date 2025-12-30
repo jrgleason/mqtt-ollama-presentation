@@ -12,7 +12,7 @@ The project has transitioned from the centralized `docs/tasks.md` file to the Op
 ### ✅ Completed via Recent OpenSpec Changes
 
 - **Beep Audio Isolation** → `improve-boot-and-communication-reliability` (100% complete)
-- **LangChain MCP Auto-Discovery** → `use-langchain-mcp-auto-discovery` (75% complete, needs runtime testing)
+- **LangChain MCP Auto-Discovery** → `use-langchain-mcp-auto-discovery` (✅ Archived 2025-12-28, implementation complete)
 - **MCP Tool Parameter Schema Fix** → `fix-mcp-tool-parameter-schema` (100% complete)
 - **Skip Transcription When Silent** → `skip-transcription-when-silent` (100% complete)
 - **MCP Retry Logic** → `improve-boot-and-communication-reliability` (100% complete)

@@ -4,6 +4,12 @@ import {execSync, spawn} from 'child_process';
 import { SAMPLE_RATE } from '../audio/constants.js';
 import { rmsEnergy, writeWavFile } from '../audio/AudioUtils.js';
 import { errMsg } from '../util/Logger.js';
+import {
+    WHISPER_TRANSCRIPTION_TIMEOUT_MS,
+    WHISPER_PROCESS_DEFAULT_TIMEOUT_MS,
+    MILLISECONDS_PER_SECOND
+} from '../constants/timing.js';
+import { MIN_AUDIO_ENERGY, MIN_AUDIO_DURATION_SECONDS } from '../constants/thresholds.js';
 
 /**
  * TranscriptionService - Orchestrate Whisper transcription workflow
@@ -29,9 +35,9 @@ export class TranscriptionService {
         }
 
         this.whisperModel = config.whisper.modelPath;
-        this.minDuration = 0.15; // seconds
-        this.minEnergy = 1e-6; // RMS energy threshold
-        this.timeoutMs = 60000; // 60 seconds
+        this.minDuration = MIN_AUDIO_DURATION_SECONDS;
+        this.minEnergy = MIN_AUDIO_ENERGY;
+        this.timeoutMs = WHISPER_TRANSCRIPTION_TIMEOUT_MS;
     }
 
     /**
@@ -192,12 +198,12 @@ export class TranscriptionService {
      * @param {string} modelRel - Path to Whisper model
      * @param {string} wavPath - Path to WAV file to transcribe
      * @param {Object} options - Options object
-     * @param {number} options.timeoutMs - Timeout in milliseconds (default: 30000)
+     * @param {number} options.timeoutMs - Timeout in milliseconds (default: WHISPER_PROCESS_DEFAULT_TIMEOUT_MS)
      * @returns {Promise<string>} Transcription text
      * @throws {Error} If transcription fails or times out
      */
     async _transcribeWithWhisper(modelRel, wavPath, options = {}) {
-        const { timeoutMs = 30000 } = options;
+        const { timeoutMs = WHISPER_PROCESS_DEFAULT_TIMEOUT_MS } = options;
 
         return new Promise((resolve, reject) => {
             const whisperModelAbs = path.isAbsolute(modelRel) ? modelRel : path.resolve(process.cwd(), modelRel);

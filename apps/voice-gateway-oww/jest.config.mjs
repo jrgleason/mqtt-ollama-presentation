@@ -10,4 +10,5 @@ export default {
         '!src/**/__tests__/**',
     ],
     transform: {},
+    setupFiles: ['<rootDir>/tests/setup.js'],
 };

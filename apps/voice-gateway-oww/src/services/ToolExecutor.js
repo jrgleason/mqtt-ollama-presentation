@@ -1,3 +1,5 @@
+import { TOOL_EXECUTION_TIMEOUT_MS, TOOL_EXECUTION_WARNING_MS } from '../constants/timing.js';
+
 /**
  * Tool Executor
  *
@@ -12,12 +14,12 @@ export class ToolExecutor {
      * @param {ToolManager} toolManager - Tool manager instance
      * @param {Object} logger - Logger instance
      * @param {Object} options - Configuration options
-     * @param {number} options.timeout - Timeout in milliseconds (default: 30000)
+     * @param {number} options.timeout - Timeout in milliseconds (default: TOOL_EXECUTION_TIMEOUT_MS)
      */
     constructor(toolManager, logger, options = {}) {
         this.toolManager = toolManager;
         this.logger = logger;
-        this.timeout = options.timeout || 30000; // 30 seconds default
+        this.timeout = options.timeout || TOOL_EXECUTION_TIMEOUT_MS;
     }
 
     /**
@@ -64,11 +66,11 @@ export class ToolExecutor {
             });
 
             // Warn on slow tools
-            if (duration > 1000) {
+            if (duration > TOOL_EXECUTION_WARNING_MS) {
                 this.logger.warn(`⚠️ Slow tool execution: ${toolName}`, {
                     tool: toolName,
                     duration: `${duration}ms`,
-                    threshold: '1000ms'
+                    threshold: `${TOOL_EXECUTION_WARNING_MS}ms`
                 });
             }
 

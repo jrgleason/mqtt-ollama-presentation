@@ -543,7 +543,7 @@ pip install piper-tts
 
 ```bash
 # Run setup script
-./setup.sh
+./scripts/setup.sh
 
 # Or manually:
 mkdir -p models

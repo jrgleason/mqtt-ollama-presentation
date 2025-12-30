@@ -256,21 +256,31 @@ See `docs/EXTERNAL-INTEGRATIONS.md` for complete configuration details.
 
 ### Known Technical Debt
 
-- God classes (BackgroundTranscriber, AudioUtils)
-- Monolithic functions (setupMic - 157 lines)
-- Duplicate code patterns (query detection, tool execution)
-- Magic numbers without context
-- Anonymous MQTT authentication (should use RBAC)
-- Mixed abstraction levels in utilities
+**Recently Resolved (refactor-code-quality-improvements):**
+- ~~Magic numbers without context~~ - RESOLVED: Constants extracted to `timing.js` and `thresholds.js`
+- ~~Duplicate code patterns (query detection)~~ - RESOLVED: IntentClassifier service created
+- ~~TODO comments~~ - RESOLVED: All TODOs resolved or documented
+- ~~File organization~~ - RESOLVED: Docs and scripts moved to dedicated directories
+
+**Remaining (acceptable for presentation):**
+- Monolithic functions (setupMic - 400+ lines) - KEPT: Refactoring deemed too risky before demo
+- Anonymous MQTT authentication (should use RBAC) - DEFERRED: Not critical for demo
+- Large files (AnthropicClient, VoiceInteractionOrchestrator) - ACCEPTABLE: Working well, no issues
 
 ### Next Steps
 
-1. Create OpenSpec change proposals for refactoring
-2. Split BackgroundTranscriber into focused services
-3. Refactor main.js setupMic() function
-4. Organize AudioUtils.js into focused modules
-5. Test refactored code with actual hardware
-6. Merge to main when stable
+**Before Presentation (January 12, 2026):**
+1. Test all demo modes (offline, online, hybrid-a, hybrid-b)
+2. Verify voice gateway end-to-end flow (wake word → response)
+3. Test device control commands with actual Z-Wave devices
+4. Practice demo script 10+ times
+5. Prepare fallback plans for network-dependent features
+
+**Post-Presentation (Optional Improvements):**
+1. Implement MQTT RBAC authentication
+2. Consider refactoring setupMic() if time permits
+3. Add comprehensive test coverage
+4. Performance profiling for optimization opportunities
 
 ## Presentation Strategy
 

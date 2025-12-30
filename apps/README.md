@@ -8,7 +8,7 @@ This directory contains all application services for the MQTT + Ollama home auto
 
 **Description:** Main Next.js chatbot application with LangChain.js and Ollama integration
 
-**Technology:** Next.js 15 + TypeScript + Prisma + LangChain.js
+**Technology:** Next.js 15 + JavaScript + Prisma + LangChain.js
 
 **Purpose:**
 
@@ -50,7 +50,7 @@ This directory contains all application services for the MQTT + Ollama home auto
 
 **Description:** Model Context Protocol server for Z-Wave device integration
 
-**Technology:** TypeScript + MCP SDK + zwave-js-ui MQTT
+**Technology:** JavaScript + MCP SDK + zwave-js-ui MQTT
 
 **Purpose:**
 
@@ -73,7 +73,7 @@ This directory contains all application services for the MQTT + Ollama home auto
 │                                                              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
 │  │   Oracle     │  │Voice Gateway │  │ ZWave MCP Server │  │
-│  │  (Next.js)   │  │  OWW (Node)  │  │  (TypeScript)    │  │
+│  │  (Next.js)   │  │  OWW (Node)  │  │  (JavaScript)    │  │
 │  │              │  │              │  │                  │  │
 │  │ Port: 3000   │  │ MQTT-based   │  │ MCP Protocol     │  │
 │  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
@@ -151,7 +151,7 @@ Access at: http://localhost:3000
 ```bash
 cd apps/voice-gateway-oww
 npm install
-./setup.sh  # Downloads models
+./scripts/setup.sh  # Downloads models
 cp .env.tmp.example .env.tmp
 # Edit .env.tmp with configuration
 npm run dev
@@ -209,7 +209,7 @@ cd apps/zwave-mcp-server && npm test
 
 ### Linting
 
-Each service follows TypeScript + ESLint standards:
+Each service follows JavaScript + ESLint standards:
 
 ```bash
 npm run lint
@@ -221,7 +221,7 @@ npm run type-check
 ## Documentation
 
 - **Main README:** [../README.md](../README.md)
-- **Architecture:** [../docs/voice-gateway-architecture.md](../docs/voice-gateway-architecture.md)
+- **Architecture:** [../docs/voice-asr-technologies.md](../docs/voice-asr-technologies.md)
 - **Tasks:** [../docs/tasks-active.md](../docs/tasks-active.md)
 - **Requirements:** [../docs/requirements.md](../docs/requirements.md)
 - **Network Dependencies:** [../docs/network-dependencies.md](../docs/network-dependencies.md)
@@ -238,4 +238,4 @@ npm run type-check
 
 ---
 
-**Last Updated:** 2025-10-11
+**Last Updated:** 2025-12-29

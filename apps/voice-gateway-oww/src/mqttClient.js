@@ -7,12 +7,12 @@
 import mqtt from 'mqtt';
 import {logger} from './util/Logger.js';
 import {config} from './config.js';
+import { MQTT_CONNECTION_TIMEOUT_MS, MQTT_RECONNECT_INTERVAL_MS } from './constants/timing.js';
 
 let client = null;
 let isConnected = false;
 let connectionFailed = false;
 let lastConnectionAttempt = 0;
-const RECONNECT_INTERVAL = 60000; // Try to reconnect once per minute
 
 /**
  * Connect to MQTT broker
@@ -27,7 +27,7 @@ async function connectMQTT() {
     // Don't spam connection attempts if we know it's failing
     if (connectionFailed) {
         const now = Date.now();
-        if (now - lastConnectionAttempt < RECONNECT_INTERVAL) {
+        if (now - lastConnectionAttempt < MQTT_RECONNECT_INTERVAL_MS) {
             return null;
         }
         lastConnectionAttempt = now;
@@ -53,7 +53,7 @@ async function connectMQTT() {
                 client?.end(true);
                 resolve(null);
             }
-        }, 5000);
+        }, MQTT_CONNECTION_TIMEOUT_MS);
 
         client.on('connect', () => {
             clearTimeout(timeout);

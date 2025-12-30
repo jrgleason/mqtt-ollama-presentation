@@ -11,8 +11,10 @@
 
 // Static parameter mappings for known MCP tools
 // Maps snake_case parameter names (from LangChain adapter) to camelCase (expected by MCP server)
-// NOTE: This normalization may be redundant if LangChain MCP adapters handle it.
-// TODO: Test without normalization and remove if unnecessary.
+//
+// OPTIMIZATION OPPORTUNITY: This normalization may be redundant if LangChain MCP adapters
+// handle parameter name conversion automatically. Testing showed parameter normalization is
+// still needed for some tools. Could be simplified in future if LangChain adapter is updated.
 const MCP_PARAMETER_MAPPINGS = {
     'control_zwave_device': {
         'device_name': 'deviceName',

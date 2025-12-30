@@ -4,6 +4,8 @@
  */
 
 import dotenv from 'dotenv';
+import { WAKE_WORD_THRESHOLD } from './constants/thresholds.js';
+import { MCP_RETRY_BASE_DELAY_MS } from './constants/timing.js';
 
 // Load .env file (quiet mode to suppress verbose logging)
 dotenv.config({ quiet: true });
@@ -43,10 +45,13 @@ const config = {
     logLevel: process.env.LOG_LEVEL || 'info',
     openWakeWord: {
         modelPath: process.env.OWW_MODEL_PATH,
-        threshold: process.env.OWW_THRESHOLD ? Number(process.env.OWW_THRESHOLD) : 0.5,
+        threshold: process.env.OWW_THRESHOLD ? Number(process.env.OWW_THRESHOLD) : WAKE_WORD_THRESHOLD,
         inferenceFramework: process.env.OWW_INFERENCE_FRAMEWORK || 'onnx',
         // Auto-detect embedding frames based on model, or allow manual override
         embeddingFrames: process.env.OWW_EMBEDDING_FRAMES ? Number(process.env.OWW_EMBEDDING_FRAMES) : null,
+        // Detector warm-up duration (ms) after embedding buffer fills
+        // Reduced from 2500ms to 1500ms for faster boot time
+        warmupMs: process.env.DETECTOR_WARMUP_MS ? Number(process.env.DETECTOR_WARMUP_MS) : 1500,
     },
     audio: {
         micDevice: process.env.AUDIO_MIC_DEVICE || 'hw:2,0',
@@ -77,8 +82,8 @@ const config = {
         port: process.env.HEALTHCHECK_PORT ? Number(process.env.HEALTHCHECK_PORT) : 3002,
     },
     mcp: {
-        retryAttempts: process.env.MCP_RETRY_ATTEMPTS ? Number(process.env.MCP_RETRY_ATTEMPTS) : 3,
-        retryBaseDelay: process.env.MCP_RETRY_BASE_DELAY ? Number(process.env.MCP_RETRY_BASE_DELAY) : 2000,
+        retryAttempts: process.env.MCP_RETRY_ATTEMPTS ? Number(process.env.MCP_RETRY_ATTEMPTS) : 2,
+        retryBaseDelay: process.env.MCP_RETRY_BASE_DELAY ? Number(process.env.MCP_RETRY_BASE_DELAY) : MCP_RETRY_BASE_DELAY_MS,
     },
     ai: {
         // Default to Anthropic unless --ollama flag is passed or AI_PROVIDER is set to 'ollama'

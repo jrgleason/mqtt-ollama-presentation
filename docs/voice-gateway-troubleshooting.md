@@ -145,7 +145,7 @@ ls -lh models/ggml-tiny.bin
 
 # If missing, download:
 cd apps/voice-gateway-oww
-./setup.sh
+./scripts/setup.sh
 ```
 
 **Transcription fails:**
@@ -199,7 +199,7 @@ ls -lh models/
 
 # If missing:
 cd apps/voice-gateway-oww
-./setup.sh
+./scripts/setup.sh
 ```
 
 ### Piper TTS Model

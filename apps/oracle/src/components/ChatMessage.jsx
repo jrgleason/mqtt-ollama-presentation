@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import {cn} from '../lib/utils.js';
 import {Bot, ChevronDown, ChevronUp, User} from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function ChatMessage({message}) {
     const isUser = message.role === 'user';
@@ -47,7 +49,11 @@ export function ChatMessage({message}) {
                         )}
                     >
                         {mainContent && (
-                            <p className="text-base leading-relaxed whitespace-pre-wrap break-words">{mainContent}</p>
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-base leading-relaxed">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {mainContent}
+                                </ReactMarkdown>
+                            </div>
                         )}
 
                         {!isUser && thinkingContent && !isThinkingInProgress && (

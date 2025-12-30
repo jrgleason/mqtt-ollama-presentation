@@ -5,8 +5,7 @@
  */
 
 import {logger} from './util/Logger.js';
-
-const CONVERSATION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+import { CONVERSATION_TIMEOUT_MS } from './constants/timing.js';
 
 class ConversationManager {
     constructor() {

@@ -187,10 +187,10 @@ The voice gateway supports 4 demo modes that can be easily switched using preset
 
 | Mode | AI | TTS | Dependencies | Command |
 |------|-----|-----|--------------|---------|
-| **Offline** | Ollama | Piper | Ollama, Python + piper-tts | `./switch-mode.sh offline` |
-| **Online** | Anthropic | ElevenLabs | API keys | `./switch-mode.sh online` |
-| **Hybrid A** | Ollama | ElevenLabs | Ollama, ELEVENLABS_API_KEY | `./switch-mode.sh hybrid-a` |
-| **Hybrid B** | Anthropic | Piper | ANTHROPIC_API_KEY, Python + piper-tts | `./switch-mode.sh hybrid-b` |
+| **Offline** | Ollama | Piper | Ollama, Python + piper-tts | `./scripts/switch-mode.sh offline` |
+| **Online** | Anthropic | ElevenLabs | API keys | `./scripts/switch-mode.sh online` |
+| **Hybrid A** | Ollama | ElevenLabs | Ollama, ELEVENLABS_API_KEY | `./scripts/switch-mode.sh hybrid-a` |
+| **Hybrid B** | Anthropic | Piper | ANTHROPIC_API_KEY, Python + piper-tts | `./scripts/switch-mode.sh hybrid-b` |
 
 ### How to Switch Modes
 
@@ -199,7 +199,7 @@ The voice gateway supports 4 demo modes that can be easily switched using preset
 cd voice-gateway-oww
 
 # Switch to desired mode (copies preset to .env.tmp)
-./switch-mode.sh [offline|online|hybrid-a|hybrid-b]
+./scripts/switch-mode.sh [offline|online|hybrid-a|hybrid-b]
 
 # Restart the service
 npm run dev

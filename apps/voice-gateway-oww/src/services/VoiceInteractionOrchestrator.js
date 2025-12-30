@@ -10,6 +10,7 @@ import { ElevenLabsTTS } from '../util/ElevenLabsTTS.js';
 import { streamSpeak } from '../streamingTTS.js';
 import { executeDateTimeTool } from '../util/tools.js';
 import { errMsg } from '../util/Logger.js';
+import { isPlaying } from '../state-machines/PlaybackMachine.js';
 
 /**
  * VoiceInteractionOrchestrator - Coordinate complete voice interaction pipeline
@@ -28,12 +29,13 @@ import { errMsg } from '../util/Logger.js';
  *   await orchestrator.processVoiceInteraction(audioSamples);
  */
 export class VoiceInteractionOrchestrator {
-    constructor(config, logger, toolExecutor, voiceService = null, isRecordingChecker = null) {
+    constructor(config, logger, toolExecutor, voiceService = null, isRecordingChecker = null, playbackMachine = null) {
         this.config = config;
         this.logger = logger;
         this.toolExecutor = toolExecutor;
         this.voiceService = voiceService;
         this.isRecordingChecker = isRecordingChecker || (() => false);
+        this.playbackMachine = playbackMachine; // PlaybackMachine service
 
         // Initialize dependencies
         this.audioPlayer = new AudioPlayer(config, logger);
@@ -44,13 +46,15 @@ export class VoiceInteractionOrchestrator {
         this.elevenLabsTTS = new ElevenLabsTTS(config, logger);
 
         // Track active TTS playback for interruption support
+        // This will be deprecated in favor of PlaybackMachine
         this.activePlayback = null; // Stores {cancel, promise} from playInterruptible
 
         this.logger.info('VoiceInteractionOrchestrator initialized', {
             aiProvider: config.ai.provider,
             ttsEnabled: config.tts.enabled,
             streamingEnabled: config.tts.streaming,
-            beepIsolationEnabled: isRecordingChecker !== null
+            beepIsolationEnabled: isRecordingChecker !== null,
+            playbackMachineEnabled: playbackMachine !== null
         });
     }
 
@@ -105,11 +109,11 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 3: Processing Beep (before AI query)
             // ============================================
-            // Only play processing beep if not currently recording (prevents beep feedback)
-            if (!this.isRecordingChecker()) {
+            // Only play processing beep if not currently recording or playing audio (prevents beep feedback)
+            if (!this._shouldSuppressBeep()) {
                 await this.audioPlayer.play(this.beep.BEEPS.processing);
             } else {
-                this.logger.debug('🔇 Suppressed processing beep (recording in progress)');
+                this.logger.debug('🔇 Suppressed processing beep (recording or playback in progress)');
             }
 
             // ============================================
@@ -143,11 +147,11 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 6: Response Beep (after TTS)
             // ============================================
-            // Only play response beep if not currently recording (prevents beep feedback)
-            if (!this.isRecordingChecker()) {
+            // Only play response beep if not currently recording or playing audio (prevents beep feedback)
+            if (!this._shouldSuppressBeep()) {
                 await this.audioPlayer.play(this.beep.BEEPS.response);
             } else {
-                this.logger.debug('🔇 Suppressed response beep (recording in progress)');
+                this.logger.debug('🔇 Suppressed response beep (recording or playback in progress)');
             }
 
             // ============================================
@@ -194,6 +198,22 @@ export class VoiceInteractionOrchestrator {
     }
 
     /**
+     * Check if beeps should be suppressed to prevent feedback loops
+     * Beeps are suppressed when:
+     * - Recording is active (prevents beep from being captured in user audio)
+     * - Playback is active (prevents beep overlap with TTS/other audio)
+     *
+     * @returns {boolean} True if beeps should be suppressed
+     * @private
+     */
+    _shouldSuppressBeep() {
+        const isRecordingActive = this.isRecordingChecker();
+        const isPlaybackPlaying = this.playbackMachine ? isPlaying(this.playbackMachine) : false;
+
+        return isRecordingActive || isPlaybackPlaying;
+    }
+
+    /**
      * Cancel any active TTS playback (voice interruption/barge-in)
      *
      * Called when:
@@ -203,6 +223,19 @@ export class VoiceInteractionOrchestrator {
      * @returns {void}
      */
     cancelActivePlayback() {
+        // Use PlaybackMachine if available (new approach)
+        if (this.playbackMachine) {
+            const snapshot = this.playbackMachine.getSnapshot();
+            if (snapshot.matches('playing')) {
+                this.logger.info('🛑 Cancelling active playback via PlaybackMachine');
+                this.playbackMachine.send({ type: 'INTERRUPT' });
+                // Transition to idle after interruption handled
+                this.playbackMachine.send({ type: 'INTERRUPT_HANDLED' });
+            }
+            return;
+        }
+
+        // Fallback to legacy approach if PlaybackMachine not available
         if (this.activePlayback) {
             this.logger.info('🛑 Cancelling active TTS playback (interrupted by user)');
             try {
@@ -341,13 +374,28 @@ export class VoiceInteractionOrchestrator {
                 // Use playInterruptible for cancellable playback
                 this.activePlayback = this.audioPlayer.playInterruptible(audioBuffer);
 
+                // Register playback with PlaybackMachine if available
+                if (this.playbackMachine) {
+                    this.playbackMachine.send({
+                        type: 'START_PLAYBACK',
+                        playback: this.activePlayback,
+                        playbackType: 'tts'
+                    });
+                }
+
                 try {
                     await this.activePlayback.promise;
                     this.logger.info('✅ AI response playback complete');
+
+                    // Notify PlaybackMachine of completion
+                    if (this.playbackMachine) {
+                        this.playbackMachine.send({ type: 'PLAYBACK_COMPLETE' });
+                    }
                 } catch (playbackErr) {
                     // Playback was cancelled or failed
                     if (playbackErr.message.includes('cancelled')) {
                         this.logger.info('🛑 TTS playback was interrupted');
+                        // Interruption already handled by PlaybackMachine
                     } else {
                         throw playbackErr;
                     }

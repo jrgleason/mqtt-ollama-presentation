@@ -72,11 +72,7 @@ export class MCPZWaveClient {
             this.pendingRequests.clear();
         });
 
-        // TODO: This seems wrong
-        // Give the server a moment to fully initialize its stdio transport
-        // await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Wait for server to be ready
+        // Wait for server to be ready (initialization is event-driven, no arbitrary timeout needed)
         await this.initialize();
     }
 
