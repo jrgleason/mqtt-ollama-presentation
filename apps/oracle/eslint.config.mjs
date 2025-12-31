@@ -20,6 +20,7 @@ const eslintConfig = [
             "next-env.d.ts",
             "src/generated/**",
             "src/generated/prisma/**",
+            "src/generated/prisma/runtime/**",
         ],
         rules: {
             // Turn off unused vars rule globally (per user request)

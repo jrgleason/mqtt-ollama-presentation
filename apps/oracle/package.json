@@ -50,7 +50,7 @@
     "concurrently": "latest",
     "dotenv": "latest",
     "eslint": "latest",
-    "eslint-config-next": "latest",
+    "eslint-config-next": "15.5.6",
     "jest": "latest",
     "postcss": "latest",
     "tailwindcss": "latest"

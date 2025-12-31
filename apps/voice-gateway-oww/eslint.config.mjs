@@ -12,7 +12,8 @@ export default [
             },
         },
         rules: {
-            // Keep defaults; project can opt-in to stricter rules later
+            // Turn off unused vars rule (many XState actions require unused context/event params)
+            'no-unused-vars': 'off',
         },
     },
     // Jest configuration for test files

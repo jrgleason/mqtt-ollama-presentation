@@ -25,18 +25,28 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: |
-            apps/oracle/package-lock.json
-            apps/voice-gateway-oww/package-lock.json
-            apps/zwave-mcp-server/package-lock.json
+          cache-dependency-path: package-lock.json
+
+      # ==========================================
+      # Install all workspace dependencies from root
+      # ==========================================
+      - name: Install all dependencies
+        run: npm ci || npm install
+
+      # ==========================================
+      # ZWave MCP Server
+      # ==========================================
+      - name: Validate package structure - zwave-mcp-server
+        working-directory: ./apps/zwave-mcp-server
+        run: |
+          echo "Checking MCP server entry points..."
+          test -f src/index.js || exit 1
+          test -f src/mcp-client.js || exit 1
+          echo "✅ MCP server structure validated"
 
       # ==========================================
       # Oracle App (Next.js)
       # ==========================================
-      - name: Install dependencies - oracle
-        working-directory: ./apps/oracle
-        run: npm ci || npm install
-
       - name: Run linter - oracle
         working-directory: ./apps/oracle
         run: npm run lint
@@ -50,27 +60,8 @@ jobs:
         run: npm run build
 
       # ==========================================
-      # ZWave MCP Server
-      # ==========================================
-      - name: Install dependencies - zwave-mcp-server
-        working-directory: ./apps/zwave-mcp-server
-        run: npm ci || npm install
-
-      - name: Validate package structure - zwave-mcp-server
-        working-directory: ./apps/zwave-mcp-server
-        run: |
-          echo "Checking MCP server entry points..."
-          test -f src/index.js || exit 1
-          test -f src/mcp-client.js || exit 1
-          echo "✅ MCP server structure validated"
-
-      # ==========================================
       # Voice Gateway OWW
       # ==========================================
-      - name: Install dependencies - voice-gateway-oww
-        working-directory: ./apps/voice-gateway-oww
-        run: npm ci || npm install
-
       - name: Run linter - voice-gateway-oww
         working-directory: ./apps/voice-gateway-oww
         run: npm run lint

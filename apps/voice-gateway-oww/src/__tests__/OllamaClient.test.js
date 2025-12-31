@@ -6,7 +6,7 @@
  */
 
 import { OllamaClient } from '../OllamaClient.js';
-import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
+import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 
 describe('OllamaClient.convertToLangChainMessages', () => {
     describe('Basic Message Conversion', () => {
@@ -46,7 +46,7 @@ describe('OllamaClient.convertToLangChainMessages', () => {
             expect(result[0].content).toBe('I am doing well, thank you!');
         });
 
-        it('should convert tool message to AIMessage with tool_call_id', () => {
+        it('should convert tool message to ToolMessage with tool_call_id', () => {
             const messages = [
                 {
                     role: 'tool',
@@ -58,9 +58,9 @@ describe('OllamaClient.convertToLangChainMessages', () => {
             const result = OllamaClient.convertToLangChainMessages(messages);
 
             expect(result).toHaveLength(1);
-            expect(result[0]).toBeInstanceOf(AIMessage);
+            expect(result[0]).toBeInstanceOf(ToolMessage);
             expect(result[0].content).toBe('Tool result data');
-            expect(result[0].additional_kwargs?.tool_call_id).toBe('call_123');
+            expect(result[0].tool_call_id).toBe('call_123');
         });
 
         it('should convert unknown role to HumanMessage', () => {
@@ -107,8 +107,8 @@ describe('OllamaClient.convertToLangChainMessages', () => {
             expect(result[0]).toBeInstanceOf(SystemMessage);
             expect(result[1]).toBeInstanceOf(HumanMessage);
             expect(result[2]).toBeInstanceOf(AIMessage);
-            expect(result[3]).toBeInstanceOf(AIMessage);
-            expect(result[3].additional_kwargs?.tool_call_id).toBe('call_456');
+            expect(result[3]).toBeInstanceOf(ToolMessage);
+            expect(result[3].tool_call_id).toBe('call_456');
             expect(result[4]).toBeInstanceOf(AIMessage);
         });
 
