@@ -5,6 +5,7 @@ import {checkOllamaHealth} from '../OllamaClient.js';
 import {checkAnthropicHealth} from '../AnthropicClient.js';
 import {connectMQTT} from '../mqttClient.js';
 import {ElevenLabsTTS} from "./ElevenLabsTTS.js";
+import {synthesizeSpeech as piperSynthesize} from '../piperTTS.js';
 import {checkAlsaDevice} from "../audio/AudioUtils.js";
 import {AudioPlayer} from "../audio/AudioPlayer.js";
 import {safeDetectorReset} from "./XStateHelpers.js";
@@ -118,13 +119,27 @@ async function synthesizeWelcomeMessage() {
     if (!config.tts.enabled) return null;
 
     try {
-        logger.debug('🔧 [STARTUP-DEBUG] synthesizeWelcomeMessage: Starting TTS synthesis in background...');
-        const tts = new ElevenLabsTTS(config, logger);
+        const provider = config.tts.provider || 'ElevenLabs';
+        logger.debug('🔧 [STARTUP-DEBUG] synthesizeWelcomeMessage: Starting TTS synthesis in background...', {provider});
+
         const welcomeMessage = 'Hello, I am Jarvis. How can I help?';
-        const audioBuffer = await tts.synthesizeSpeech(welcomeMessage, {
-            volume: config.tts.volume,
-            speed: config.tts.speed
-        });
+        let audioBuffer;
+
+        if (provider === 'Piper') {
+            // Use Piper TTS (local/offline)
+            audioBuffer = await piperSynthesize(welcomeMessage, {
+                volume: config.tts.volume,
+                speed: config.tts.speed
+            });
+        } else {
+            // Use ElevenLabs TTS (cloud)
+            const tts = new ElevenLabsTTS(config, logger);
+            audioBuffer = await tts.synthesizeSpeech(welcomeMessage, {
+                volume: config.tts.volume,
+                speed: config.tts.speed
+            });
+        }
+
         logger.debug('🔧 [STARTUP-DEBUG] synthesizeWelcomeMessage: TTS synthesis complete');
         return audioBuffer;
     } catch (err) {

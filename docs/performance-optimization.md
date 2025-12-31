@@ -117,7 +117,7 @@ Model: qwen2.5:0.5b
 1. **Model Downgrade: base → tiny**
     - Downloaded `ggml-tiny.bin` (75 MB vs 142 MB base)
     - Changed via `.env`: `WHISPER_MODEL_PATH=models/ggml-tiny.bin`
-    - Added performance logging in `voice-gateway-common/src/stt.js`
+    - Added performance logging in `voice-gateway-oww/src/services/TranscriptionService.js`
 
 ### Results
 
@@ -288,7 +288,7 @@ a voice assistant.
 
 **Files modified:**
 
-- `voice-gateway-common/src/stt.js` - Added Whisper timing logs
+- `voice-gateway-oww/src/services/TranscriptionService.js` - Added Whisper timing logs
 - `src/ollama-client.js` - Already had timing logs
 
 ### 4. Hardware-Appropriate Selection

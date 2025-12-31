@@ -34,8 +34,19 @@ NODE_ENV=development
 LOG_LEVEL=debug
 PORT=3000
 DATABASE_URL=file:./dev.db
+
+# AI Provider (ollama or anthropic)
+AI_PROVIDER=ollama
+
+# Ollama Configuration (for AI_PROVIDER=ollama)
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:3b
+
+# Anthropic Configuration (for AI_PROVIDER=anthropic)
+# ANTHROPIC_API_KEY=your_api_key_here
+# ANTHROPIC_MODEL=claude-3-5-haiku-20241022
+
+# MQTT and Z-Wave
 MQTT_BROKER_URL=mqtt://127.0.0.1:1883
 ZWAVE_MQTT_BROKER=mqtt://localhost:1883
 ZWAVE_UI_URL=http://localhost:8091
@@ -47,10 +58,86 @@ ZWAVE_UI_URL=http://localhost:8091
 - `LOG_LEVEL`: Controls logging verbosity
     - `info` (production default): Only errors and important events
     - `debug` (development default): Verbose logging including MQTT and MCP operations
+- `AI_PROVIDER`: Choose AI provider (`ollama` or `anthropic`)
+    - `ollama` (default): Local AI processing with Ollama
+    - `anthropic`: Cloud AI with Anthropic Claude models
+- `OLLAMA_BASE_URL`: URL to your Ollama instance for LLM inference (when using `ollama` provider)
+- `OLLAMA_MODEL`: Ollama model name (e.g., `llama3.2:3b`, `qwen3:0.6b`)
+- `ANTHROPIC_API_KEY`: Your Anthropic API key (required when using `anthropic` provider)
+- `ANTHROPIC_MODEL`: Anthropic model name (e.g., `claude-3-5-haiku-20241022`, `claude-3-5-sonnet-20241022`)
 - `MQTT_BROKER_URL`: URL to your MQTT broker (e.g., Mosquitto)
-- `OLLAMA_BASE_URL`: URL to your Ollama instance for LLM inference
 - `ZWAVE_MQTT_BROKER`: MQTT broker for Z-Wave device communication
 - `ZWAVE_UI_URL`: URL to Z-Wave JS UI instance for device discovery
+
+### AI Provider Configuration
+
+Oracle supports two AI providers for flexible deployment:
+
+#### Ollama (Local AI)
+
+**Best for:** Privacy, offline operation, no API costs
+
+```bash
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3:0.6b
+```
+
+**Pros:**
+- Runs completely offline
+- No API costs
+- Full data privacy
+- Fast response times (with good hardware)
+
+**Cons:**
+- Requires local Ollama installation
+- Lower accuracy compared to cloud models
+- Needs sufficient CPU/RAM
+
+#### Anthropic (Cloud AI)
+
+**Best for:** Accuracy, reasoning, no local compute requirements
+
+```bash
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-3-5-haiku-20241022
+```
+
+Get your API key from: [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+
+**Recommended Models:**
+- `claude-3-5-haiku-20241022` - Fast, cost-effective, good for most tasks
+- `claude-3-5-sonnet-20241022` - Balanced, better reasoning
+- `claude-3-opus-20240229` - Most capable, slower, expensive
+
+**Pros:**
+- Superior reasoning and accuracy
+- No local compute requirements
+- Regular model updates
+
+**Cons:**
+- Requires internet connection
+- API usage costs
+- Data sent to Anthropic servers
+
+#### Switching Providers
+
+To switch between providers, simply change the `AI_PROVIDER` environment variable and restart the application:
+
+```bash
+# Switch to Anthropic
+AI_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-... npm start
+
+# Switch back to Ollama
+AI_PROVIDER=ollama npm start
+```
+
+Both providers support the same features:
+- MCP tools (Z-Wave device control)
+- Custom tools (calculator, etc.)
+- Streaming responses
+- Tool calling
 
 ### Debugging MQTT Issues
 
@@ -86,11 +173,23 @@ npm start
 - `src/app/` - Next.js app router pages and layouts
   - `src/app/api/chat/` - Chat API with LangChain and MCP tools
   - `src/app/api/mcp/` - MCP server SSE endpoint (Vercel MCP Adapter)
+- `src/components/` - React UI components
+  - `ChatMessage.jsx` - Chat message component with markdown rendering support
 - `src/lib/mqtt/` - MQTT client for device communication ([API docs](../../docs/mqtt-client-api.md))
 - `src/lib/langchain/` - LangChain integration with Ollama
 - `src/lib/mcp/` - MCP integration module for Z-Wave tools
 - `src/hooks/` - React hooks including useMCPClient
 - `prisma/` - Database schema and migrations
+
+## Chat UI Features
+
+The Oracle chat interface includes rich formatting capabilities:
+
+- **Markdown Rendering**: AI responses support full markdown formatting including bold, italic, lists, code blocks, and links
+- **Extended Thinking**: Collapsible thinking blocks show the AI's reasoning process
+- **Dark Mode**: Automatic theme adaptation with proper contrast for all markdown elements
+- **Tool Integration**: Seamless display of tool usage within message bubbles
+- **Security**: XSS-safe markdown rendering with automatic HTML sanitization
 
 ## MCP Integration
 

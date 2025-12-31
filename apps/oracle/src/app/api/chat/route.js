@@ -1,4 +1,5 @@
 import {createOllamaClient} from '../../../lib/ollama/client.js';
+import {createAnthropicClient} from '../../../lib/anthropic/client.js';
 import {createCalculatorTool} from '../../../lib/langchain/tools/calculator-tool.js';
 import {initializeMCPIntegration, shutdownMCPClient} from '../../../lib/mcp/integration.js';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
@@ -40,13 +41,28 @@ export async function POST(req) {
         const {messages, model: selectedModel} = await req.json();
 
         const isDebug = process.env.NODE_ENV !== 'production' || process.env.LOG_LEVEL === 'debug';
+        const aiProvider = process.env.AI_PROVIDER || 'anthropic'; // Default to anthropic
+
+        // ALWAYS log AI provider selection (even in production)
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🤖 AI PROVIDER DEBUG');
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('process.env.AI_PROVIDER:', process.env.AI_PROVIDER);
+        console.log('Resolved aiProvider:', aiProvider);
+        console.log('Selected model from request:', selectedModel);
+        console.log('Using:', aiProvider === 'anthropic' ? 'ANTHROPIC ☁️' : 'OLLAMA 🏠');
+        console.log('═══════════════════════════════════════════════════════════');
 
         if (isDebug) {
             console.log('[chat/route] ========== REQUEST DEBUG START ==========');
+            console.log('[chat/route] AI Provider:', aiProvider);
             console.log('[chat/route] Selected model from request:', selectedModel);
             console.log('[chat/route] Environment variables:', {
+                AI_PROVIDER: process.env.AI_PROVIDER,
                 OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
                 OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+                ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+                ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '***' + process.env.ANTHROPIC_API_KEY.slice(-4) : 'NOT SET',
             });
             console.log('[chat/route] ========== REQUEST DEBUG END ==========');
         }
@@ -61,24 +77,33 @@ export async function POST(req) {
             );
         }
 
-        const model = createOllamaClient(0.1, selectedModel);
-        if (isDebug) {
-            console.log('[chat/route] Created model with:', {temperature: 0.1, selectedModel});
-        }
+        // Create model based on AI_PROVIDER
+        let model;
+        if (aiProvider === 'anthropic') {
+            model = createAnthropicClient(0.1, selectedModel);
+            if (isDebug) {
+                console.log('[chat/route] Created Anthropic model with:', {temperature: 0.1, selectedModel});
+            }
+        } else {
+            model = createOllamaClient(0.1, selectedModel);
+            if (isDebug) {
+                console.log('[chat/route] Created Ollama model with:', {temperature: 0.1, selectedModel});
+            }
 
-        // Test Ollama connectivity
-        if (isDebug) {
-            try {
-                const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-                console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
-                const testResponse = await fetch(`${baseUrl}/api/tags`, {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(5000),
-                });
-                const testData = await testResponse.json();
-                console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
-            } catch (connectError) {
-                console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+            // Test Ollama connectivity
+            if (isDebug) {
+                try {
+                    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+                    console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
+                    const testResponse = await fetch(`${baseUrl}/api/tags`, {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(5000),
+                    });
+                    const testData = await testResponse.json();
+                    console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
+                } catch (connectError) {
+                    console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+                }
             }
         }
 
@@ -250,7 +275,9 @@ IMPORTANT RULES:
                                 if (isDebug) {
                                     console.log('[chat/route] Retrying without tool binding...');
                                 }
-                                const plainModel = createOllamaClient(0.1, selectedModel);
+                                const plainModel = aiProvider === 'anthropic'
+                                    ? createAnthropicClient(0.1, selectedModel)
+                                    : createOllamaClient(0.1, selectedModel);
                                 response = await plainModel.invoke(currentMessages);
                             } else {
                                 throw invokeError;

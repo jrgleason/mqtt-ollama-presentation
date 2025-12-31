@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 Services live under `apps/`: `apps/oracle` (Next.js UI, LangChain, Prisma), `apps/voice-gateway-oww` (wake-word + STT),
-`apps/voice-gateway-common` (shared audio helpers), and `apps/zwave-mcp-server` (JavaScript MCP bridge). `deployment/`
+and `apps/zwave-mcp-server` (JavaScript MCP bridge). `deployment/`
 holds Docker and broker config, and `docs/` captures runbooks and architecture notes. Keep feature tests near code in
 `__tests__` directories such as `apps/oracle/src/lib/mqtt/__tests__`.
 

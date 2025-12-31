@@ -33,8 +33,10 @@ export class AIRouter {
         this.anthropicClient = null;
 
         // System prompt (use config override if provided, otherwise use default)
+        // For Ollama/qwen3: explicitly disable thinking mode
+        const isOllama = config.ai.provider === 'ollama';
         this.defaultSystemPrompt = config.ai.systemPrompt ||
-            'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
+            `You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.${isOllama ? ' Do NOT use <think> tags.' : ''}`;
     }
 
     /**

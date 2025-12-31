@@ -13,7 +13,7 @@
  *
  * VAD Algorithm:
  * 1. After wake word, allow grace period (default 1200ms) before silence can stop recording
- * 2. Detect speech when RMS energy >= 0.01 (SILENCE_THRESHOLD)
+ * 2. Detect speech when RMS energy >= silenceThreshold (default 0.003, configurable)
  * 3. After speech detected, require trailing silence (default 1500ms) before stopping
  * 4. Require minimum speech duration (default 700ms) before stopping
  * 5. Force stop after maximum recording length (default 10000ms)
@@ -21,11 +21,11 @@
 
 import { rmsEnergy } from './AudioUtils.js';
 import {
-    SILENCE_THRESHOLD,
     MIN_SPEECH_SAMPLES,
     getTrailingSilenceSamples,
     getMaxRecordingSamples,
-    getGraceBeforeStopMs
+    getGraceBeforeStopMs,
+    getSilenceThreshold
 } from './constants.js';
 
 export class VoiceActivityDetector {
@@ -44,6 +44,7 @@ export class VoiceActivityDetector {
         this.hasSpokenDuringRecording = false;
 
         // Calculate thresholds from config
+        this.silenceThreshold = getSilenceThreshold(config);
         this.silenceSamplesRequired = getTrailingSilenceSamples(config);
         this.maxRecordingSamples = getMaxRecordingSamples(config);
         this.graceBeforeStopMs = getGraceBeforeStopMs(config);
@@ -85,13 +86,34 @@ export class VoiceActivityDetector {
         // Calculate RMS energy to detect silence vs. speech
         const energy = rmsEnergy(samples);
 
-        if (energy < SILENCE_THRESHOLD) {
+        // Check grace period (don't stop during grace period after wake word)
+        const sinceStartMs = recordingState.getRecordingDurationMs();
+        const graceActive = !this.hasSpokenDuringRecording && sinceStartMs < this.graceBeforeStopMs;
+
+        // Enhanced diagnostic logging during grace period
+        if (graceActive) {
+            this.logger.debug('Grace period active', {
+                energy: energy.toFixed(6),
+                threshold: this.silenceThreshold,
+                durationMs: sinceStartMs.toFixed(0),
+                gracePeriodMs: this.graceBeforeStopMs
+            });
+        }
+
+        if (energy < this.silenceThreshold) {
             // Silence detected
             this.silenceSampleCount += samples.length;
 
-            // Check grace period (don't stop during grace period after wake word)
-            const sinceStartMs = recordingState.getRecordingDurationMs();
-            const graceActive = !this.hasSpokenDuringRecording && sinceStartMs < this.graceBeforeStopMs;
+            // Log warning if energy is close to threshold (may need tuning)
+            if (energy >= 0.002 && energy <= 0.004) {
+                this.logger.warn('Energy close to threshold - may need adjustment', {
+                    energy: energy.toFixed(6),
+                    threshold: this.silenceThreshold,
+                    suggestion: energy < this.silenceThreshold
+                        ? 'Consider lowering VAD_SILENCE_THRESHOLD if user speech is being cut off'
+                        : 'Energy is just above threshold'
+                });
+            }
 
             if (graceActive) {
                 // Still in grace period, don't stop yet
@@ -122,9 +144,10 @@ export class VoiceActivityDetector {
             // Speech detected (energy above threshold)
             if (!this.hasSpokenDuringRecording) {
                 this.hasSpokenDuringRecording = true;
-                this.logger.debug('✅ Speech detected in recording', {
-                    energy: energy.toFixed(4),
-                    threshold: SILENCE_THRESHOLD
+                this.logger.debug('Speech detected in recording', {
+                    energy: energy.toFixed(6),
+                    threshold: this.silenceThreshold,
+                    aboveThresholdBy: (energy - this.silenceThreshold).toFixed(6)
                 });
             }
 
@@ -147,6 +170,7 @@ export class VoiceActivityDetector {
         return {
             silenceSampleCount: this.silenceSampleCount,
             hasSpokenDuringRecording: this.hasSpokenDuringRecording,
+            silenceThreshold: this.silenceThreshold,
             silenceSamplesRequired: this.silenceSamplesRequired,
             maxRecordingSamples: this.maxRecordingSamples,
             graceBeforeStopMs: this.graceBeforeStopMs

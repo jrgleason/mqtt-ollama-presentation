@@ -12,7 +12,7 @@ import {setupWakeWordMachine} from "./state-machines/WakeWordMachine.js";
 import {setupPlaybackMachine, isPlaying as isPlaybackActive} from "./state-machines/PlaybackMachine.js";
 import {initializeMCPIntegration, shutdownMCPClient} from "./services/MCPIntegration.js";
 import mic from 'mic';
-import {SAMPLE_RATE, CHUNK_SIZE} from "./audio/constants.js";
+import {SAMPLE_RATE, CHUNK_SIZE, getSilenceThreshold} from "./audio/constants.js";
 import {getServiceSnapshot, safeDetectorReset} from "./util/XStateHelpers.js";
 import {DETECTOR_WARMUP_TIMEOUT_MS} from './constants/timing.js';
 import {AudioPlayer} from "./audio/AudioPlayer.js";
@@ -104,22 +104,6 @@ function setupMic(voiceService, orchestrator, detector, playbackMachine, onRecor
          * Trade-off: Longer preserves more context, shorter reduces memory usage
          */
         PRE_ROLL_MS: 300,
-
-        /**
-         * RMS energy threshold to distinguish speech from background noise
-         * Audio below this threshold is considered silence.
-         *
-         * Typical ranges:
-         * - Background noise: < 0.005
-         * - Very quiet speech: 0.005-0.01
-         * - Normal speech: 0.05 - 0.2
-         * - Loud speech: > 0.2
-         *
-         * Tuning guidance:
-         * - Lower values (e.g., 0.003): More sensitive, may capture background noise
-         * - Higher values (e.g., 0.02): Less sensitive, may cut off quiet speech
-         */
-        SILENCE_THRESHOLD: 0.005,
 
         /**
          * Minimum speech duration in milliseconds
@@ -239,12 +223,21 @@ function setupMic(voiceService, orchestrator, detector, playbackMachine, onRecor
             } else if (audioSnapshot.length > 0 && !hasSpokenDuringRecording) {
                 // Calculate energy for logging (to help tune threshold)
                 const avgEnergy = rmsEnergy(audioSnapshot);
+                const silenceThreshold = getSilenceThreshold(config);
+
+                // Categorize silence type for better diagnostics
+                const category = avgEnergy < 0.002
+                    ? 'True silence'
+                    : avgEnergy <= 0.004
+                    ? 'Close to threshold - consider lowering VAD_SILENCE_THRESHOLD'
+                    : 'Just below threshold';
+
                 // Skip transcription when no speech detected (false wake word trigger)
-                logger.info('⏩ Skipping transcription - no speech detected', {
+                logger.info('Skipping transcription - no speech detected', {
                     recordedSamples: audioSnapshot.length,
                     avgEnergy: avgEnergy.toFixed(6),
-                    threshold: VAD_CONSTANTS.SILENCE_THRESHOLD,
-                    suggestion: avgEnergy > 0.003 ? 'Energy close to threshold - may need adjustment' : 'True silence'
+                    threshold: silenceThreshold,
+                    category: category
                 });
                 // Transition back to listening state
                 voiceService.send({type: 'INTERACTION_COMPLETE'});
@@ -341,7 +334,8 @@ function setupMic(voiceService, orchestrator, detector, playbackMachine, onRecor
             recordedAudio = recordedAudio.concat(Array.from(normalized));
 
             const energy = rmsEnergy(normalized);
-            if (energy < VAD_CONSTANTS.SILENCE_THRESHOLD) {
+            const silenceThreshold = getSilenceThreshold(config);
+            if (energy < silenceThreshold) {
                 silenceSampleCount += normalized.length;
                 const sinceStartMs = Date.now() - recordingStartedAt;
                 const graceActive = !hasSpokenDuringRecording && sinceStartMs < VAD_CONSTANTS.GRACE_BEFORE_STOP_MS;

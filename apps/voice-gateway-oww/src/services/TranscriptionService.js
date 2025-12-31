@@ -38,6 +38,12 @@ export class TranscriptionService {
         this.minDuration = MIN_AUDIO_DURATION_SECONDS;
         this.minEnergy = MIN_AUDIO_ENERGY;
         this.timeoutMs = WHISPER_TRANSCRIPTION_TIMEOUT_MS;
+
+        // Performance optimization settings
+        this.threads = config.whisper.threads || 4;
+        this.language = config.whisper.language || 'en';
+        this.beamSize = config.whisper.beamSize || 1;
+        this.bestOf = config.whisper.bestOf || 1;
     }
 
     /**
@@ -215,7 +221,18 @@ export class TranscriptionService {
 
             const startTime = Date.now();
             const whisperCmd = this._resolveWhisperPath();
-            const whisperArgs = ['-m', whisperModelAbs, '-f', wavPath, '-nt'];
+            // Performance-optimized arguments:
+            // -nt: no timestamps, -l: language (skip detection), -t: threads
+            // -bs: beam size, -bo: best-of (both set to 1 for greedy decoding)
+            const whisperArgs = [
+                '-m', whisperModelAbs,
+                '-f', wavPath,
+                '-nt',
+                '-l', this.language,
+                '-t', String(this.threads),
+                '-bs', String(this.beamSize),
+                '-bo', String(this.bestOf)
+            ];
 
             // Create AbortController for timeout
             const controller = new AbortController();

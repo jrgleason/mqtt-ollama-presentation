@@ -62,6 +62,7 @@ const config = {
         beepVolume: process.env.BEEP_VOLUME ? Number(process.env.BEEP_VOLUME) : 0.3,
     },
     vad: {
+        silenceThreshold: process.env.VAD_SILENCE_THRESHOLD ? Number(process.env.VAD_SILENCE_THRESHOLD) : undefined,
         trailingSilenceMs: process.env.VAD_TRAILING_SILENCE_MS ? Number(process.env.VAD_TRAILING_SILENCE_MS) : 1500,
         maxUtteranceMs: process.env.VAD_MAX_UTTERANCE_MS ? Number(process.env.VAD_MAX_UTTERANCE_MS) : 10000,
         minSpeechMs: process.env.VAD_MIN_SPEECH_MS ? Number(process.env.VAD_MIN_SPEECH_MS) : 700,
@@ -70,6 +71,11 @@ const config = {
     whisper: {
         model: process.env.WHISPER_MODEL || 'base',
         modelPath: process.env.WHISPER_MODEL_PATH || 'models/ggml-base.bin',
+        // Performance optimizations
+        threads: process.env.WHISPER_THREADS ? Number(process.env.WHISPER_THREADS) : 4,
+        language: process.env.WHISPER_LANGUAGE || 'en', // Skip language detection
+        beamSize: process.env.WHISPER_BEAM_SIZE ? Number(process.env.WHISPER_BEAM_SIZE) : 1, // Greedy decoding
+        bestOf: process.env.WHISPER_BEST_OF ? Number(process.env.WHISPER_BEST_OF) : 1, // Greedy decoding
     },
     mqtt: {
         brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
@@ -99,6 +105,8 @@ const config = {
     ollama: {
         baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
         model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
+        // Disable thinking mode for qwen3 models (faster but less accurate)
+        noThink: process.env.OLLAMA_NO_THINK === 'true',
     },
     tts: {
         enabled: process.env.TTS_ENABLED !== 'false', // Default to enabled

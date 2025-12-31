@@ -20,6 +20,28 @@ function markdownToSpeech(markdown) {
     // Remove any Chinese/Japanese/Korean characters that might slip through
     text = text.replace(/[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF。，]/g, '');
 
+    // =========================================================================
+    // TTS-friendly unit conversions (symbols → spoken words)
+    // =========================================================================
+    // Temperature: °F, °C, ºF, ºC (degree symbol variations)
+    text = text.replace(/(\d+\.?\d*)\s*[°º]F\b/gi, '$1 degrees Fahrenheit');
+    text = text.replace(/(\d+\.?\d*)\s*[°º]C\b/gi, '$1 degrees Celsius');
+    // Standalone degree symbols (rare but handle them)
+    text = text.replace(/[°º]F\b/gi, 'degrees Fahrenheit');
+    text = text.replace(/[°º]C\b/gi, 'degrees Celsius');
+
+    // Humidity/percentage: handle "% humidity" or just "%"
+    text = text.replace(/(\d+\.?\d*)\s*%\s*humidity/gi, '$1 percent humidity');
+    text = text.replace(/(\d+\.?\d*)\s*%\s*RH/gi, '$1 percent relative humidity');
+    text = text.replace(/(\d+\.?\d*)\s*%/g, '$1 percent');
+
+    // Common units
+    text = text.replace(/\bkWh\b/gi, 'kilowatt hours');
+    text = text.replace(/\bkW\b/gi, 'kilowatts');
+    text = text.replace(/\bmph\b/gi, 'miles per hour');
+    text = text.replace(/\bkph\b/gi, 'kilometers per hour');
+    text = text.replace(/\bm\/s\b/gi, 'meters per second');
+
     // Handle code blocks (fenced with ```)
     text = text.replace(/```[\s\S]*?```/g, (match) => {
         // Extract code inside backticks

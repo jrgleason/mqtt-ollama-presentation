@@ -7,6 +7,7 @@ import { AIRouter } from '../ai/AIRouter.js';
 import { conversationManager } from '../ConversationManager.js';
 import { publishTranscription, publishAIResponse } from '../mqttClient.js';
 import { ElevenLabsTTS } from '../util/ElevenLabsTTS.js';
+import { synthesizeSpeech as piperSynthesize } from '../piperTTS.js';
 import { streamSpeak } from '../streamingTTS.js';
 import { executeDateTimeTool } from '../util/tools.js';
 import { errMsg } from '../util/Logger.js';
@@ -43,7 +44,6 @@ export class VoiceInteractionOrchestrator {
         this.transcriptionService = new TranscriptionService(config, logger);
         this.intentClassifier = new IntentClassifier();
         this.aiRouter = new AIRouter(config, logger, toolExecutor);
-        this.elevenLabsTTS = new ElevenLabsTTS(config, logger);
 
         // Track active TTS playback for interruption support
         // This will be deprecated in favor of PlaybackMachine
@@ -365,10 +365,23 @@ export class VoiceInteractionOrchestrator {
      */
     async _speakResponse(aiResponse) {
         try {
-            const audioBuffer = await this.elevenLabsTTS.synthesizeSpeech(aiResponse, {
-                volume: this.config.tts.volume,
-                speed: this.config.tts.speed
-            });
+            const provider = this.config.tts.provider || 'ElevenLabs';
+            let audioBuffer;
+
+            if (provider === 'Piper') {
+                // Use Piper TTS (local/offline)
+                audioBuffer = await piperSynthesize(aiResponse, {
+                    volume: this.config.tts.volume,
+                    speed: this.config.tts.speed
+                });
+            } else {
+                // Use ElevenLabs TTS (cloud)
+                const elevenLabsTTS = new ElevenLabsTTS(this.config, this.logger);
+                audioBuffer = await elevenLabsTTS.synthesizeSpeech(aiResponse, {
+                    volume: this.config.tts.volume,
+                    speed: this.config.tts.speed
+                });
+            }
 
             if (audioBuffer && audioBuffer.length > 0) {
                 // Use playInterruptible for cancellable playback

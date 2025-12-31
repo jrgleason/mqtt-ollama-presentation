@@ -42,17 +42,25 @@ export const PRE_ROLL_MS = 300;
 export const PRE_ROLL_SAMPLES = Math.floor((PRE_ROLL_MS / 1000) * SAMPLE_RATE);
 
 /**
- * SILENCE_THRESHOLD - RMS energy level below which audio is considered silence
+ * DEFAULT_SILENCE_THRESHOLD - RMS energy level below which audio is considered silence
  *
  * This threshold distinguishes between speech/noise and silence.
  * - Typical human voice: 0.05 - 0.2 RMS energy
- * - Background noise: < 0.01 RMS energy
- * - Silence: < 0.01 RMS energy
+ * - Very quiet speech: 0.003 - 0.01 RMS energy
+ * - Background noise: < 0.003 RMS energy
+ * - True silence: < 0.001 RMS energy
  *
- * Value: 0.01
- * Rationale: Empirically tested to work well in typical home environments
+ * Default: 0.003 (configurable via config.vad.silenceThreshold)
+ * Rationale: More lenient than previous 0.01 default to reduce false positives
+ * when users speak quietly, while MIN_SPEECH_MS still filters out background noise
  */
-export const SILENCE_THRESHOLD = 0.01;
+export const DEFAULT_SILENCE_THRESHOLD = 0.003;
+
+/**
+ * SILENCE_THRESHOLD - Legacy constant for backward compatibility
+ * @deprecated Use getSilenceThreshold(config) instead
+ */
+export const SILENCE_THRESHOLD = DEFAULT_SILENCE_THRESHOLD;
 
 /**
  * MIN_SPEECH_MS - Minimum duration of recording before it can be stopped
@@ -138,4 +146,11 @@ export function getMaxRecordingSamples(config) {
  */
 export function getGraceBeforeStopMs(config) {
     return config?.vad?.graceBeforeStopMs || DEFAULT_GRACE_BEFORE_STOP_MS;
+}
+
+/**
+ * Helper function to get silence threshold from config or use default
+ */
+export function getSilenceThreshold(config) {
+    return config?.vad?.silenceThreshold || DEFAULT_SILENCE_THRESHOLD;
 }

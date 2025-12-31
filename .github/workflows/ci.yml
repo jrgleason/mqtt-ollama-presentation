@@ -29,14 +29,6 @@ jobs:
             apps/oracle/package-lock.json
             apps/voice-gateway-oww/package-lock.json
             apps/zwave-mcp-server/package-lock.json
-            apps/voice-gateway-common/package-lock.json
-
-      # ==========================================
-      # Voice Gateway Common (dependency for OWW)
-      # ==========================================
-      - name: Install dependencies - voice-gateway-common
-        working-directory: ./apps/voice-gateway-common
-        run: npm ci || npm install
 
       # ==========================================
       # Oracle App (Next.js)
@@ -108,4 +100,3 @@ jobs:
           echo "- Oracle (Next.js)" >> $GITHUB_STEP_SUMMARY
           echo "- ZWave MCP Server" >> $GITHUB_STEP_SUMMARY
           echo "- Voice Gateway OWW" >> $GITHUB_STEP_SUMMARY
-          echo "- Voice Gateway Common" >> $GITHUB_STEP_SUMMARY
