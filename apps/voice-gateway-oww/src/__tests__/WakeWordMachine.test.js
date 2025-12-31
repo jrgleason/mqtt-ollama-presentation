@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { createWakeWordMachine, setupWakeWordMachine } from '../state-machines/WakeWordMachine.js';
 
 describe('WakeWordMachine', () => {
