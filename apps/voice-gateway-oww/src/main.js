@@ -571,27 +571,24 @@ async function main() {
         // Wait for WakeWordMachine to be in 'ready' state before playing welcome message
         // This ensures the detector is fully warmed up
         const waitForReady = new Promise((resolve) => {
-            const checkState = () => {
+            // Subscribe to state changes
+            const subscription = wakeWordMachine.subscribe(() => {
                 const snapshot = wakeWordMachine.getSnapshot();
                 if (snapshot.matches('ready')) {
                     logger.debug('🔧 [STARTUP-DEBUG] Phase 6: WakeWordMachine ready, playing welcome message...');
+                    // Clean up subscription before resolving
+                    subscription.unsubscribe();
                     resolve();
                 }
-            };
-
-            // Subscribe to state changes
-            const subscription = wakeWordMachine.subscribe(checkState);
+            });
 
             // Check immediately in case already ready
-            checkState();
-
-            // Clean up subscription after resolving
-            resolve = ((originalResolve) => {
-                return () => {
-                    subscription.unsubscribe();
-                    originalResolve();
-                };
-            })(resolve);
+            const snapshot = wakeWordMachine.getSnapshot();
+            if (snapshot.matches('ready')) {
+                logger.debug('🔧 [STARTUP-DEBUG] Phase 6: WakeWordMachine ready, playing welcome message...');
+                subscription.unsubscribe();
+                resolve();
+            }
         });
 
         await waitForReady;

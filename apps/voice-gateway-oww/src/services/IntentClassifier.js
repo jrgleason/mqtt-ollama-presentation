@@ -23,9 +23,11 @@ export class IntentClassifier {
         ];
 
         this.dateTimeQueryPatterns = [
-            /what (time|date) is it\??$/i,
-            /what day is (it|today)\??$/i,
+            /what (time|date) is it/i,
+            /what day is (it|today)/i,
             /^what('?s| is) the current (time|date|day)/i,
+            // Simple "current time/date" patterns
+            /^current (time|date)$/i,
             // Enhanced patterns for "day of the week" phrasings
             /what day of the week/i,
             /^day of the week\??$/i,

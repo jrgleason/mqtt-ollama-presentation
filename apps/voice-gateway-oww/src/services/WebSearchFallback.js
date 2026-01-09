@@ -269,7 +269,12 @@ export class WebSearchFallback {
 
         // Deduplicate and join
         const uniqueResults = [...new Set(results)].slice(0, 4);
-        const resultText = uniqueResults.join(' | ');
+        let resultText = uniqueResults.join(' | ');
+
+        // Limit to 500 characters for efficiency
+        if (resultText.length > 500) {
+            resultText = resultText.substring(0, 500);
+        }
 
         return resultText || 'No results found';
     }
@@ -280,8 +285,7 @@ export class WebSearchFallback {
      * @returns {string} Context message to prepend to AI query
      */
     buildSearchContext(searchResults) {
-        // Keep it simple and direct for small models
-        return `SEARCH RESULTS:\n${searchResults}\n\nGive a SHORT, DIRECT answer based on these results. Just state the answer in 1 sentence.`;
+        return `Based on recent web search results:\n\n${searchResults}\n\nUsing this information, please answer the user's question briefly and directly.`;
     }
 }
 

@@ -107,6 +107,10 @@ const config = {
         model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
         // Disable thinking mode for qwen3 models (faster but less accurate)
         noThink: process.env.OLLAMA_NO_THINK === 'true',
+        // Performance settings
+        numCtx: process.env.OLLAMA_NUM_CTX ? Number(process.env.OLLAMA_NUM_CTX) : 2048,
+        temperature: process.env.OLLAMA_TEMPERATURE ? Number(process.env.OLLAMA_TEMPERATURE) : 0.5,
+        keepAlive: process.env.OLLAMA_KEEP_ALIVE !== undefined ? Number(process.env.OLLAMA_KEEP_ALIVE) : -1,
     },
     tts: {
         enabled: process.env.TTS_ENABLED !== 'false', // Default to enabled

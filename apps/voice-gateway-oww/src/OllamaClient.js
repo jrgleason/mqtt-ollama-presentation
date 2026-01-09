@@ -29,10 +29,17 @@ export class OllamaClient {
     /** Get or initialize Ollama client */
     get client() {
         if (!this.#client) {
+            // Get performance settings with defaults
+            const numCtx = this.config.ollama.numCtx ?? 2048;
+            const temperature = this.config.ollama.temperature ?? 0.5;
+            const keepAlive = this.config.ollama.keepAlive ?? -1;
+
             this.#client = new ChatOllama({
                 baseUrl: this.config.ollama.baseUrl,
                 model: this.config.ollama.model,
-                temperature: this.config.ollama.temperature || 0.7,
+                temperature: temperature,
+                numCtx: numCtx,
+                keepAlive: keepAlive,
                 // Performance: Limit response length to prevent runaway generation
                 numPredict: 150,
             });
@@ -40,6 +47,9 @@ export class OllamaClient {
             this.logger.debug('✅ ChatOllama client initialized', {
                 baseUrl: this.config.ollama.baseUrl,
                 model: this.config.ollama.model,
+                numCtx: numCtx,
+                temperature: temperature,
+                keepAlive: keepAlive,
             });
         }
         return this.#client;

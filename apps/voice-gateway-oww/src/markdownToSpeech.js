@@ -4,6 +4,9 @@
  * Converts markdown (including code blocks) into pronounceable text for TTS.
  */
 
+// Degree symbol pattern matching both ° and º characters
+const DEGREE_SYMBOLS = '[°º]';
+
 /**
  * Convert markdown text to speech-friendly text
  *
@@ -24,11 +27,11 @@ function markdownToSpeech(markdown) {
     // TTS-friendly unit conversions (symbols → spoken words)
     // =========================================================================
     // Temperature: °F, °C, ºF, ºC (degree symbol variations)
-    text = text.replace(/(\d+\.?\d*)\s*[°º]F\b/gi, '$1 degrees Fahrenheit');
-    text = text.replace(/(\d+\.?\d*)\s*[°º]C\b/gi, '$1 degrees Celsius');
+    text = text.replace(new RegExp(`(\\d+\\.?\\d*)\\s*${DEGREE_SYMBOLS}F\\b`, 'gi'), '$1 degrees Fahrenheit');
+    text = text.replace(new RegExp(`(\\d+\\.?\\d*)\\s*${DEGREE_SYMBOLS}C\\b`, 'gi'), '$1 degrees Celsius');
     // Standalone degree symbols (rare but handle them)
-    text = text.replace(/[°º]F\b/gi, 'degrees Fahrenheit');
-    text = text.replace(/[°º]C\b/gi, 'degrees Celsius');
+    text = text.replace(new RegExp(`${DEGREE_SYMBOLS}F\\b`, 'gi'), 'degrees Fahrenheit');
+    text = text.replace(new RegExp(`${DEGREE_SYMBOLS}C\\b`, 'gi'), 'degrees Celsius');
 
     // Humidity/percentage: handle "% humidity" or just "%"
     text = text.replace(/(\d+\.?\d*)\s*%\s*humidity/gi, '$1 percent humidity');
