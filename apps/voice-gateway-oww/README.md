@@ -8,8 +8,12 @@ Offline voice command gateway for MQTT + Ollama home automation using OpenWakeWo
 - **Voice Activity Detection:** WebRTC VAD with trailing silence detection
 - **Speech-to-Text:** Local Whisper.cpp (tiny model, 1.5s transcription)
 - **AI Response:** Ollama with qwen2.5:0.5b (~1s response time, optimized for Pi 5) or llama3.2:1b for better tool support (not suitable for lower-resource devices)
+<<<<<<< HEAD
 - **Text-to-Speech:** ElevenLabs API with streaming (high-quality voice synthesis)
 - **Volume Control:** Voice commands to adjust speaker volume ("turn up the volume", "set volume to 50%")
+=======
+- **Text-to-Speech:** Piper TTS with local voice models (1.7s synthesis)
+>>>>>>> 9cf57b1 (docs: clarify llama3.2:1b not suitable for low-resource devices)
 - **MQTT Integration:** Communicates with Oracle chatbot
 - **Local-First Processing:** Wake word, STT, and AI processing happen locally
 - **Cloud TTS:** High-quality voice output via ElevenLabs (requires internet)
