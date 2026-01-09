@@ -5,6 +5,20 @@
  */
 
 import {loadPrompt} from '../util/prompt-loader.js';
+import logger from '../util/Logger.js';
+
+/**
+ * Days of the week
+ * @type {string[]}
+ */
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Months of the year
+ * @type {string[]}
+ */
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
 
 /**
  * Get current date and time information
@@ -13,17 +27,13 @@ import {loadPrompt} from '../util/prompt-loader.js';
 export function getCurrentDateTime() {
     const now = new Date();
 
-    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
-
     return {
         // Date components
-        dayOfWeek: daysOfWeek[now.getDay()],
-        dayOfWeekShort: daysOfWeek[now.getDay()].substring(0, 3),
+        dayOfWeek: DAYS_OF_WEEK[now.getDay()],
+        dayOfWeekShort: DAYS_OF_WEEK[now.getDay()].substring(0, 3),
         dayOfMonth: now.getDate(),
-        month: months[now.getMonth()],
-        monthShort: months[now.getMonth()].substring(0, 3),
+        month: MONTHS[now.getMonth()],
+        monthShort: MONTHS[now.getMonth()].substring(0, 3),
         monthNumber: now.getMonth() + 1,
         year: now.getFullYear(),
 
@@ -112,8 +122,7 @@ export function getDateTimeDescription(context = '') {
     if (/what\s+day\s+of\s+the\s+week/i.test(lowerContext)) {
         const explicit = parseExplicitDate(context);
         if (explicit) {
-            const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const dow = daysOfWeek[explicit.getDay()];
+            const dow = DAYS_OF_WEEK[explicit.getDay()];
             return `${dow}`; // Keep answers brief as per system prompt
         }
         // If no explicit date found, default to today
@@ -178,6 +187,6 @@ export function executeDateTimeTool(_args = {}, context = '') {
     void _args;
 
     const result = getDateTimeDescription(context);
-    console.log('🕒 DateTime tool executed:', result);
+    logger.debug('🕒 DateTime tool executed:', result);
     return result;
 }
