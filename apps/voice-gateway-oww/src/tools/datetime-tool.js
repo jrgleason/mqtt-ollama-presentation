@@ -5,7 +5,7 @@
  */
 
 import {loadPrompt} from '../util/prompt-loader.js';
-import logger from '../util/Logger.js';
+import {logger} from '../util/Logger.js';
 
 /**
  * Days of the week
