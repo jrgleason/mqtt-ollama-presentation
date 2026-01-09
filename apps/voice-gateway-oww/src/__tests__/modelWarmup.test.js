@@ -211,7 +211,7 @@ describe('Ollama Model Warmup', () => {
                         keep_alive: -1,
                     }),
                 });
-                fail('Should have thrown an error');
+                throw new Error('Should have thrown an error');
             } catch (error) {
                 expect(error.message).toBe('Network error');
             }
