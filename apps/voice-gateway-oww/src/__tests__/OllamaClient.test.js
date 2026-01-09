@@ -258,7 +258,7 @@ describe('OllamaClient Performance Configuration', () => {
         const client = new OllamaClient(config, mockLogger);
 
         // Access the client to trigger initialization
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         // Verify debug logging includes default values
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
@@ -278,7 +278,7 @@ describe('OllamaClient Performance Configuration', () => {
         };
 
         const client = new OllamaClient(config, mockLogger);
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
         expect(initLog.data.numCtx).toBe(4096);
@@ -294,7 +294,7 @@ describe('OllamaClient Performance Configuration', () => {
         };
 
         const client = new OllamaClient(config, mockLogger);
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
         expect(initLog.data.temperature).toBe(0.7);
@@ -310,7 +310,7 @@ describe('OllamaClient Performance Configuration', () => {
         };
 
         const client = new OllamaClient(config, mockLogger);
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
         expect(initLog.data.keepAlive).toBe(3600);
@@ -326,7 +326,7 @@ describe('OllamaClient Performance Configuration', () => {
         };
 
         const client = new OllamaClient(config, mockLogger);
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
         expect(initLog.data.keepAlive).toBe(0);
@@ -344,7 +344,7 @@ describe('OllamaClient Performance Configuration', () => {
         };
 
         const client = new OllamaClient(config, mockLogger);
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
         expect(initLog.data.baseUrl).toBe('http://custom:11434');
@@ -366,7 +366,7 @@ describe('OllamaClient Performance Configuration', () => {
         };
 
         const client = new OllamaClient(config, mockLogger);
-        const chatClient = client.client;
+        client.client; // Trigger lazy initialization
 
         // Verify that performance settings are logged
         const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');

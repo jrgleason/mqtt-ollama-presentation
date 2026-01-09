@@ -177,7 +177,7 @@ describe('WebSearchFallback', () => {
                 return 'Success';
             };
 
-            const result = await fallback.searchWeb('test query');
+            await fallback.searchWeb('test query');
 
             // Should have called Playwright tools
             expect(toolCalls.find(c => c.name === 'browser_navigate')).toBeTruthy();

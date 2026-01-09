@@ -41,7 +41,7 @@ describe('Ollama Model Warmup', () => {
             };
 
             // Simulate warmup logic
-            const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
+            await fetch(`${config.ollama.baseUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -91,7 +91,7 @@ describe('Ollama Model Warmup', () => {
             };
 
             // Simulate warmup logic with defaults
-            const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
+            await fetch(`${config.ollama.baseUrl}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -265,14 +265,6 @@ describe('Ollama Model Warmup', () => {
         });
 
         it('should skip warmup when health check fails', () => {
-            const config = {
-                ai: { provider: 'ollama' },
-                ollama: {
-                    baseUrl: 'http://localhost:11434',
-                    model: 'qwen2.5:0.5b',
-                }
-            };
-
             const healthResults = {
                 ai: { healthy: false, error: 'Ollama server unreachable' }
             };

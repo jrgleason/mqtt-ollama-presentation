@@ -512,7 +512,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const activeStatus = device.isActive === null ? 'unknown' :
                     device.isActive ? 'active' : 'inactive';
                 const lastSeen = registryBuilder.getLastSeenFormatted(device.name);
-                const location = device.location ? ` in ${device.location}` : '';
 
                 let responseText = `Device "${device.name}" exists.\n`;
                 responseText += `Type: ${device.type}\n`;

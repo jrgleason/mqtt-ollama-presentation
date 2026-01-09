@@ -2,7 +2,6 @@
  * Tests for prompt-loader utility
  */
 
-import { jest } from '@jest/globals';
 import {
     loadPrompt,
     preloadPrompts,
