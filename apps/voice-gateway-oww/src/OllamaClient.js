@@ -26,13 +26,32 @@ import {Ollama} from 'ollama';
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 import {logger} from './util/Logger.js';
 import {config} from './config.js';
+import {loadPrompt} from './util/prompt-loader.js';
 
 export class OllamaClient {
     #client = null;
+    // Phase 1: Query position tracking for diagnostics
+    #queryCounter = 0;
 
     constructor(config, logger) {
         this.config = config;
         this.logger = logger;
+    }
+
+    /**
+     * Get the current query position in this session (1-indexed)
+     * @returns {number} Query number (1st, 2nd, 3rd, etc.)
+     */
+    get queryPosition() {
+        return this.#queryCounter;
+    }
+
+    /**
+     * Reset the query counter (useful for testing or session resets)
+     */
+    resetQueryCounter() {
+        this.#queryCounter = 0;
+        this.logger.debug('Query counter reset');
     }
 
     /** Get or initialize Ollama client */
@@ -42,9 +61,13 @@ export class OllamaClient {
             this.#client = new ChatOllama({
                 baseUrl: this.config.ollama.baseUrl,
                 model: this.config.ollama.model,
-                temperature: this.config.ollama.temperature || 0.7,
+                temperature: this.config.ollama.temperature || 0.5,
                 // Performance: Limit response length to prevent runaway generation
-                numPredict: 150,
+                // Increased from 250 to 350 to allow complete tool call JSON generation
+                numPredict: 350,
+                // Performance optimizations for voice interactions
+                numCtx: this.config.ollama.numCtx || 4096,
+                keepAlive: this.config.ollama.keepAlive !== undefined ? this.config.ollama.keepAlive : -1,
             });
 
             this.logger.debug('✅ ChatOllama client initialized', {
@@ -58,6 +81,9 @@ export class OllamaClient {
                 host: this.config.ollama.baseUrl,
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 model: this.config.ollama.model,
+                numCtx: this.config.ollama.numCtx || 2048,
+                temperature: this.config.ollama.temperature || 0.5,
+                keepAlive: this.config.ollama.keepAlive !== undefined ? this.config.ollama.keepAlive : -1,
             });
         }
         return this.#client;
@@ -186,11 +212,21 @@ export class OllamaClient {
      */
     async query(prompt, options = {}) {
         const model = options.model || this.config.ollama.model;
-        const systemPrompt = options.systemPrompt ||
-            'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only. No <think> tags.';
+        // Use simplified prompt for small models - saves context space
+        const systemPrompt = options.systemPrompt || loadPrompt('system/ollama-simple');
+
+        // Phase 1: Increment and track query position
+        this.#queryCounter++;
+        const queryPosition = this.#queryCounter;
 
         try {
-            this.logger.debug('🤖 Sending prompt to Ollama', {model, prompt: prompt || '[conversation]'});
+            this.logger.debug('🤖 Sending prompt to Ollama', {
+                model,
+                prompt: prompt || '[conversation]',
+                queryPosition, // Phase 1: Track query position
+                hasTools: !!(options.tools && options.tools.length > 0),
+                toolCount: options.tools?.length || 0
+            });
 
             const startTime = Date.now();
 
@@ -231,17 +267,77 @@ export class OllamaClient {
             }
 
             // Invoke the model
+            const invokeStartTime = Date.now();
             let response = await modelToUse.invoke(langChainMessages);
+            const invokeDuration = Date.now() - invokeStartTime;
 
-            // Debug: Log raw response for troubleshooting
+            // Phase 1: Enhanced diagnostic logging for raw response
+            const hasEmptyToolCallArray = !!response.tool_calls && response.tool_calls.length === 0;
             this.logger.debug('🔍 Raw model response', {
+                queryPosition, // Phase 1: Which query in session
+                invokeDuration: `${invokeDuration}ms`,
                 hasContent: !!response.content,
                 contentLength: response.content?.length || 0,
                 contentPreview: response.content?.substring(0, 150) || '',
                 hasToolCalls: !!response.tool_calls,
                 toolCallsLength: response.tool_calls?.length || 0,
-                hasToolExecutor: !!options.toolExecutor
+                hasEmptyToolCallArray, // Phase 1: Key diagnostic for empty array issue
+                toolCallNames: response.tool_calls?.map(tc => tc.name) || [],
+                hasToolExecutor: !!options.toolExecutor,
+                // Phase 1: Log response metadata if available
+                responseMetadata: response.response_metadata ? {
+                    model: response.response_metadata.model,
+                    done_reason: response.response_metadata.done_reason,
+                    total_duration: response.response_metadata.total_duration,
+                    eval_count: response.response_metadata.eval_count
+                } : null
             });
+
+            // Phase 4: Detect empty tool call array pattern and retry without tools
+            const isEmptyToolCallResponse = hasEmptyToolCallArray && !response.content && options.tools?.length > 0;
+            if (isEmptyToolCallResponse && options.toolExecutor) {
+                this.logger.info('⚠️ Empty tool call array detected, retrying WITHOUT tools', {
+                    queryPosition,
+                    originalToolCount: options.tools.length
+                });
+
+                // Retry without tools - add guidance to answer directly
+                const retryMessages = [...messages];
+                const lastUserIdx = retryMessages.findLastIndex(m => m.role === 'user');
+                if (lastUserIdx !== -1) {
+                    const noThinkSuffix = useNoThink ? ' /no_think' : '';
+                    retryMessages[lastUserIdx] = {
+                        ...retryMessages[lastUserIdx],
+                        content: retryMessages[lastUserIdx].content.replace(' /no_think', '') +
+                            ' Answer directly without using any tools.' + noThinkSuffix
+                    };
+                }
+
+                const retryLangChainMessages = OllamaClient.convertToLangChainMessages(retryMessages);
+                const retryStartTime = Date.now();
+                response = await this.client.invoke(retryLangChainMessages); // No tools bound
+                const retryDuration = Date.now() - retryStartTime;
+
+                this.logger.debug('🔍 Retry response (without tools)', {
+                    queryPosition,
+                    retryDuration: `${retryDuration}ms`,
+                    hasContent: !!response.content,
+                    contentLength: response.content?.length || 0,
+                    contentPreview: response.content?.substring(0, 150) || ''
+                });
+
+                // Return the direct response from retry
+                const aiResponse = OllamaClient.cleanNonEnglish(response.content);
+                const totalDuration = Date.now() - startTime;
+                this.logger.debug('✅ Ollama response (retry without tools)', {
+                    model,
+                    queryPosition,
+                    duration: `${totalDuration}ms`,
+                    responseLength: aiResponse.length,
+                    response: aiResponse.substring(0, 100) + (aiResponse.length > 100 ? '...' : '')
+                });
+                return aiResponse;
+            }
 
             // Check if the model wants to call a tool (native tool_calls or text-based)
             let toolCalls = response.tool_calls || [];
@@ -304,24 +400,37 @@ export class OllamaClient {
 
                 // For Ollama models (especially smaller ones like qwen3), use simple follow-up approach
                 // They don't properly understand ToolMessage format and will try to call tools again
-                // Build a follow-up message with the tool result
+                // Build a follow-up message with the tool result - keep it MINIMAL
                 const toolResultSummary = toolResultStrings
-                    .map(tr => `${tr.name} result: ${tr.result}`)
-                    .join('\n');
+                    .map(tr => tr.result)
+                    .join(' ');
+
+                // Find the original user question to include in follow-up
+                // This prevents the model from confusing different questions in conversation history
+                const lastUserIdx = messages.findLastIndex(m => m.role === 'user');
+                const originalQuestion = lastUserIdx !== -1
+                    ? messages[lastUserIdx].content.replace(' /no_think', '').trim()
+                    : '';
 
                 // Add /no_think for qwen3 models to speed up response
                 const noThinkSuffix = useNoThink ? ' /no_think' : '';
+                // Make the follow-up prompt very explicit about extracting facts
+                // IMPORTANT: Don't give the model a "fallback" phrase - it will just use it every time
                 const followUpMessage = new HumanMessage(
-                    `Here is the data you requested:\n${toolResultSummary}\n\nNow answer the user's original question using this data. Be brief and direct - one sentence only. Do NOT call any more tools.${noThinkSuffix}`
+                    `${toolResultSummary}\n\nQuestion: ${originalQuestion}\n\nAnswer in 1 sentence using the information above.${noThinkSuffix}`
                 );
 
                 langChainMessages.push(followUpMessage);
                 this.logger.debug('🔧 Sending tool result as follow-up message', {
-                    resultLength: toolResultSummary.length
+                    resultLength: toolResultSummary.length,
+                    originalQuestion: originalQuestion.substring(0, 50),
+                    // Log full follow-up content for debugging
+                    followUpContent: followUpMessage.content.substring(0, 300)
                 });
 
                 // Get final response WITHOUT tools bound - we already have the data
                 // This prevents the model from trying to call tools again
+                // TODO: Consider allowing refinement searches - see proposal add-search-refinement-support
                 response = await this.client.invoke(langChainMessages);
 
                 // Debug: log raw response before cleaning
@@ -389,6 +498,7 @@ export class OllamaClient {
 
                 this.logger.debug('✅ Ollama response (with tools) received', {
                     model,
+                    queryPosition, // Phase 1: Track position
                     duration: `${Date.now() - startTime}ms`,
                     response: aiResponse.substring(0, 100) + (aiResponse.length > 100 ? '...' : ''),
                 });
@@ -407,6 +517,7 @@ export class OllamaClient {
 >>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             this.logger.debug('✅ Ollama response received', {
                 model,
+                queryPosition, // Phase 1: Track position
                 duration: `${duration}ms`,
                 responseLength: aiResponse.length,
                 response: aiResponse.substring(0, 100) + (aiResponse.length > 100 ? '...' : ''),
@@ -417,6 +528,7 @@ export class OllamaClient {
             this.logger.error('❌ Ollama query failed', {
                 error: error.message,
                 model,
+                queryPosition, // Phase 1: Track position in errors too
                 prompt: prompt?.substring(0, 50) || '[conversation]',
             });
             throw error;

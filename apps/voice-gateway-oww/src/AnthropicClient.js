@@ -8,6 +8,7 @@ import {ChatAnthropic} from '@langchain/anthropic';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 import {logger} from './util/Logger.js';
 import {config} from './config.js';
+import {loadPrompt} from './util/prompt-loader.js';
 
 export class AnthropicClient {
     #client = null;
@@ -126,7 +127,8 @@ export class AnthropicClient {
                     }
                     // Ignore: tool_use, input_json_delta, tool_result, etc.
                 }
-                return texts.join(' ').trim();
+                // Concatenate directly - text parts already have natural spacing
+                return texts.join('');
             } catch {
                 return '';
             }
@@ -151,7 +153,7 @@ export class AnthropicClient {
     async query(prompt, options = {}) {
         let client = this.client;
         const systemPrompt = options.systemPrompt ||
-            'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
+            loadPrompt('system/home-assistant');
 
         const onToken = options.onToken; // optional streaming callback
 
@@ -324,8 +326,8 @@ export class AnthropicClient {
                         const piece = AnthropicClient.extractTextOnly(c);
                         if (piece) {
                             onToken(piece);
-                            // Add a space before concatenating to avoid word glue, then trim
-                            finalText += (finalText && !finalText.endsWith(' ') ? ' ' : '') + piece;
+                            // Concatenate directly - streaming chunks preserve natural spacing
+                            finalText += piece;
                         }
                     }
                     const finalApiTime = Date.now() - finalApiStart;
@@ -441,7 +443,8 @@ export class AnthropicClient {
                     const piece = AnthropicClient.extractTextOnly(c);
                     if (piece) {
                         onToken(piece);
-                        text += (text && !text.endsWith(' ') ? ' ' : '') + piece;
+                        // Concatenate directly - streaming chunks preserve natural spacing
+                        text += piece;
                     }
                 }
 <<<<<<< HEAD

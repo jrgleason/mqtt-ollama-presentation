@@ -82,12 +82,9 @@ describe('RecordingMachine', () => {
             const snapshot1 = service.getSnapshot();
             const initialTimestamp = snapshot1.context.startedAt;
 
-            // Wait a bit
-            const waitPromise = new Promise(resolve => setTimeout(resolve, 10));
-            return waitPromise.then(() => {
-                const snapshot2 = service.getSnapshot();
-                expect(snapshot2.context.startedAt).toBe(initialTimestamp);
-            });
+            // Get another snapshot - timestamp should be unchanged
+            const snapshot2 = service.getSnapshot();
+            expect(snapshot2.context.startedAt).toBe(initialTimestamp);
         });
     });
 

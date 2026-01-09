@@ -199,12 +199,42 @@ export class ToolExecutor {
     formatErrorMessage(toolName, error) {
         const errorMsg = error.message.toLowerCase();
 
-        // Network errors
+        // Z-Wave specific errors - check if this is a Z-Wave tool
+        const isZWaveTool = toolName.toLowerCase().includes('zwave') ||
+                           toolName.toLowerCase().includes('device') ||
+                           toolName.toLowerCase().includes('list_devices') ||
+                           toolName.toLowerCase().includes('verify_device') ||
+                           toolName.toLowerCase().includes('control') ||
+                           toolName.toLowerCase().includes('sensor');
+
+        if (isZWaveTool) {
+            // If the MCP server already returned a friendly message, use it
+            if (errorMsg.includes("can't reach the smart home") ||
+                errorMsg.includes("service isn't running") ||
+                errorMsg.includes("smart home system")) {
+                return error.message;
+            }
+
+            // Otherwise, translate technical errors to friendly messages
+            if (errorMsg.includes('timed out') || errorMsg.includes('timeout') || errorMsg.includes('etimedout')) {
+                return "The smart home system is taking too long to respond. It might be offline or experiencing issues.";
+            }
+
+            if (errorMsg.includes('econnrefused') || errorMsg.includes('connection refused') || errorMsg.includes('connect_error')) {
+                return "I can't connect to the smart home controller. Please check that it's running and connected to your network.";
+            }
+
+            if (errorMsg.includes('enotfound') || errorMsg.includes('not found')) {
+                return "I can't find the smart home controller on the network. Please check the network configuration.";
+            }
+        }
+
+        // Network errors (general)
         if (errorMsg.includes('network') || errorMsg.includes('econnrefused') || errorMsg.includes('enotfound')) {
             return `The ${toolName} service is currently unavailable. Please check your network connection.`;
         }
 
-        // Timeout errors
+        // Timeout errors (general)
         if (errorMsg.includes('timeout')) {
             return `The ${toolName} operation timed out. Please try again later.`;
         }

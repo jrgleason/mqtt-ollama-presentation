@@ -1,0 +1,1 @@
+REQUIRED: Get the accurate current date and time from the system clock. You MUST call this function whenever the user asks about any temporal/calendar information (current time/date/day/month/year).

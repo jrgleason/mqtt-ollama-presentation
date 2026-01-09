@@ -336,7 +336,7 @@ See `docs/EXTERNAL-INTEGRATIONS.md` for complete configuration details.
 
 ### Troubleshooting Guides
 
-- `docs/voice-gateway-troubleshooting.md` - Voice gateway debugging
+- `apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md` - Voice gateway setup & troubleshooting
 - `docs/performance-analysis.md` - Performance optimization tips
 - `docs/optimization-summary.md` - Model selection and benchmarks
 

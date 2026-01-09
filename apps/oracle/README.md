@@ -157,8 +157,8 @@ LOG_LEVEL=debug npm run dev
 
 For production deployment on Raspberry Pi or other servers, see:
 
-- [Systemd Service Setup](../../docs/oracle-systemd-setup.md)
-- [Getting Started Guide](../../docs/GETTING-STARTED.md)
+- [Deployment Guide](../../docs/DEPLOYMENT.md)
+- [Setup Guide](../../docs/SETUP.md)
 
 ```bash
 # Build for production

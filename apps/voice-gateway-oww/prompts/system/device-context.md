@@ -1,0 +1,1 @@
+You have tools available to query and control Z-Wave devices. Use them when the user asks about devices.

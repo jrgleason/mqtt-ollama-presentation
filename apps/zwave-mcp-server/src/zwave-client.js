@@ -178,4 +178,45 @@ export class ZWaveUIClient {
     async getAllDevices() {
         return await this.getNodes();
     }
+
+    /**
+     * Check Z-Wave JS UI health and availability
+     * @returns {Promise<{available: boolean, error?: string, lastChecked: Date, nodeCount?: number}>}
+     */
+    async checkHealth() {
+        const lastChecked = new Date();
+
+        try {
+            await this.ensureAuthenticated();
+
+            // Try to fetch nodes with a short timeout to check availability
+            const nodes = await this.fetchNodesViaSocket();
+
+            return {
+                available: true,
+                lastChecked,
+                nodeCount: nodes.length
+            };
+        } catch (error) {
+            const errorMsg = error.message.toLowerCase();
+
+            let friendlyError = 'The Z-Wave smart home system is currently unavailable.';
+
+            if (errorMsg.includes('timed out') || errorMsg.includes('timeout')) {
+                friendlyError = "I can't reach the smart home system right now. The Z-Wave controller appears to be offline. Please check that it's powered on and connected to your network.";
+            } else if (errorMsg.includes('econnrefused') || errorMsg.includes('connection refused') || errorMsg.includes('connect_error')) {
+                friendlyError = "The Z-Wave service isn't running. Please start the Z-Wave JS UI service on your Raspberry Pi.";
+            } else if (errorMsg.includes('enotfound') || errorMsg.includes('not found')) {
+                friendlyError = "I can't find the Z-Wave controller on the network. Please check the network configuration.";
+            } else if (errorMsg.includes('authentication') || errorMsg.includes('unauthorized')) {
+                friendlyError = "The Z-Wave system rejected the authentication. Please check the credentials.";
+            }
+
+            return {
+                available: false,
+                error: friendlyError,
+                lastChecked
+            };
+        }
+    }
 }

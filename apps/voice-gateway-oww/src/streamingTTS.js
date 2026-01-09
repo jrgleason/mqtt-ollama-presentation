@@ -382,7 +382,8 @@ export async function streamSpeak(text, options = {}) {
         if (!partial) return;
         if (!firstTokenAt) firstTokenAt = Date.now();
 
-        // Append but cap buffer to avoid unbounded growth
+        // Append directly - LLM streaming tokens already include proper whitespace
+        // DO NOT add spaces between tokens as they can split mid-word (e.g., "Donal" + "d")
         buffer += partial;
         if (buffer.length > maxBufferChars * 2) buffer = buffer.slice(-maxBufferChars * 2);
 

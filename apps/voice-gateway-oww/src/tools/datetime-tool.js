@@ -4,6 +4,8 @@
  * Provides current date and time information in the system's timezone
  */
 
+import {loadPrompt} from '../util/prompt-loader.js';
+
 /**
  * Get current date and time information
  * @returns {Object} Current datetime info
@@ -148,12 +150,13 @@ export function getDateTimeDescription(context = '') {
 
 /**
  * Tool definition for AI
+ * @see prompts/tools/datetime.md
  */
 export const dateTimeTool = {
     type: 'function',
     function: {
         name: 'get_current_datetime',
-        description: 'REQUIRED: Get the accurate current date and time from the system clock. You MUST call this function whenever the user asks about any temporal/calendar information (current time/date/day/month/year).',
+        description: loadPrompt('tools/datetime'),
         parameters: {
             type: 'object',
             description: 'No parameters required for current date/time.',

@@ -38,15 +38,23 @@ const mqttConfig = getMQTTConfig();
 const zwaveClient = new ZWaveUIClient(zwaveConfig);
 const registryBuilder = new DeviceRegistryBuilder();
 
+// Health check cache (60 second TTL to avoid repeated timeouts)
+const HEALTH_CHECK_CACHE_TTL_MS = 60 * 1000;
+let healthCheckCache = null;
+let healthCheckCacheTime = 0;
+
 // Initialize MQTT client if enabled
 let mqttClient = null;
 if (mqttConfig.enabled) {
     try {
-        mqttClient = new MQTTClientWrapper({
-            brokerUrl: mqttConfig.brokerUrl,
-            username: mqttConfig.username,
-            password: mqttConfig.password,
-        });
+        mqttClient = new MQTTClientWrapper(
+            {
+                brokerUrl: mqttConfig.brokerUrl,
+                username: mqttConfig.username,
+                password: mqttConfig.password,
+            },
+            registryBuilder  // Pass registry builder for activity tracking
+        );
         console.warn('[MCP Server] MQTT integration enabled (prefer MQTT:', mqttConfig.preferMqtt, ')');
     } catch (error) {
         console.error('[MCP Server] Failed to initialize MQTT client:', error);
@@ -125,6 +133,85 @@ function extractPrimaryValue(values) {
     const renderedValue = selected.value !== undefined ? JSON.stringify(selected.value) : 'null';
 
     return `${label}: ${renderedValue}`;
+}
+
+/**
+ * Translate technical Z-Wave errors into user-friendly, speakable messages
+ * @param {Error} error - The error object
+ * @returns {string} User-friendly error message
+ */
+function translateZWaveError(error) {
+    const errorMsg = error.message.toLowerCase();
+
+    // Timeout errors
+    if (errorMsg.includes('timed out') || errorMsg.includes('timeout')) {
+        return "I'm sorry, but I can't reach the smart home system right now. The Z-Wave controller appears to be offline. Please check that it's powered on and connected to your network.";
+    }
+
+    // Connection refused errors
+    if (errorMsg.includes('econnrefused') || errorMsg.includes('connection refused') || errorMsg.includes('connect_error')) {
+        return "The Z-Wave service isn't running. Please start the Z-Wave JS UI service on your Raspberry Pi.";
+    }
+
+    // Network not found errors
+    if (errorMsg.includes('enotfound') || errorMsg.includes('not found')) {
+        return "I can't find the Z-Wave controller on the network. Please check the network configuration.";
+    }
+
+    // Authentication errors
+    if (errorMsg.includes('authentication') || errorMsg.includes('unauthorized')) {
+        return "The Z-Wave system rejected the authentication. Please check the credentials.";
+    }
+
+    // Generic Z-Wave system error
+    return "The Z-Wave system encountered an error. Please try again in a moment, or restart the Z-Wave service if the problem persists.";
+}
+
+/**
+ * Format device state for human-readable display
+ * @param {Record<string, any>} [values] - Device values from Z-Wave node
+ * @returns {string} - Formatted state (e.g., "ON", "OFF", "61.8°F", "unknown")
+ */
+function formatDeviceState(values) {
+    if (!values) {
+        return 'unknown';
+    }
+
+    const candidates = Object.values(values);
+    if (!candidates.length) {
+        return 'unknown';
+    }
+
+    // Find primary value (currentValue, state, or value property)
+    const priority = candidates.find((value) =>
+        ['currentValue', 'state', 'value'].includes(String(value.property)),
+    );
+    const selected = priority || candidates[0];
+
+    // Handle undefined/null values
+    if (selected.value === undefined || selected.value === null) {
+        return 'unknown';
+    }
+
+    // Handle boolean states (switches)
+    if (typeof selected.value === 'boolean') {
+        return selected.value ? 'ON' : 'OFF';
+    }
+
+    // Handle numeric values with units (sensors)
+    if (typeof selected.value === 'number') {
+        const unit = selected.unit || '';
+        // Remove space between value and unit for compact display
+        return unit ? `${selected.value}${unit}` : String(selected.value);
+    }
+
+    // Handle string values
+    if (typeof selected.value === 'string') {
+        return selected.value;
+    }
+
+    // Fallback for other types
+    return String(selected.value);
 }
 
 /**
@@ -219,6 +306,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             },
         },
         {
+            name: 'list_devices',
+            description:
+                'Get a paginated list of Z-Wave devices with their current state (on/off, sensor values) and status information. Returns device names, types, locations, current state, and activity status.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    limit: {
+                        type: 'number',
+                        description: 'Number of devices to return (default: 10)',
+                        default: 10,
+                        minimum: 1,
+                        maximum: 100,
+                    },
+                    offset: {
+                        type: 'number',
+                        description: 'Number of devices to skip for pagination (default: 0)',
+                        default: 0,
+                        minimum: 0,
+                    },
+                },
+                required: [],
+            },
+        },
+        {
+            name: 'verify_device',
+            description:
+                'Verify if a Z-Wave device exists and check its current status. Returns device information including type, location, activity status, and last seen timestamp. If device does not exist, provides suggestions for similar device names.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    deviceName: {
+                        type: 'string',
+                        description: 'The name of the device to verify (case-insensitive)',
+                    },
+                },
+                required: ['deviceName'],
+            },
+        },
+        {
             name: 'control_zwave_device',
             description:
                 'Control a Z-Wave device by sending commands via MQTT. Supports turning devices on/off and dimming.',
@@ -260,11 +386,197 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
                 required: ['deviceName'],
             },
         },
+        {
+            name: 'check_zwave_health',
+            description:
+                'Check if the Z-Wave system is available and healthy. Returns availability status, node count, and any error messages. ' +
+                'Results are cached for 60 seconds to avoid repeated timeouts.',
+            inputSchema: {
+                type: 'object',
+                properties: {},
+                required: [],
+            },
+        },
     ],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const {name, arguments: rawArgs} = request.params;
+
+    if (name === 'list_devices') {
+        const args = rawArgs || {};
+        const limit = Number(args.limit) || 10;
+        const offset = Number(args.offset) || 0;
+
+        console.warn('[mcp-server] list_devices called', { limit, offset });
+
+        try {
+            // Fetch live nodes from Z-Wave JS UI
+            const liveNodes = await zwaveClient.getLiveNodes();
+            const registry = registryBuilder.build(toRegistry(liveNodes));
+
+            // Use pagination method from registry builder
+            const result = registryBuilder.getDevices(registry, limit, offset);
+
+            console.warn('[mcp-server] Paginated devices', {
+                total: result.total,
+                showing: result.showing,
+                hasMore: result.hasMore,
+                offset
+            });
+
+            // Format response for AI - include device state
+            const deviceList = result.devices.map(device => {
+                const location = device.location ? ` in ${device.location}` : '';
+                const activeStatus = device.isActive === null ? 'unknown' :
+                    device.isActive ? 'active' : 'inactive';
+                const lastSeen = registryBuilder.getLastSeenFormatted(device.name);
+
+                // Get device state from live nodes
+                const node = liveNodes.find(n => {
+                    const nodeName = n.name || `Node ${n.id}`;
+                    return nodeName === device.name;
+                });
+                const deviceState = node ? formatDeviceState(node.values) : 'unknown';
+
+                return `- "${device.name}" (${device.type})${location} - ${deviceState}, ${activeStatus}, last seen: ${lastSeen}`;
+            }).join('\n');
+
+            let responseText;
+            if (result.total === 0) {
+                responseText = 'No Z-Wave devices found.';
+            } else {
+                responseText = `Showing ${result.showing} of ${result.total} Z-Wave devices:\n${deviceList}`;
+
+                if (result.hasMore) {
+                    const nextOffset = offset + limit;
+                    responseText += `\n\n${result.total - (offset + result.showing)} more devices available. Use offset=${nextOffset} to see more.`;
+                }
+            }
+
+            console.warn('[mcp-server] list_devices response', {
+                responseLength: responseText.length
+            });
+
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: responseText,
+                    },
+                ],
+            };
+        } catch (error) {
+            const friendlyMessage = translateZWaveError(error);
+            console.error('[mcp-server] Error in list_devices:', error);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: friendlyMessage,
+                    },
+                ],
+                isError: true,
+            };
+        }
+    }
+
+    if (name === 'verify_device') {
+        const args = rawArgs || {};
+        const { deviceName } = args;
+
+        if (!deviceName) {
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: 'Error: deviceName is required',
+                    },
+                ],
+                isError: true,
+            };
+        }
+
+        console.warn('[mcp-server] verify_device called', { deviceName });
+
+        try {
+            // Fetch live nodes and build registry
+            const liveNodes = await zwaveClient.getLiveNodes();
+            const registry = registryBuilder.build(toRegistry(liveNodes));
+
+            // Try to find the device (case-insensitive)
+            const device = registryBuilder.findDeviceByName(registry, deviceName);
+
+            if (device) {
+                // Device found - return its details
+                const activeStatus = device.isActive === null ? 'unknown' :
+                    device.isActive ? 'active' : 'inactive';
+                const lastSeen = registryBuilder.getLastSeenFormatted(device.name);
+                const location = device.location ? ` in ${device.location}` : '';
+
+                let responseText = `Device "${device.name}" exists.\n`;
+                responseText += `Type: ${device.type}\n`;
+                if (device.location) {
+                    responseText += `Location: ${device.location}\n`;
+                }
+                responseText += `Status: ${activeStatus}\n`;
+                responseText += `Last seen: ${lastSeen}`;
+
+                // Add warning if device is inactive
+                if (device.isActive === false) {
+                    responseText += '\n\n⚠️ Warning: Device exists but may not be responding.';
+                }
+
+                console.warn('[mcp-server] verify_device found device', { name: device.name });
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: responseText,
+                        },
+                    ],
+                };
+            } else {
+                // Device not found - provide suggestions
+                const suggestions = registryBuilder.findSimilarDevices(registry, deviceName, 3);
+
+                let responseText = `Device "${deviceName}" not found.`;
+
+                if (suggestions.length > 0) {
+                    responseText += `\n\nDid you mean: ${suggestions.join(', ')}?`;
+                } else {
+                    responseText += '\n\nNo similar devices found. Use list_devices to see all available devices.';
+                }
+
+                console.warn('[mcp-server] verify_device device not found', {
+                    deviceName,
+                    suggestions
+                });
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: responseText,
+                        },
+                    ],
+                };
+            }
+        } catch (error) {
+            const friendlyMessage = translateZWaveError(error);
+            console.error('[mcp-server] Error in verify_device:', error);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: friendlyMessage,
+                    },
+                ],
+                isError: true,
+            };
+        }
+    }
 
     if (name === 'list_zwave_devices') {
         const args = rawArgs || {};
@@ -367,12 +679,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 ],
             };
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error retrieving nodes';
+            const friendlyMessage = translateZWaveError(error);
+            console.error('[mcp-server] Error in list_zwave_devices:', error);
             return {
                 content: [
                     {
                         type: 'text',
-                        text: `Failed to list Z-Wave devices: ${message}`,
+                        text: friendlyMessage,
                     },
                 ],
                 isError: true,
@@ -509,12 +822,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error controlling device';
+            const friendlyMessage = translateZWaveError(error);
+            console.error('[mcp-server] Error in control_zwave_device:', error);
             return {
                 content: [
                     {
                         type: 'text',
-                        text: `Failed to control device: ${message}`,
+                        text: friendlyMessage,
                     },
                 ],
                 isError: true,
@@ -648,13 +962,97 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 ],
             };
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error getting sensor data';
+            const friendlyMessage = translateZWaveError(error);
             console.error('[MCP Server] Error getting sensor data:', error);
             return {
                 content: [
                     {
                         type: 'text',
-                        text: `Failed to get sensor data: ${message}`,
+                        text: friendlyMessage,
+                    },
+                ],
+                isError: true,
+            };
+        }
+    }
+
+    if (name === 'check_zwave_health') {
+        console.warn('[mcp-server] check_zwave_health called');
+
+        try {
+            // Check if cached result is still valid
+            const now = Date.now();
+            const cacheAge = now - healthCheckCacheTime;
+
+            if (healthCheckCache && cacheAge < HEALTH_CHECK_CACHE_TTL_MS) {
+                // Return cached result
+                const ageSeconds = Math.round(cacheAge / 1000);
+                console.warn('[mcp-server] Returning cached health check result', {
+                    age: `${ageSeconds}s`,
+                    available: healthCheckCache.available
+                });
+
+                let responseText;
+                if (healthCheckCache.available) {
+                    responseText = `Z-Wave system is healthy and available.\n`;
+                    responseText += `Node count: ${healthCheckCache.nodeCount || 0}\n`;
+                    responseText += `Last checked: ${ageSeconds} seconds ago`;
+                } else {
+                    responseText = `Z-Wave system is unavailable.\n`;
+                    responseText += `Error: ${healthCheckCache.error}\n`;
+                    responseText += `Last checked: ${ageSeconds} seconds ago`;
+                }
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: responseText,
+                        },
+                    ],
+                };
+            }
+
+            // Perform fresh health check
+            console.warn('[mcp-server] Performing fresh health check');
+            const healthStatus = await zwaveClient.checkHealth();
+
+            // Cache the result
+            healthCheckCache = healthStatus;
+            healthCheckCacheTime = now;
+
+            let responseText;
+            if (healthStatus.available) {
+                responseText = `Z-Wave system is healthy and available.\n`;
+                responseText += `Node count: ${healthStatus.nodeCount || 0}\n`;
+                responseText += `Last checked: just now`;
+            } else {
+                responseText = `Z-Wave system is unavailable.\n`;
+                responseText += `Error: ${healthStatus.error}\n`;
+                responseText += `Last checked: just now`;
+            }
+
+            console.warn('[mcp-server] Health check complete', {
+                available: healthStatus.available,
+                nodeCount: healthStatus.nodeCount
+            });
+
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: responseText,
+                    },
+                ],
+            };
+        } catch (error) {
+            const friendlyMessage = translateZWaveError(error);
+            console.error('[mcp-server] Error in check_zwave_health:', error);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: friendlyMessage,
                     },
                 ],
                 isError: true,

@@ -5,6 +5,9 @@ A Model Context Protocol (MCP) server that provides tools for interacting with Z
 ## Features
 
 - **Device Discovery**: List all Z-Wave devices with their status and MQTT topics
+- **Paginated Device Listing**: Efficiently browse large device collections with pagination
+- **Device Verification**: Check if a device exists with fuzzy name matching for suggestions
+- **Device Activity Tracking**: Monitor device status (active/inactive based on last seen time)
 - **Node Details**: Get detailed information about specific nodes
 - **Value Refresh**: Refresh sensor readings and device states
 - **Node Re-interview**: Update device capabilities and information
@@ -13,9 +16,74 @@ A Model Context Protocol (MCP) server that provides tools for interacting with Z
 
 ## Available Tools
 
-### 1. `list_zwave_devices`
+### 1. `list_devices`
 
-Lists all Z-Wave devices reported by Z-Wave JS UI.
+Lists Z-Wave devices with pagination support. Designed for efficient discovery when many devices exist.
+
+**Parameters:**
+
+- `limit` (number, optional): Maximum number of devices to return (default: 10)
+- `offset` (number, optional): Number of devices to skip for pagination (default: 0)
+
+**Example:**
+
+```json
+{
+  "limit": 10,
+  "offset": 0
+}
+```
+
+**Response:**
+
+```
+Found 15 devices (showing 10):
+
+1. Living Room Light (switch) - Living Room - Active (2 minutes ago)
+2. Kitchen Switch (switch) - Kitchen - Active (30 seconds ago)
+...
+
+5 more devices available. Use offset=10 to see more.
+```
+
+### 2. `verify_device`
+
+Verify if a specific device exists and get its current status. Useful for checking device availability before sending commands.
+
+**Parameters:**
+
+- `deviceName` (string, required): The name of the device to verify
+
+**Example:**
+
+```json
+{
+  "deviceName": "Living Room Light"
+}
+```
+
+**Response (device found):**
+
+```
+Device "Living Room Light" exists.
+Type: switch
+Location: Living Room
+Status: Active (last seen 2 minutes ago)
+```
+
+**Response (device not found):**
+
+```
+Device "Living Romm Light" not found.
+
+Did you mean one of these?
+- Living Room Light
+- Living Room Fan
+```
+
+### 3. `list_zwave_devices`
+
+Lists all Z-Wave devices reported by Z-Wave JS UI (legacy tool with full details).
 
 **Parameters:**
 
@@ -31,7 +99,7 @@ Lists all Z-Wave devices reported by Z-Wave JS UI.
 }
 ```
 
-### 2. `control_zwave_device`
+### 5. `control_zwave_device`
 
 Control a Z-Wave device by sending commands via MQTT. Supports turning devices on/off and dimming.
 
@@ -51,7 +119,7 @@ Control a Z-Wave device by sending commands via MQTT. Supports turning devices o
 }
 ```
 
-### 3. `get_device_sensor_data`
+### 6. `get_device_sensor_data`
 
 Get current sensor readings from a Z-Wave sensor device (temperature, humidity, light level, etc.).
 

@@ -444,4 +444,4 @@ npm run test:e2e
 **Project-Specific Documentation:**
 - See `docs/EXTERNAL-INTEGRATIONS.md` for integration details
 - See `docs/DEPLOYMENT.md` for production deployment
-- See `docs/performance-optimization.md` for detailed benchmarks
+- See `docs/PERFORMANCE.md` for detailed benchmarks

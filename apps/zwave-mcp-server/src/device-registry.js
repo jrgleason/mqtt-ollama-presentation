@@ -18,6 +18,71 @@
 /** @typedef {import('./types.js').DeviceRegistryEntry} DeviceRegistryEntry */
 
 export class DeviceRegistryBuilder {
+    constructor() {
+        // Track device activity status
+        /** @type {Map<string, number>} - Device name -> last seen timestamp (ms) */
+        this.deviceLastSeen = new Map();
+
+        // Default activity threshold: 5 minutes
+        this.activityThresholdMs = Number(process.env.DEVICE_ACTIVE_THRESHOLD_MS) || (5 * 60 * 1000);
+    }
+
+    /**
+     * Update the last seen timestamp for a device
+     * @param {string} deviceName - The device name
+     */
+    updateDeviceActivity(deviceName) {
+        this.deviceLastSeen.set(deviceName, Date.now());
+    }
+
+    /**
+     * Check if a device is currently active (seen recently)
+     * @param {string} deviceName - The device name
+     * @returns {boolean | null} - true if active, false if inactive, null if unknown
+     */
+    isDeviceActive(deviceName) {
+        const lastSeen = this.deviceLastSeen.get(deviceName);
+        if (!lastSeen) {
+            return null; // Unknown activity status
+        }
+
+        const age = Date.now() - lastSeen;
+        return age < this.activityThresholdMs;
+    }
+
+    /**
+     * Get the last seen timestamp for a device
+     * @param {string} deviceName - The device name
+     * @returns {number | null} - Timestamp in ms, or null if never seen
+     */
+    getLastSeen(deviceName) {
+        return this.deviceLastSeen.get(deviceName) || null;
+    }
+
+    /**
+     * Get formatted last seen time for display
+     * @param {string} deviceName - The device name
+     * @returns {string} - Human-readable time string
+     */
+    getLastSeenFormatted(deviceName) {
+        const lastSeen = this.getLastSeen(deviceName);
+        if (!lastSeen) {
+            return 'Never';
+        }
+
+        const ageSeconds = Math.floor((Date.now() - lastSeen) / 1000);
+
+        if (ageSeconds < 60) {
+            return `${ageSeconds} seconds ago`;
+        } else if (ageSeconds < 3600) {
+            const minutes = Math.floor(ageSeconds / 60);
+            return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+        } else {
+            const hours = Math.floor(ageSeconds / 3600);
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        }
+    }
+
     /**
      * Build a registry keyed by friendly device name.
      * @param {ZWaveConfig} zwaveConfig
@@ -35,6 +100,11 @@ export class DeviceRegistryBuilder {
 
             const {type, commandClass} = this.detectDeviceType(node);
 
+            // Update activity tracking if device is ready/available
+            if (node.ready && node.available) {
+                this.updateDeviceActivity(deviceName);
+            }
+
             registry[deviceName] = {
                 nodeId,
                 name: deviceName,
@@ -45,10 +115,46 @@ export class DeviceRegistryBuilder {
                 },
                 type,
                 commandClass,
+                lastSeen: this.getLastSeen(deviceName),
+                isActive: this.isDeviceActive(deviceName),
             };
         }
 
         return registry;
+    }
+
+    /**
+     * Get total count of devices in registry
+     * @param {DeviceRegistry} registry
+     * @returns {number}
+     */
+    getDeviceCount(registry) {
+        return Object.keys(registry).length;
+    }
+
+    /**
+     * Get paginated list of devices from registry
+     * @param {DeviceRegistry} registry
+     * @param {number} [limit=10] - Number of devices to return
+     * @param {number} [offset=0] - Number of devices to skip
+     * @returns {{ devices: DeviceRegistryEntry[], total: number, showing: number, hasMore: boolean }}
+     */
+    getDevices(registry, limit = 10, offset = 0) {
+        const allDevices = Object.values(registry);
+        const total = allDevices.length;
+
+        // Sort devices alphabetically by name
+        allDevices.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Apply pagination
+        const paginatedDevices = allDevices.slice(offset, offset + limit);
+
+        return {
+            devices: paginatedDevices,
+            total,
+            showing: paginatedDevices.length,
+            hasMore: (offset + limit) < total,
+        };
     }
 
     /**
@@ -186,5 +292,58 @@ export class DeviceRegistryBuilder {
         }
 
         return undefined;
+    }
+
+    /**
+     * Find similar device names for suggestions (fuzzy matching)
+     * @param {DeviceRegistry} registry
+     * @param {string} name - The device name to match
+     * @param {number} [maxSuggestions=3] - Maximum number of suggestions to return
+     * @returns {string[]} - Array of similar device names
+     */
+    findSimilarDevices(registry, name, maxSuggestions = 3) {
+        const lowerName = name.toLowerCase();
+        const allDevices = Object.keys(registry);
+
+        // Calculate simple similarity score based on common substrings
+        const scored = allDevices.map(deviceName => {
+            const lowerDevice = deviceName.toLowerCase();
+            let score = 0;
+
+            // Exact match (shouldn't happen, but just in case)
+            if (lowerDevice === lowerName) {
+                score = 1000;
+            }
+            // Contains the search term
+            else if (lowerDevice.includes(lowerName)) {
+                score = 100 + (50 - Math.abs(lowerDevice.length - lowerName.length));
+            }
+            // Search term contains device name
+            else if (lowerName.includes(lowerDevice)) {
+                score = 90 + (50 - Math.abs(lowerDevice.length - lowerName.length));
+            }
+            // Check for common words
+            else {
+                const nameWords = lowerName.split(/\s+/);
+                const deviceWords = lowerDevice.split(/\s+/);
+                const commonWords = nameWords.filter(word => deviceWords.includes(word));
+                score = commonWords.length * 20;
+            }
+
+            // Levenshtein distance bonus (simple approximation)
+            const lengthDiff = Math.abs(lowerDevice.length - lowerName.length);
+            if (lengthDiff < 3) {
+                score += 10;
+            }
+
+            return { deviceName, score };
+        });
+
+        // Sort by score (highest first) and return top matches
+        return scored
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, maxSuggestions)
+            .map(item => item.deviceName);
     }
 }

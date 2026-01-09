@@ -413,5 +413,5 @@ cd apps/voice-gateway-oww && node src/main.js
 - **Z-Wave Setup:** `/docs/zwave-setup-guide.md`
 - **OpenWakeWord Guide:** `/docs/openwakeword-guide.md`
 - **MCP Architecture:** `/docs/mcp-architecture.md`
-- **Performance Tuning:** `/docs/performance-optimization.md`
+- **Performance Tuning:** `/docs/PERFORMANCE.md`
 - **Network Dependencies:** `/docs/network-dependencies.md`

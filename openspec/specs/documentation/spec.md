@@ -195,3 +195,111 @@ Documentation files SHALL adhere to size limits to improve readability and maint
 - **THEN** the file SHALL not exceed approximately 200 lines
 - **AND** if it grows beyond this limit, content SHALL be extracted to reference documents
 
+### Requirement: App README Documentation Links
+
+All app README.md files MUST have working links to documentation files.
+
+#### Scenario: Voice Gateway README References Performance Documentation
+GIVEN the voice-gateway-oww README.md documentation section
+WHEN a user clicks the performance optimization link
+THEN they are directed to docs/PERFORMANCE.md (not the deleted performance-optimization.md)
+
+#### Scenario: Oracle README References Deployment Documentation
+GIVEN the Oracle README.md production deployment section
+WHEN a user clicks the systemd setup link
+THEN they are directed to docs/DEPLOYMENT.md (not the non-existent oracle-systemd-setup.md)
+
+### Requirement: Archive Folder Consolidation
+
+The docs/archive/ folder MUST contain only README.md with comprehensive summaries of archived content.
+
+#### Scenario: Archive Analysis Reports Are Summarized
+GIVEN historical analysis reports in docs/archive/
+WHEN the cleanup is complete
+THEN the key findings are preserved in archive/README.md
+AND the original analysis files (TTS_MIGRATION_HISTORY.md, TTS_DUPLICATE_ANALYSIS.md, DUPLICATE_FILES_ANALYSIS.md) are deleted
+
+#### Scenario: Archive README Contains Refactoring History
+GIVEN the archive/README.md documentation
+WHEN a developer needs historical context
+THEN they can find summaries of TTS migration timeline, duplicate analysis results, and refactoring status
+
+### Requirement: Voice Gateway Developer Documentation
+
+The apps/voice-gateway-oww/docs/ folder MUST contain a single comprehensive DEVELOPER_GUIDE.md.
+
+#### Scenario: Developer Guide Contains All Implementation Details
+GIVEN the voice gateway DEVELOPER_GUIDE.md
+WHEN a developer needs implementation details
+THEN they can find wake word configuration, microphone setup, file naming conventions, startup orchestration, beep isolation, and MCP retry logic in one document
+
+#### Scenario: Voice Gateway Docs Folder Is Consolidated
+GIVEN the apps/voice-gateway-oww/docs/ folder
+WHEN the consolidation is complete
+THEN only DEVELOPER_GUIDE.md exists
+AND BEEP_ISOLATION.md, MCP_RETRY_IMPLEMENTATION.md, and STARTUP_AND_ORCHESTRATION.md are deleted
+
+### Requirement: Reference-Style Link Pattern
+
+Documentation files SHALL use reference-style markdown links to improve maintainability and centralize link management.
+
+#### Scenario: Links in README.md navigation index
+
+- **WHEN** the docs/README.md file contains navigation links
+- **THEN** all links SHALL use reference-style format with definitions at file bottom
+- **AND** link definitions SHALL be organized in a dedicated `<!-- Links -->` section
+
+#### Scenario: Updating a file path
+
+- **WHEN** a documentation file is renamed or moved
+- **THEN** only the link definition needs to be updated in one place
+- **AND** all inline references SHALL automatically point to the new location
+
+### Requirement: Consolidated Performance Documentation
+
+Performance-related documentation SHALL be consolidated into a single authoritative file at `docs/PERFORMANCE.md`.
+
+#### Scenario: Finding performance optimization guidance
+
+- **WHEN** a developer needs to optimize voice pipeline performance
+- **THEN** they SHALL consult `docs/PERFORMANCE.md` as the single source of truth
+- **AND** the file SHALL include model selection guidance, benchmarks, and optimization history
+
+#### Scenario: Understanding performance tradeoffs
+
+- **WHEN** a developer needs to understand AI provider latency tradeoffs
+- **THEN** `docs/PERFORMANCE.md` SHALL provide comparison tables
+- **AND** SHALL include recommendations based on use case (speed vs quality)
+
+### Requirement: No Broken Internal Links
+
+All internal documentation links SHALL resolve to existing files and valid sections.
+
+#### Scenario: Following navigation links
+
+- **WHEN** a reader follows any internal link in the docs directory
+- **THEN** the link SHALL resolve to an existing file
+- **AND** if the link targets a section, that section SHALL exist in the target file
+
+#### Scenario: Validating links during review
+
+- **WHEN** a documentation change is proposed
+- **THEN** all internal links in the changed files SHALL be verified
+- **AND** broken links SHALL be fixed before the change is merged
+
+### Requirement: JavaScript-Only Documentation Consistency
+
+All documentation SHALL consistently refer to JavaScript as the project language, with no TypeScript references.
+
+#### Scenario: Technology references in documentation
+
+- **WHEN** documentation mentions the project programming language
+- **THEN** it SHALL reference JavaScript (ES6+)
+- **AND** SHALL NOT mention TypeScript except in historical archive context
+
+#### Scenario: Code examples in documentation
+
+- **WHEN** documentation includes code examples
+- **THEN** examples SHALL use JavaScript syntax
+- **AND** SHALL NOT include TypeScript type annotations
+

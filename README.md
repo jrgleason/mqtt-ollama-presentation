@@ -604,7 +604,7 @@ cd apps/voice-gateway-oww
 - **[Voice ASR Technologies](docs/voice-asr-technologies.md)** - Speech recognition comparison
 - **[Z-Wave Setup](docs/zwave-setup-guide.md)** - Device pairing and troubleshooting
 - **[OpenWakeWord Guide](docs/openwakeword-guide.md)** - Wake word detection setup
-- **[Voice Gateway Troubleshooting](docs/voice-gateway-troubleshooting.md)** - Common issues
+- **[Voice Gateway Developer Guide](apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md)** - Setup, troubleshooting, internals
 
 ### Reference
 - **[Documentation Index](docs/README.md)** - Complete documentation map

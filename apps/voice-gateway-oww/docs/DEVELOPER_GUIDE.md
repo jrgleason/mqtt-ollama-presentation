@@ -338,6 +338,510 @@ Tool modules follow LangChain convention of **kebab-case**:
 
 ---
 
+---
+
+## Startup Orchestration & Detector Warm-up
+
+### Problem Statement
+
+The voice gateway was announcing readiness before the wake word detector had fully stabilized, causing:
+- User utterances being cut off
+- False negatives (wake word not detected)
+- Inconsistent initial detection behavior
+
+### Root Cause
+
+The OpenWakeWord detector requires time to stabilize after its embedding buffers fill. The buffers accumulate audio data, but the detector needs additional processing time (2-3 seconds) before it can reliably detect wake words.
+
+### Solution Overview
+
+Implemented a three-part solution:
+
+1. **Detector Warm-up Phase** - Added 2.5 second stabilization period after buffer fill
+2. **Promise-based Orchestration** - Sequential async/await initialization
+3. **Welcome Message Sequencing** - Welcome plays AFTER warm-up, BEFORE activation
+
+### Implementation Details
+
+#### OpenWakeWordDetector.js - Warm-up Tracking
+
+```javascript
+// New state properties
+this.warmUpComplete = false;
+this._warmUpPromise = null;
+this._warmUpResolve = null;
+
+// Warm-up trigger (in detect() method):
+if (!this.embeddingBufferFilled && this.embeddingBuffer.length >= this.embeddingFrames) {
+    this.embeddingBufferFilled = true;
+    logger.debug('Embedding buffer filled, starting warm-up period...');
+
+    setTimeout(() => {
+        this.warmUpComplete = true;
+        this.emit('warmup-complete');
+        if (this._warmUpResolve) {
+            this._warmUpResolve();
+        }
+    }, 2500);
+}
+```
+
+#### InitUtil.js - Await Detector Warm-up
+
+```javascript
+// Phase 5.5: Detector Warm-up Wait
+logger.info('Waiting for detector warm-up...');
+try {
+    await Promise.race([
+        detector.getWarmUpPromise(),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Detector warm-up timeout')), 10000)
+        )
+    ]);
+    logger.info('Detector fully warmed up and ready');
+} catch (error) {
+    logger.warn('Detector warm-up timeout - may experience initial detection issues');
+}
+```
+
+#### main.js - 7-Phase Sequential Startup
+
+```javascript
+async function main() {
+    // Phase 1: Services and Health Checks
+    await initServices();
+
+    // Phase 2: Wake Word Detector (with warm-up)
+    const detector = await setupWakeWordDetector(); // Includes warm-up wait
+
+    // Phase 3: Tool System Initialization
+    const toolRegistry = new ToolRegistry();
+    const toolExecutor = new ToolExecutor(toolRegistry, logger);
+
+    // Phase 4: Voice Service & Orchestrator
+    const voiceService = setupVoiceStateMachine();
+    const orchestrator = new VoiceInteractionOrchestrator(...);
+
+    // Phase 5: Microphone Setup
+    const micInstance = setupMic(voiceService, orchestrator, detector, ...);
+
+    // Phase 6: Welcome Message BEFORE Activation
+    await startTTSWelcome(detector, audioPlayer);
+
+    // Phase 7: Final Activation
+    voiceService.send({type: 'READY'});
+}
+```
+
+### Timeline Comparison
+
+**OLD (Broken):**
+```
+T+0s:     Mic starts -> audio DISCARDED
+T+0.5s:   Welcome message plays
+T+2.5s:   Welcome ends
+T+3.5s:   Post-welcome reset
+T+4.0s:   First warm-up complete (wasted!)
+T+7.0s:   ACTUALLY ready (2.5-3.5s gap!)
+```
+
+**NEW (Fixed):**
+```
+T+0s:     Mic starts -> audio FED TO DETECTOR
+T+2.5s:   Warm-up complete
+T+2.5s:   Welcome: "Hello, I am Jarvis..."
+T+4.5s:   Welcome ends, Ready beep
+T+4.8s:   ACTUALLY ready (no gap!)
+```
+
+### Performance Impact
+
+- **Startup time:** +2.5 seconds (warm-up period)
+- **Memory:** Negligible (one promise, one flag)
+- **CPU:** None (timer-based, no polling)
+- **Reliability:** Significantly improved initial detection accuracy
+
+### Edge Cases Handled
+
+1. **Timeout scenario:** 10-second timeout prevents hang
+2. **Multiple getWarmUpPromise() calls:** Returns same promise instance
+3. **Already warmed up:** Returns resolved promise immediately
+4. **Buffer reset:** Warm-up state persists (no re-warm needed)
+
+---
+
+## Beep Audio Isolation System
+
+### Overview
+
+The beep audio isolation system prevents audio feedback loops caused by the microphone capturing system-generated beeps during recording.
+
+### Problem Statement
+
+**Before beep isolation:**
+1. Wake word detected -> System plays beep
+2. Microphone still recording -> Beep gets captured
+3. Whisper transcribes: "turn on the lights [BEEPING]"
+4. AI processes the corrupted transcription
+
+### Solution
+
+The beep isolation system tracks the state machine's recording state and suppresses beep playback during the `recording` state only.
+
+### State Machine States
+
+- `startup` - Initial state, microphone muted
+- `listening` - Wake word detection active
+- `recording` - User speech being captured (**BEEPS SUPPRESSED**)
+- `processing` - Transcription and AI query in progress
+- `cooldown` - Brief pause before returning to listening
+
+### Implementation
+
+#### State Tracking (main.js)
+
+```javascript
+let stateIsRecording = false;
+
+voiceService.subscribe((state) => {
+    stateIsRecording = (state.value === 'recording');
+});
+```
+
+#### Wake Word Beep Suppression (main.js)
+
+```javascript
+if (!stateIsRecording) {
+    audioPlayer.play(BEEPS.wakeWord).catch(err => logger.debug('Beep failed'));
+} else {
+    logger.debug('Suppressed wake word beep (recording in progress)');
+}
+```
+
+#### Processing/Response Beep Suppression (VoiceInteractionOrchestrator.js)
+
+```javascript
+if (!this.isRecordingChecker()) {
+    await this.audioPlayer.play(this.beep.BEEPS.processing);
+} else {
+    this.logger.debug('Suppressed processing beep (recording in progress)');
+}
+```
+
+### Beep Types and States
+
+| Beep Type | Plays In States | Suppressed In State |
+|-----------|----------------|---------------------|
+| Wake Word | `listening`, `cooldown` | `recording` |
+| Processing | `processing` | `recording` |
+| Response | `cooldown` | `recording` |
+| Error | Any error state | `recording` |
+
+### Key Design Decisions
+
+1. **Only suppress during recording state** - Other states don't risk feedback loops
+2. **Wake word interruption still works** - Cooldown is NOT a recording state
+3. **Callback-based state sharing** - Avoids tight coupling
+4. **Fail-safe default** - If checker is null, beeps play normally
+
+### Testing
+
+Run tests: `npm test tests/beep-isolation.test.js`
+
+14 test cases covering suppression, state tracking, and interruption scenarios.
+
+---
+
+## MCP Retry Logic
+
+### Overview
+
+Exponential backoff retry logic for MCP (Model Context Protocol) server connections to handle transient failures gracefully.
+
+### Configuration
+
+```bash
+# Environment variables
+MCP_RETRY_ATTEMPTS=3       # Number of attempts before giving up (default: 3)
+MCP_RETRY_BASE_DELAY=2000  # Base delay in milliseconds (default: 2000)
+```
+
+### Retry Strategy
+
+**Exponential Backoff Timing:**
+- Attempt 1: Immediate (0ms delay)
+- Attempt 2: 2000ms delay (base delay)
+- Attempt 3: 4000ms delay (2x base delay)
+- **Total max retry time: 6 seconds**
+
+### Implementation
+
+#### MCPIntegration.js
+
+```javascript
+async function initializeMCPIntegration(config, logger) {
+    const maxAttempts = config.mcp.retryAttempts;
+    const baseDelay = config.mcp.retryBaseDelay;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            logger.info(`Initializing MCP integration... (attempt ${attempt}/${maxAttempts})`);
+            // ... connection logic
+            return { mcpClient, tools };
+        } catch (error) {
+            if (attempt < maxAttempts) {
+                const delay = baseDelay * (attempt - 1);
+                logger.warn(`MCP connection attempt ${attempt}/${maxAttempts} failed`);
+                logger.info(`Retrying MCP connection in ${delay}ms...`);
+                await sleep(delay);
+            } else {
+                throw new Error(`MCP connection failed after ${maxAttempts} attempts`);
+            }
+        }
+    }
+}
+```
+
+### Behavior
+
+**Success on first attempt:**
+```
+Initializing MCP integration... (attempt 1/3)
+MCP integration initialized (toolCount: 2, attemptNumber: 1)
+```
+
+**Success after retry:**
+```
+Initializing MCP integration... (attempt 1/3)
+MCP connection attempt 1/3 failed
+Retrying MCP connection in 2000ms...
+Initializing MCP integration... (attempt 2/3)
+MCP integration initialized (toolCount: 2, attemptNumber: 2)
+```
+
+**Permanent failure:**
+```
+Initializing MCP integration... (attempt 1/3)
+MCP connection attempt 1/3 failed
+Retrying MCP connection in 2000ms...
+... (all retries exhausted)
+MCP integration permanently failed (attempts: 3)
+```
+
+The voice gateway continues with local tools only (datetime, search, volume control).
+
+### Integration with Voice Gateway
+
+```javascript
+try {
+    const mcpIntegration = await initializeMCPIntegration(config, logger);
+    // Register MCP tools
+    for (const tool of mcpIntegration.tools) {
+        toolRegistry.registerLangChainTool(tool);
+    }
+} catch (error) {
+    logger.error('Failed to initialize MCP tools');
+    logger.warn('Continuing with local tools only...');
+}
+```
+
+### Testing
+
+Run tests: `npm test tests/mcp-retry.test.js`
+
+13 test cases covering successful connections, transient failures, permanent failures, and timing.
+
+---
+
+---
+
+## Quick Start Guide
+
+### Running on Raspberry Pi 5
+
+#### 1. Copy to Raspberry Pi
+
+```bash
+# From your development machine
+scp -r apps/voice-gateway-oww pi@<raspberry-pi-ip>:/home/pi/
+```
+
+#### 2. Install Dependencies
+
+```bash
+ssh pi@<raspberry-pi-ip>
+cd voice-gateway-oww
+npm install
+```
+
+#### 3. Configure
+
+```bash
+cp .env.example .env.tmp
+nano .env.tmp  # Edit if needed (defaults work out of the box)
+```
+
+**Default Configuration:**
+- Wake Word: "Hey Jarvis"
+- Microphone: hw:2,0 (LANDIBO USB mic)
+- MQTT Broker: mqtt://localhost:1883
+- Threshold: 0.5
+
+#### 4. Run
+
+```bash
+npm run dev
+```
+
+#### 5. Install Piper TTS
+
+```bash
+python3 -m venv venvs/piper-tts
+source venvs/piper-tts/bin/activate
+pip install piper-tts
+python3 -m piper.download_voices en_US-amy-medium
+mkdir -p models/piper
+ln -s ~/.local/share/piper_tts/en_US-amy-medium.onnx models/piper/
+ln -s ~/.local/share/piper_tts/en_US-amy-medium.onnx.json models/piper/
+deactivate
+```
+
+### Demo Mode Switching
+
+| Mode | AI | TTS | Command |
+|------|-----|-----|---------|
+| **Offline** | Ollama | Piper | `./scripts/switch-mode.sh offline` |
+| **Online** | Anthropic | ElevenLabs | `./scripts/switch-mode.sh online` |
+| **Hybrid A** | Ollama | ElevenLabs | `./scripts/switch-mode.sh hybrid-a` |
+| **Hybrid B** | Anthropic | Piper | `./scripts/switch-mode.sh hybrid-b` |
+
+### Quick Configuration Changes
+
+```bash
+# Wake word
+OWW_MODEL_PATH=jarvis  # or alexa, mycroft
+
+# Sensitivity
+OWW_THRESHOLD=0.3  # Lower = more sensitive
+
+# Microphone
+AUDIO_MIC_DEVICE=hw:X,Y  # From `arecord -l`
+
+# Voice Activity Detection
+VAD_TRAILING_SILENCE_MS=1500  # Silence before stopping
+VAD_MAX_UTTERANCE_MS=10000    # Max recording length
+```
+
+---
+
+## Troubleshooting
+
+### Quick Diagnostics
+
+```bash
+# Check service status
+systemctl status voice-gateway-oww.service
+journalctl -u voice-gateway-oww.service -n 100 --no-pager
+
+# Check dependencies
+curl http://localhost:11434/api/tags  # Ollama
+arecord -l                             # Audio devices
+ls models/                             # Models
+```
+
+### Common Issues Checklist
+
+- [ ] Is Ollama running?
+- [ ] Is MQTT broker accessible?
+- [ ] Are audio devices detected?
+- [ ] Are models downloaded?
+- [ ] Is Python venv activated for Piper TTS?
+
+### Platform-Specific Issues
+
+#### macOS
+- Grant microphone permissions to Terminal
+- Uses speaker.js instead of ALSA
+
+#### Linux/Raspberry Pi
+
+**Audio device not found:**
+```bash
+arecord -l  # List devices
+# Update AUDIO_MIC_DEVICE in .env
+# Use plughw:X,0 format for auto format conversion
+```
+
+**Permission denied:**
+```bash
+sudo usermod -a -G audio $USER
+# Logout and login again
+```
+
+### Wake Word Issues
+
+**Not detected:**
+- Lower threshold: `OWW_THRESHOLD=0.3`
+- Check microphone: `arecord -D hw:2,0 -f S16_LE -r 16000 -d 3 test.wav`
+- Verify models exist in `models/`
+
+**Score interpretation:**
+- `0.00-0.05`: Background noise
+- `0.15-0.25`: Close but below threshold
+- `0.25+`: Detected ✅
+
+### Recording Issues
+
+**Cutting off mid-sentence:**
+```bash
+VAD_TRAILING_SILENCE_MS=2000  # Increase silence wait
+```
+
+**Not stopping when finished:**
+```bash
+VAD_TRAILING_SILENCE_MS=1000  # Decrease silence wait
+```
+
+### TTS Issues
+
+**Piper not working:**
+```bash
+source venvs/piper-tts/bin/activate
+python3 -c "import piper"  # Should return nothing if installed
+ls models/piper/           # Check voice model exists
+```
+
+### Network Issues
+
+**MQTT:**
+```bash
+mosquitto_sub -h localhost -p 1883 -t 'test' -v
+```
+
+**Ollama:**
+```bash
+curl http://localhost:11434/api/version
+ollama list  # Check model is downloaded
+```
+
+### Enable Debug Logging
+
+```bash
+LOG_LEVEL=debug npm run dev
+```
+
+---
+
+## System Requirements
+
+- **Raspberry Pi 5** (16GB RAM recommended, 8GB minimum)
+- **USB Microphone** (16kHz capable)
+- **Speaker** (USB or 3.5mm)
+- **MQTT Broker** (HiveMQ or Mosquitto)
+- **Python 3.8+** (for Piper TTS)
+
+---
+
 ## Related Resources
 
 - OpenSpec proposal: `openspec/changes/refactor-main-setupmic/proposal.md`

@@ -252,3 +252,214 @@ The `get_device_sensor_data` tool SHALL be registered with the MCP server and ex
 - **THEN** error message is clear and actionable
 - **AND** AI can convey error to user: "I couldn't find that device" or "That device doesn't have sensor data"
 
+### Requirement: Device List Pagination
+
+The Z-Wave MCP server SHALL provide a `list_devices` tool that returns paginated device listings with status information.
+
+#### Scenario: List devices with default pagination
+
+- **GIVEN** Z-Wave network has 25 registered devices
+- **WHEN** `list_devices()` is called with no parameters
+- **THEN** tool returns first 10 devices
+- **AND** response includes: `{ devices: [...], total: 25, showing: 10, hasMore: true }`
+- **AND** response message indicates "Showing 10 of 25 devices. Use offset parameter to see more."
+
+#### Scenario: List devices with custom limit
+
+- **GIVEN** Z-Wave network has 25 registered devices
+- **WHEN** `list_devices({ limit: 5 })` is called
+- **THEN** tool returns first 5 devices
+- **AND** response includes: `{ devices: [...], total: 25, showing: 5, hasMore: true }`
+
+#### Scenario: List devices with offset for pagination
+
+- **GIVEN** Z-Wave network has 25 registered devices
+- **WHEN** `list_devices({ limit: 10, offset: 10 })` is called
+- **THEN** tool returns devices 11-20
+- **AND** response includes: `{ devices: [...], total: 25, showing: 10, hasMore: true }`
+
+#### Scenario: List all devices when count is small
+
+- **GIVEN** Z-Wave network has 5 registered devices
+- **WHEN** `list_devices()` is called with no parameters
+- **THEN** tool returns all 5 devices
+- **AND** response includes: `{ devices: [...], total: 5, showing: 5, hasMore: false }`
+- **AND** no "more devices" message is shown
+
+#### Scenario: Device entry includes status information
+
+- **GIVEN** device "Living Room Light" exists and was seen 30 seconds ago
+- **WHEN** device is included in `list_devices` response
+- **THEN** device entry includes: `{ name: "Living Room Light", type: "switch", location: "Living Room", isActive: true, lastSeen: "30 seconds ago" }`
+
+#### Scenario: Device entry shows inactive status
+
+- **GIVEN** device "Garage Sensor" exists but hasn't responded in 10 minutes
+- **WHEN** device is included in `list_devices` response
+- **THEN** device entry includes: `{ name: "Garage Sensor", type: "sensor", location: "Garage", isActive: false, lastSeen: "10 minutes ago" }`
+
+---
+
+### Requirement: Device Verification
+
+The Z-Wave MCP server SHALL provide a `verify_device` tool to check if a device exists and report its current status.
+
+#### Scenario: Verify existing device
+
+- **GIVEN** device "Kitchen Light" exists in Z-Wave network
+- **AND** device responded to MQTT/API within last 2 minutes
+- **WHEN** `verify_device({ deviceName: "Kitchen Light" })` is called
+- **THEN** tool returns: `{ exists: true, name: "Kitchen Light", type: "switch", location: "Kitchen", isActive: true, lastSeen: "2 minutes ago" }`
+
+#### Scenario: Verify existing but inactive device
+
+- **GIVEN** device "Basement Sensor" exists in Z-Wave network
+- **AND** device has not responded in 15 minutes
+- **WHEN** `verify_device({ deviceName: "Basement Sensor" })` is called
+- **THEN** tool returns: `{ exists: true, name: "Basement Sensor", type: "sensor", location: "Basement", isActive: false, lastSeen: "15 minutes ago" }`
+- **AND** response includes warning: "Device exists but may not be responding"
+
+#### Scenario: Verify non-existent device with suggestions
+
+- **GIVEN** device "Kichen Light" (misspelled) does NOT exist
+- **AND** device "Kitchen Light" DOES exist
+- **WHEN** `verify_device({ deviceName: "Kichen Light" })` is called
+- **THEN** tool returns: `{ exists: false, suggestions: ["Kitchen Light"] }`
+- **AND** response message: "Device 'Kichen Light' not found. Did you mean: Kitchen Light?"
+
+#### Scenario: Verify non-existent device with no similar names
+
+- **GIVEN** device "Nonexistent Device XYZ" does NOT exist
+- **AND** no similar device names exist
+- **WHEN** `verify_device({ deviceName: "Nonexistent Device XYZ" })` is called
+- **THEN** tool returns: `{ exists: false, suggestions: [] }`
+- **AND** response message: "Device 'Nonexistent Device XYZ' not found. No similar devices found."
+
+#### Scenario: Case-insensitive device verification
+
+- **GIVEN** device "Living Room Light" exists
+- **WHEN** `verify_device({ deviceName: "living room light" })` is called
+- **THEN** tool finds the device (case-insensitive match)
+- **AND** returns the canonical name: `{ exists: true, name: "Living Room Light", ... }`
+
+---
+
+### Requirement: Device Activity Tracking
+
+The Z-Wave MCP server SHALL track device activity status based on recent MQTT messages or API responses.
+
+#### Scenario: Device marked active on MQTT message
+
+- **GIVEN** device "Temp Sensor 1" receives MQTT update
+- **WHEN** MQTT message is processed
+- **THEN** device lastSeen timestamp is updated to current time
+- **AND** device isActive returns true (within 5 minute threshold)
+
+#### Scenario: Device marked inactive after timeout
+
+- **GIVEN** device "Motion Sensor" last seen 6 minutes ago
+- **WHEN** isActive status is queried
+- **THEN** device isActive returns false (exceeded 5 minute threshold)
+
+#### Scenario: Activity threshold is configurable
+
+- **GIVEN** DEVICE_ACTIVE_THRESHOLD_MS environment variable is set to 600000 (10 minutes)
+- **WHEN** device "Sensor A" was seen 7 minutes ago
+- **THEN** device isActive returns true (within custom 10 minute threshold)
+
+#### Scenario: New device has unknown activity status
+
+- **GIVEN** device "New Switch" was just discovered via API
+- **AND** no MQTT messages have been received for this device
+- **WHEN** activity status is queried
+- **THEN** device isActive returns null (unknown)
+- **AND** lastSeen is null or "Never"
+
+### Requirement: Z-Wave Unavailability Error Handling
+
+The Z-Wave MCP server SHALL provide clear, user-friendly error messages when the Z-Wave JS UI is unavailable.
+
+#### Scenario: Z-Wave JS UI connection timeout
+
+- **GIVEN** Z-Wave JS UI server is unreachable (network down, Pi offline, service stopped)
+- **WHEN** any Z-Wave tool is called (list_devices, verify_device, control_zwave_device, etc.)
+- **THEN** tool returns error with user-friendly message
+- **AND** error message is suitable for TTS playback
+- **AND** error message includes: problem description, likely cause, suggested action
+- **AND** example: "I can't reach the smart home system right now. The Z-Wave controller appears to be offline. Please check that it's powered on and connected to your network."
+
+#### Scenario: Z-Wave JS UI connection refused
+
+- **GIVEN** Z-Wave JS UI service is not running on the Pi
+- **WHEN** any Z-Wave tool is called
+- **THEN** tool returns error: "The Z-Wave service isn't running. Please start the Z-Wave JS UI service on your Raspberry Pi."
+
+#### Scenario: Z-Wave JS UI partial failure
+
+- **GIVEN** Z-Wave JS UI is reachable but returns internal error
+- **WHEN** any Z-Wave tool is called
+- **THEN** tool returns error: "The Z-Wave system encountered an error. Please try again in a moment, or restart the Z-Wave service if the problem persists."
+
+---
+
+### Requirement: Voice Gateway Error Translation
+
+The voice gateway SHALL translate technical tool errors into speakable, user-friendly responses.
+
+#### Scenario: Tool timeout translated to friendly message
+
+- **GIVEN** ToolExecutor receives timeout error from Z-Wave tool
+- **WHEN** error contains "Timed out" or "ETIMEDOUT"
+- **THEN** ToolExecutor returns: "The smart home system is taking too long to respond. It might be offline or experiencing issues."
+- **AND** log contains original technical error for debugging
+
+#### Scenario: Connection refused translated to friendly message
+
+- **GIVEN** ToolExecutor receives connection error from Z-Wave tool
+- **WHEN** error contains "ECONNREFUSED" or "connection refused"
+- **THEN** ToolExecutor returns: "I can't connect to the smart home controller. Please check that it's running and connected to your network."
+
+#### Scenario: AI receives clear error context
+
+- **GIVEN** Z-Wave tool fails with user-friendly error message
+- **WHEN** AIRouter processes tool result
+- **THEN** AI receives error message that clearly explains the situation
+- **AND** AI can formulate a helpful response to user
+- **AND** AI does NOT try to call another tool as a "workaround" (avoids cascade failures)
+
+---
+
+### Requirement: Z-Wave Health Check Tool
+
+The Z-Wave MCP server SHALL provide a `check_zwave_health` tool for proactively checking system availability.
+
+#### Scenario: Health check when Z-Wave is available
+
+- **GIVEN** Z-Wave JS UI is running and reachable
+- **WHEN** `check_zwave_health()` is called
+- **THEN** tool returns: `{ available: true, nodeCount: 15, lastChecked: "2 seconds ago" }`
+- **AND** response is fast (cached result, <100ms)
+
+#### Scenario: Health check when Z-Wave is unavailable
+
+- **GIVEN** Z-Wave JS UI is unreachable
+- **WHEN** `check_zwave_health()` is called
+- **THEN** tool returns: `{ available: false, error: "Cannot reach Z-Wave controller", lastChecked: "30 seconds ago" }`
+- **AND** cached result used to avoid repeated timeout delays
+
+#### Scenario: Health check cache expiry
+
+- **GIVEN** Health check was performed 60+ seconds ago
+- **WHEN** `check_zwave_health()` is called
+- **THEN** fresh check is performed (not cached)
+- **AND** cache is updated with new result
+
+#### Scenario: AI uses health check proactively
+
+- **GIVEN** User asks about smart home devices
+- **AND** previous Z-Wave call failed recently
+- **WHEN** AI processes the request
+- **THEN** AI MAY call `check_zwave_health` first
+- **AND** if unavailable, AI responds immediately with helpful message
+- **AND** avoids waiting for tool timeout
+

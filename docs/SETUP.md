@@ -874,8 +874,8 @@ sudo systemctl restart ollama.service
 - **Architecture:** `/docs/ARCHITECTURE.md`
 - **OpenWakeWord Guide:** `/docs/openwakeword-guide.md`
 - **MCP Architecture:** `/docs/mcp-architecture.md`
-- **Performance Tuning:** `/docs/performance-optimization.md`
-- **Troubleshooting:** `/docs/voice-gateway-troubleshooting.md`
+- **Performance Tuning:** `/docs/PERFORMANCE.md`
+- **Troubleshooting:** `/apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md`
 - **Project Guidelines:** `/CLAUDE.md`
 
 ---

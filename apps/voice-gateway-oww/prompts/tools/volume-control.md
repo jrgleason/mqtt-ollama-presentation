@@ -1,0 +1,1 @@
+Control the speaker volume for the voice assistant. Can get current volume, set to specific level, increase, decrease, mute, or maximize volume. Use this when the user asks to change volume (e.g., "turn up the volume", "make it quieter", "set volume to 50%").

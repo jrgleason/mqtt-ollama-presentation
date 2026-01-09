@@ -88,14 +88,14 @@ docker compose up --build
 | Oracle background service | [Oracle Systemd Setup][oracle-systemd] |
 | Voice pipeline            | [Voice Gateway Overview][voice-doc]    |
 
-[pi-setup]: raspberry-pi-setup.md
+[pi-setup]: SETUP.md#part-1-hardware-setup-raspberry-pi-5
 
-[mqtt-setup]: mqtt-setup.md
+[mqtt-setup]: SETUP.md#part-2-mqtt-broker-setup
 
-[zwave-deploy]: zwave-js-ui-deploy.md
+[zwave-deploy]: zwave-setup-guide.md
 
-[oracle-systemd]: oracle-systemd-setup.md
+[oracle-systemd]: DEPLOYMENT.md
 
-[voice-doc]: voice-gateway-architecture.md
+[voice-doc]: ../apps/voice-gateway-oww/README.md
 
 [docs-index]: README.md
