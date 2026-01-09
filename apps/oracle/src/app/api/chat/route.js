@@ -1,10 +1,14 @@
 import {createOllamaClient} from '../../../lib/ollama/client.js';
-import {createDeviceListTool} from '../../../lib/langchain/tools/device-list-tool.js';
-import {createDeviceControlTool} from '../../../lib/langchain/tools/device-control-tool.js';
+import {createAnthropicClient} from '../../../lib/anthropic/client.js';
 import {createCalculatorTool} from '../../../lib/langchain/tools/calculator-tool.js';
+import {initializeMCPIntegration, shutdownMCPClient} from '../../../lib/mcp/integration.js';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 
 export const runtime = 'nodejs';
+
+// Global MCP client instance (reused across requests for performance)
+let globalMCPClient = null;
+let globalMCPTools = [];
 
 /**
  * Convert raw message objects to LangChain BaseMessage instances
@@ -37,13 +41,28 @@ export async function POST(req) {
         const {messages, model: selectedModel} = await req.json();
 
         const isDebug = process.env.NODE_ENV !== 'production' || process.env.LOG_LEVEL === 'debug';
+        const aiProvider = process.env.AI_PROVIDER || 'anthropic'; // Default to anthropic
+
+        // ALWAYS log AI provider selection (even in production)
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🤖 AI PROVIDER DEBUG');
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('process.env.AI_PROVIDER:', process.env.AI_PROVIDER);
+        console.log('Resolved aiProvider:', aiProvider);
+        console.log('Selected model from request:', selectedModel);
+        console.log('Using:', aiProvider === 'anthropic' ? 'ANTHROPIC ☁️' : 'OLLAMA 🏠');
+        console.log('═══════════════════════════════════════════════════════════');
 
         if (isDebug) {
             console.log('[chat/route] ========== REQUEST DEBUG START ==========');
+            console.log('[chat/route] AI Provider:', aiProvider);
             console.log('[chat/route] Selected model from request:', selectedModel);
             console.log('[chat/route] Environment variables:', {
+                AI_PROVIDER: process.env.AI_PROVIDER,
                 OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
                 OLLAMA_MODEL: process.env.OLLAMA_MODEL,
+                ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
+                ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '***' + process.env.ANTHROPIC_API_KEY.slice(-4) : 'NOT SET',
             });
             console.log('[chat/route] ========== REQUEST DEBUG END ==========');
         }
@@ -58,31 +77,58 @@ export async function POST(req) {
             );
         }
 
-        const model = createOllamaClient(0.1, selectedModel);
-        if (isDebug) {
-            console.log('[chat/route] Created model with:', {temperature: 0.1, selectedModel});
-        }
+        // Create model based on AI_PROVIDER
+        let model;
+        if (aiProvider === 'anthropic') {
+            model = createAnthropicClient(0.1, selectedModel);
+            if (isDebug) {
+                console.log('[chat/route] Created Anthropic model with:', {temperature: 0.1, selectedModel});
+            }
+        } else {
+            model = createOllamaClient(0.1, selectedModel);
+            if (isDebug) {
+                console.log('[chat/route] Created Ollama model with:', {temperature: 0.1, selectedModel});
+            }
 
-        // Test Ollama connectivity
-        if (isDebug) {
-            try {
-                const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-                console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
-                const testResponse = await fetch(`${baseUrl}/api/tags`, {
-                    method: 'GET',
-                    signal: AbortSignal.timeout(5000),
-                });
-                const testData = await testResponse.json();
-                console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
-            } catch (connectError) {
-                console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+            // Test Ollama connectivity
+            if (isDebug) {
+                try {
+                    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+                    console.log('[chat/route] Testing Ollama connectivity at:', baseUrl);
+                    const testResponse = await fetch(`${baseUrl}/api/tags`, {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(5000),
+                    });
+                    const testData = await testResponse.json();
+                    console.log('[chat/route] Ollama is reachable! Available models:', testData.models?.map(m => m.name).join(', ') || 'none');
+                } catch (connectError) {
+                    console.error('[chat/route] ⚠️ WARNING: Cannot reach Ollama:', connectError.message);
+                }
             }
         }
 
-        // Create tools
+        // Initialize MCP client and get tools (only once per process)
+        if (!globalMCPClient) {
+            if (isDebug) {
+                console.log('[chat/route] Initializing MCP integration...');
+            }
+            try {
+                const { mcpClient, tools: mcpTools } = await initializeMCPIntegration({ debug: isDebug });
+                globalMCPClient = mcpClient;
+                globalMCPTools = mcpTools;
+                if (isDebug) {
+                    console.log('[chat/route] MCP tools discovered:', mcpTools.map(t => t.lc_name || t.name));
+                }
+            } catch (error) {
+                console.error('[chat/route] Failed to initialize MCP integration:', error);
+                // Fallback: Continue without MCP tools
+                globalMCPTools = [];
+            }
+        }
+
+        // Create tools: MCP tools + custom tools
         const tools = [
-            createDeviceListTool(),
-            createDeviceControlTool(),
+            ...globalMCPTools,
             createCalculatorTool(),
         ];
 
@@ -95,12 +141,14 @@ export async function POST(req) {
             content: `You are a helpful home automation assistant.
 
 IMPORTANT RULES:
-1. When user asks to list devices, you MUST call the list_devices tool. DO NOT make up device names.
+1. When user asks to list devices, you MUST call the list_zwave_devices tool. DO NOT make up device names.
 2. When user asks to control a device, you MUST:
-   a. First call list_devices to get exact device names
-   b. Then call control_device with the EXACT name from the list
-3. NEVER invent or guess device names. Always use list_devices first.
-4. For greetings or general questions, respond normally without tools.`
+   a. First call list_zwave_devices to get exact device names
+   b. Then call control_zwave_device with the EXACT name from the list
+3. When user asks about sensor data (temperature, etc), use get_device_sensor_data with the device name.
+4. NEVER invent or guess device names. Always use list_zwave_devices first.
+5. For greetings or general questions, respond normally without tools.
+6. list_zwave_devices takes NO parameters - just call it directly.`
         };
 
         const allMessages = [systemMessage, ...messages];
@@ -138,9 +186,24 @@ IMPORTANT RULES:
                                 let toolResult;
                                 try {
                                     toolResult = await tool.func(toolCall.args);
+
+                                    // Normalize tool result to string (LangChain requires string content)
+                                    // MCP tools may return [text, artifacts] arrays - extract just the text
+                                    let normalizedContent;
+                                    if (typeof toolResult === 'string') {
+                                        normalizedContent = toolResult;
+                                    } else if (Array.isArray(toolResult)) {
+                                        // MCP format: [text_content, artifacts_array]
+                                        normalizedContent = toolResult[0] || '';
+                                    } else if (typeof toolResult === 'object' && toolResult !== null) {
+                                        normalizedContent = JSON.stringify(toolResult);
+                                    } else {
+                                        normalizedContent = String(toolResult);
+                                    }
+
                                     toolResults.push({
                                         role: 'tool',
-                                        content: toolResult,
+                                        content: normalizedContent,
                                         tool_call_id: toolCall.id
                                     });
                                 } catch (toolError) {
@@ -212,7 +275,9 @@ IMPORTANT RULES:
                                 if (isDebug) {
                                     console.log('[chat/route] Retrying without tool binding...');
                                 }
-                                const plainModel = createOllamaClient(0.1, selectedModel);
+                                const plainModel = aiProvider === 'anthropic'
+                                    ? createAnthropicClient(0.1, selectedModel)
+                                    : createOllamaClient(0.1, selectedModel);
                                 response = await plainModel.invoke(currentMessages);
                             } else {
                                 throw invokeError;

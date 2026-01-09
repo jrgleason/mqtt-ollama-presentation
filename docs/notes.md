@@ -2077,3 +2077,138 @@ If testing reveals instability:
 - **Week 5+:** Practice demo with chosen architecture
 
 **Research Complete ✅** - Single Raspberry Pi 5 is feasible with the right model choice!
+
+---
+
+## Z-Wave MCP Server - Research Findings (Historical - October 2025)
+
+**NOTE:** We no longer plan to ship an MCP-based path for the demo. The app now publishes directly to MQTT. This section is preserved for reference.
+
+### Key Findings from MCP Research
+
+#### 1. MQTT MCP CAN Read Messages
+
+**IMPORTANT DISCOVERY:** The MQTT MCP limitation is NOT a protocol issue - it's a limitation of the specific `ezhuk/mqtt-mcp` Python implementation we tested.
+
+**EMQX Documentation confirms MQTT brokers CAN:**
+- ✅ Monitor subscriptions and received messages
+- ✅ Track topic metrics and message flows
+- ✅ View retained messages
+- ✅ Access message history (via dashboard/API)
+
+**Implication:** We could either:
+1. Use the `@emqx-ai/mcp-mqtt-sdk` (TypeScript) which may have better message access
+2. Build custom MQTT monitoring into our Z-Wave MCP server
+3. Use HiveMQ Control Center for topic discovery during development
+
+#### 2. Z-Wave JS UI REST API Endpoints
+
+**Base URL:** `http://10.0.0.58:8091` (default port)
+
+**Key API Routes:**
+- `GET /api/settings` - Returns devices, settings, serial ports
+- `GET /api/exportConfig` - Node configuration
+- `POST /api/importConfig` - Import node config
+
+**WebSocket API (Socket.IO):**
+```typescript
+socket.emit('init', {}, (state) => {
+  // Returns: { nodes: {...}, driver: {...}, controller: {...} }
+})
+```
+
+#### 3. Recommended Architecture (Not Implemented)
+
+**Option 1: Combined MCP Server** (was recommended but not used)
+- Single MCP Server with dual capabilities
+- Query Z-Wave JS UI API for device discovery
+- Publish MQTT commands for device control
+- Friendly name → MQTT topic mapping
+
+**Final Decision:** Direct MQTT integration for demo simplicity
+
+#### 4. MQTT Topic Structure (Z-Wave JS UI)
+
+**Typical patterns:**
+```
+zwave/<nodeId>/<commandClass>/<endpoint>/<property>/set    # Control
+zwave/<nodeId>/<commandClass>/<endpoint>/<property>        # State
+```
+
+**Examples:**
+```
+zwave/5/38/0/targetValue/set    # Binary/Multilevel Switch
+zwave/5/38/0/currentValue       # Switch state
+zwave/3/64/0/mode/set           # Thermostat mode
+```
+
+#### 5. Device Registry Builder Example
+
+```typescript
+interface DeviceRegistry {
+  [name: string]: {
+    nodeId: number
+    topics: {
+      control: string
+      state: string
+    }
+    type: 'switch' | 'dimmer' | 'thermostat'
+    commandClass: number
+  }
+}
+```
+
+### Why We Didn't Use MCP for Z-Wave
+
+**Reasons for Direct MQTT:**
+1. **Simpler demo flow** - Fewer moving parts during presentation
+2. **Lower latency** - Direct MQTT faster than MCP → MQTT bridge
+3. **Easier debugging** - Can use MQTT Explorer to see all traffic
+4. **Less complexity** - No need to manage MCP server process
+5. **Demo focus** - Want to showcase Ollama + LangChain, not MCP architecture
+
+**MCP Still Valuable For:**
+- Multi-client scenarios (Claude Desktop, Cursor, etc.)
+- Enterprise architectures with separation of concerns
+- Reusable tool interfaces across multiple AI applications
+
+### Implementation We Actually Used
+
+**Direct MQTT Integration in Oracle App:**
+```typescript
+// apps/oracle/src/lib/mqtt/client.ts
+import mqtt from 'mqtt'
+
+const client = mqtt.connect('mqtt://localhost:1883')
+
+export async function controlDevice(deviceName, action, value) {
+  const device = await findDeviceByName(deviceName)
+  const topic = `zwave/${device.nodeId}/38/0/targetValue/set`
+  await client.publish(topic, JSON.stringify({ value }))
+}
+```
+
+**Benefits of This Approach:**
+- ✅ Simple, direct, easy to understand
+- ✅ Fast response times
+- ✅ Easy to debug with MQTT Explorer
+- ✅ Works perfectly for demo
+
+**Trade-offs:**
+- ❌ MQTT credentials in app code
+- ❌ Not reusable across multiple AI clients
+- ❌ Coupled architecture (MQTT logic in app)
+
+### Lessons Learned
+
+1. **Start simple** - Direct MQTT integration was the right choice for demo
+2. **MCP is powerful but not always necessary** - Use when you have multiple AI clients
+3. **Z-Wave JS UI API is comprehensive** - Could build full device management if needed
+4. **MQTT topic structure is stable** - ValueID topics work well for programmatic access
+5. **Local-first architecture works** - No cloud dependencies during demo
+
+### References
+
+- [Z-Wave JS UI Docs](https://zwave-js.github.io/zwave-js-ui/)
+- [MCP Documentation](https://modelcontextprotocol.info/)
+- [FastMCP Tutorial](https://www.firecrawl.dev/blog/fastmcp-tutorial-building-mcp-servers-python)

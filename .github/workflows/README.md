@@ -20,7 +20,6 @@ Automatically builds and tests all projects in the monorepo on every commit.
     - Oracle (Next.js app)
     - ZWave MCP Server
     - Voice Gateway OWW
-    - Voice Gateway Common
 3. **Runs tests** for projects that have test suites
 4. **Runs linters** to ensure code quality
 5. **Validates package structure** for MCP servers
@@ -32,7 +31,6 @@ Automatically builds and tests all projects in the monorepo on every commit.
 | oracle               | ✅     | ✅    | ✅    | Next.js production build |
 | zwave-mcp-server     | ✅     | -    | -    | Structure validation     |
 | voice-gateway-oww    | ✅     | ✅    | ✅    | Node.js app              |
-| voice-gateway-common | ✅     | -    | -    | Shared library           |
 
 ## Viewing Build Status
 

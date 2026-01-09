@@ -1,6 +1,6 @@
 export default {
     testEnvironment: 'node',
-    roots: ['<rootDir>/src'],
+    roots: ['<rootDir>/src', '<rootDir>/tests'],
     testMatch: ['**/__tests__/**/*.test.js', '**/?(*.)+(spec|test).js'],
     moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
@@ -9,4 +9,6 @@ export default {
         'src/**/*.js',
         '!src/**/__tests__/**',
     ],
+    transform: {},
+    setupFiles: ['<rootDir>/tests/setup.js'],
 };

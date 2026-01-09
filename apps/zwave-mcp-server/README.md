@@ -31,44 +31,90 @@ Lists all Z-Wave devices reported by Z-Wave JS UI.
 }
 ```
 
-### 2. `get_node_details`
+### 2. `control_zwave_device`
 
-Get detailed information about a specific Z-Wave node including all values, command classes, and capabilities.
+Control a Z-Wave device by sending commands via MQTT. Supports turning devices on/off and dimming.
 
 **Parameters:**
 
-- `nodeId` (number, required): The Z-Wave node ID
+- `deviceName` (string, required): The name of the device to control (e.g., "Demo Switch" or "Living Room Light")
+- `action` (string, required): The action to perform: "on", "off", or "dim"
+- `level` (number, optional): For dimming, brightness level 0-100 (required when action is "dim")
 
 **Example:**
 
 ```json
 {
-  "nodeId": 3
+  "deviceName": "Living Room Light",
+  "action": "dim",
+  "level": 50
 }
 ```
 
-### 3. `refresh_node_values`
+### 3. `get_device_sensor_data`
 
-Refresh all values for a specific Z-Wave node. Useful for getting updated sensor readings.
+Get current sensor readings from a Z-Wave sensor device (temperature, humidity, light level, etc.).
 
-**Parameters:**
-
-- `nodeId` (number, required): The Z-Wave node ID to refresh
-
-### 4. `refresh_node_info`
-
-Re-interview a Z-Wave node to get updated device information and capabilities. Use when a device was recently added or
-changed.
+**Data Strategy:**
+- **MQTT-First (Default)**: When `PREFER_MQTT=true`, checks MQTT cache first for real-time sensor data
+- **API Fallback**: Falls back to Z-Wave JS UI API if MQTT cache miss or stale (> 5 minutes)
+- **API-Only**: When `PREFER_MQTT=false`, always queries Z-Wave JS UI API directly
 
 **Parameters:**
 
-- `nodeId` (number, required): The Z-Wave node ID to re-interview
+- `deviceName` (string, required): The name of the sensor device (e.g., "Temp Sensor 1" or "Office Temperature")
 
-### 5. `get_network_statistics`
+**Example:**
 
-Get Z-Wave network statistics including message counts, errors, and overall network health.
+```json
+{
+  "deviceName": "Temp Sensor 1"
+}
+```
 
-**Parameters:** None
+**Response Format:**
+
+```
+Sensor: "Temp Sensor 1"
+Value: 72.5 F
+Source: MQTT
+Age: 15 seconds
+Timestamp: 2025-01-10T15:30:45.123Z
+```
+
+## MQTT Integration
+
+This MCP server integrates with MQTT for two purposes:
+1. **Device Control** - Send commands to Z-Wave devices
+2. **Sensor Data** - Subscribe to real-time sensor updates (temperature, humidity, etc.)
+
+### MQTT vs API Strategy
+
+The server uses a **hybrid approach** for sensor data:
+
+**MQTT Cache (Primary - Default)**
+- Subscribes to sensor topics: `zwave/+/+/sensor_multilevel/+/currentValue`
+- Caches values in memory with timestamps
+- Zero latency for cached values (< 5 minutes old)
+- Works even if Z-Wave JS UI web interface is down
+
+**Z-Wave JS UI API (Fallback)**
+- Used when MQTT cache miss or value is stale
+- Queries device values via Socket.IO
+- Requires web interface to be running
+
+**Configuration:**
+```bash
+MQTT_ENABLED=true          # Enable/disable MQTT integration (default: true)
+PREFER_MQTT=true           # Prefer MQTT cache over API (default: true)
+```
+
+### Benefits of MQTT-First Strategy
+
+1. **Lower Latency** - Instant access to cached sensor values (no API call)
+2. **Real-Time Updates** - MQTT broker pushes updates as sensors report
+3. **Reliability** - Works if Z-Wave JS UI web interface restarts
+4. **Network Efficiency** - Pub/sub model reduces polling overhead
 
 ## MQTT Topic Structure
 
@@ -86,6 +132,12 @@ zwave/[Location/]Device_Name/command_class/endpoint_0/targetValue/set
 
 ```
 zwave/[Location/]Device_Name/command_class/endpoint_0/currentValue
+```
+
+**Sensor Topic (Multilevel Sensors):**
+
+```
+zwave/[Location/]Device_Name/sensor_multilevel/endpoint_0/currentValue
 ```
 
 ### Examples
@@ -115,11 +167,28 @@ zwave/Bedroom/Lamp/switch_multilevel/endpoint_0/targetValue/set
 {"value": 99}  # Full brightness
 ```
 
+**Multilevel Sensor (Command Class 49):**
+
+```bash
+# Temperature Sensor Topic
+zwave/Office/Temp_Sensor_1/sensor_multilevel/endpoint_0/currentValue
+
+# Payload (read-only, published by Z-Wave JS UI)
+{"value": 72.5, "unit": "F"}
+
+# Humidity Sensor Topic
+zwave/Living_Room/Humidity_Sensor/sensor_multilevel/endpoint_0/currentValue
+
+# Payload
+{"value": 45, "unit": "%"}
+```
+
 **Without Location:**
 
 ```bash
 # If device has no location set, it's omitted from the path
 zwave/Kitchen_Light/switch_binary/endpoint_0/targetValue/set
+zwave/Temp_Sensor_1/sensor_multilevel/endpoint_0/currentValue
 ```
 
 ### Command Class Mapping
@@ -173,7 +242,27 @@ mosquitto_sub -h localhost -t "zwave/+/+/+/+/currentValue" -v
 
 # Watch specific device
 mosquitto_sub -h localhost -t "zwave/Demo/Switch_One/+/+/currentValue" -v
+
+# Watch all sensor data (temperature, humidity, etc.)
+mosquitto_sub -h localhost -t "zwave/+/+/sensor_multilevel/+/currentValue" -v
+
+# Watch specific sensor
+mosquitto_sub -h localhost -t "zwave/Office/Temp_Sensor_1/sensor_multilevel/+/currentValue" -v
 ```
+
+Simulate sensor data for testing (if you don't have physical sensors):
+
+```bash
+# Publish fake temperature reading
+mosquitto_pub -h localhost -t "zwave/Office/Temp_Sensor_1/sensor_multilevel/endpoint_0/currentValue" \
+  -m '{"value": 72.5, "unit": "F"}'
+
+# Publish fake humidity reading
+mosquitto_pub -h localhost -t "zwave/Living_Room/Humidity_Sensor/sensor_multilevel/endpoint_0/currentValue" \
+  -m '{"value": 45, "unit": "%"}'
+```
+
+**Note:** The MCP server's MQTT cache will store these simulated values just like real sensor data.
 
 ### Z-Wave JS UI Configuration
 
@@ -211,7 +300,7 @@ unauthorized access to your Z-Wave network.
 Copy the example environment file and configure it:
 
 ```bash
-cp .env.example .env
+cp .env.tmp.example .env.tmp
 ```
 
 Edit `.env` and set the following variables:

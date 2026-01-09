@@ -34,7 +34,7 @@ export class ZWaveUIClient {
 
         if (data && data.success && data.user && data.user.token) {
             this.authToken = data.user.token;
-            console.log('[ZWave UI] Authenticated successfully');
+            console.warn('[ZWave UI] Authenticated successfully');
         } else {
             throw new Error('Authentication failed');
         }
@@ -130,7 +130,6 @@ export class ZWaveUIClient {
             return await this.fetchNodesViaSocket();
         } catch (error) {
             if (this.config.authEnabled) {
-                console.warn('[ZWave UI] Live node fetch failed, retrying after re-authentication');
                 await this.ensureAuthenticated(true);
                 return await this.fetchNodesViaSocket();
             }
@@ -174,5 +173,9 @@ export class ZWaveUIClient {
     async getDeviceInfo(nodeId) {
         const nodes = await this.getNodes();
         return nodes[nodeId.toString()] || null;
+    }
+
+    async getAllDevices() {
+        return await this.getNodes();
     }
 }

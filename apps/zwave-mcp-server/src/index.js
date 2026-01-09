@@ -4,7 +4,18 @@ import {StdioServerTransport} from '@modelcontextprotocol/sdk/server/stdio.js';
 import {CallToolRequestSchema, ListToolsRequestSchema,} from '@modelcontextprotocol/sdk/types.js';
 import {DeviceRegistryBuilder} from './device-registry.js';
 import {ZWaveUIClient} from './zwave-client.js';
-import {getConfig} from './config.js';
+import {MQTTClientWrapper} from './mqtt-client.js';
+import {getConfig, getMQTTConfig} from './config.js';
+
+/**
+ * IMPORTANT: MCP Server Logging Convention
+ *
+ * All debug/diagnostic logs MUST use console.warn() to write to stderr.
+ * Actual errors should use console.error().
+ * The MCP SDK stdio transport requires stdout to contain ONLY newline-delimited JSON-RPC messages.
+ * Any output to stdout (e.g., console.log, console.debug, console.info) will break the protocol
+ * and cause JSON parse failures in the client.
+ */
 
 /** @typedef {import('./types.js').ZWaveNode} ZWaveNode */
 /** @typedef {import('./types.js').ZWaveConfig} ZWaveConfig */
@@ -13,8 +24,27 @@ import {getConfig} from './config.js';
 
 
 const zwaveConfig = getConfig();
+const mqttConfig = getMQTTConfig();
 const zwaveClient = new ZWaveUIClient(zwaveConfig);
 const registryBuilder = new DeviceRegistryBuilder();
+
+// Initialize MQTT client if enabled
+let mqttClient = null;
+if (mqttConfig.enabled) {
+    try {
+        mqttClient = new MQTTClientWrapper({
+            brokerUrl: mqttConfig.brokerUrl,
+            username: mqttConfig.username,
+            password: mqttConfig.password,
+        });
+        console.warn('[MCP Server] MQTT integration enabled (prefer MQTT:', mqttConfig.preferMqtt, ')');
+    } catch (error) {
+        console.error('[MCP Server] Failed to initialize MQTT client:', error);
+        console.warn('[MCP Server] Continuing without MQTT integration');
+    }
+} else {
+    console.warn('[MCP Server] MQTT integration disabled');
+}
 
 /**
  * @param {ZWaveNode[]} nodes
@@ -152,6 +182,9 @@ const server = new Server(
     },
 );
 
+// Error handler - only log actual errors
+server.onerror = (error) => console.error('[server] Error:', error);
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
         {
@@ -201,6 +234,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
                 required: ['deviceName', 'action'],
             },
         },
+        {
+            name: 'get_device_sensor_data',
+            description:
+                'Get current sensor readings from a Z-Wave sensor device (temperature, humidity, light level, etc.). ' +
+                'Uses MQTT cache for real-time data when available, falls back to Z-Wave JS UI API if needed.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    deviceName: {
+                        type: 'string',
+                        description: 'The name of the sensor device (e.g. "Temp Sensor 1" or "Office Temperature")',
+                    },
+                },
+                required: ['deviceName'],
+            },
+        },
     ],
 }));
 
@@ -213,11 +262,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const filterDisplay = args.filter;
         const filter = filterDisplay ? String(filterDisplay).toLowerCase() : undefined;
 
+        console.warn('[mcp-server] list_zwave_devices called', {
+            args,
+            includeInactive,
+            filter,
+            filterDisplay
+        });
+
         try {
+            console.warn('[mcp-server] Fetching live nodes from Z-Wave JS UI...');
             const liveNodes = await zwaveClient.getLiveNodes();
-            console.error('[MCP DEBUG] Raw nodes from ZWave-JS-UI:', JSON.stringify(liveNodes.slice(0, 2), null, 2));
+            console.warn('[mcp-server] Got live nodes', {
+                totalNodes: liveNodes.length,
+                nodeIds: liveNodes.map(n => n.id)
+            });
             const registry = registryBuilder.build(toRegistry(liveNodes));
 
+            console.warn('[mcp-server] Filtering nodes...', {filter, includeInactive});
             const filteredSummaries = liveNodes
                 .filter((node) => {
                     const nameLower = (node.name || `Node ${node.id}`).toLowerCase();
@@ -229,7 +290,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
                     const isActive = (node.ready ?? false) && (node.available ?? true);
 
-                    return matchesFilter && (includeInactive || isActive);
+                    const passes = matchesFilter && (includeInactive || isActive);
+
+                    // Log each node evaluation if filter is active
+                    if (filter) {
+                        console.warn('[mcp-server] Node filter check', {
+                            nodeId: node.id,
+                            name: node.name,
+                            nameLower,
+                            filter,
+                            matchesFilter,
+                            isActive,
+                            passes
+                        });
+                    }
+
+                    return passes;
                 })
                 .map((node) => {
                     // Simplified device summary for AI - only essential fields
@@ -244,12 +320,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 })
                 .sort((a, b) => a.name.localeCompare(b.name));
 
-            // Return JSON for programmatic use
+            console.warn('[mcp-server] Filtered to', {
+                matchedCount: filteredSummaries.length,
+                devices: filteredSummaries.map(d => d.name)
+            });
+
+            // Build a clear, formatted response for the AI
+            let responseText;
+            if (filteredSummaries.length === 0) {
+                responseText = filter
+                    ? `No Z-Wave devices found matching "${filterDisplay}".`
+                    : 'No Z-Wave devices are currently available.';
+            } else {
+                const deviceList = filteredSummaries
+                    .map(d => {
+                        const location = d.location ? ` in ${d.location}` : '';
+                        return `- "${d.name}"${location} is ${d.status}`;
+                    })
+                    .join('\n');
+
+                const filterNote = filter ? ` matching "${filterDisplay}"` : '';
+                responseText = `Available Z-Wave devices${filterNote} (${filteredSummaries.length} total):\n${deviceList}`;
+            }
+
+            console.warn('[mcp-server] Returning response', {
+                responseLength: responseText.length,
+                responsePreview: responseText.substring(0, 150)
+            });
+
             return {
                 content: [
                     {
                         type: 'text',
-                        text: JSON.stringify(filteredSummaries),
+                        text: responseText,
                     },
                 ],
             };
@@ -353,20 +456,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
 
-            // TODO: Send MQTT command - requires MQTT client initialization
-            // For now, return success message with the topic/value that would be sent
-            const response = action === 'dim'
-                ? `Dry-run: Would dim ${device.name} to ${level}% (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`
-                : `Dry-run: Would turn ${action} ${device.name} (would publish ${JSON.stringify({value: mqttValue})} to ${controlTopic}). Device control is not yet implemented.`;
+            // Publish MQTT command to control the device
+            if (mqttClient && mqttClient.connected) {
+                try {
+                    await mqttClient.publish(controlTopic, {value: mqttValue});
+                    const response = action === 'dim'
+                        ? `Successfully sent command to dim ${device.name} to ${level}%`
+                        : `Successfully sent command to turn ${action} ${device.name}`;
 
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: response,
-                    },
-                ],
-            };
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: response,
+                            },
+                        ],
+                    };
+                } catch (error) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error sending MQTT command: ${error.message}`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+            } else {
+                // MQTT not available - return informative message
+                const response = action === 'dim'
+                    ? `MQTT not connected. Would dim ${device.name} to ${level}% (topic: ${controlTopic}, value: ${mqttValue})`
+                    : `MQTT not connected. Would turn ${action} ${device.name} (topic: ${controlTopic}, value: ${mqttValue})`;
+
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: response,
+                        },
+                    ],
+                };
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Unknown error controlling device';
             return {
@@ -374,6 +505,146 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     {
                         type: 'text',
                         text: `Failed to control device: ${message}`,
+                    },
+                ],
+                isError: true,
+            };
+        }
+    }
+
+    if (name === 'get_device_sensor_data') {
+        const args = rawArgs || {};
+        const {deviceName} = args;
+
+        if (!deviceName) {
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: 'Error: deviceName is required',
+                    },
+                ],
+                isError: true,
+            };
+        }
+
+        try {
+            let sensorData = null;
+            let source = 'unknown';
+
+            // Strategy: Try MQTT cache first if PREFER_MQTT is enabled, then fall back to API
+            if (mqttClient && mqttConfig.preferMqtt) {
+                console.warn(`[MCP Server] Checking MQTT cache for sensor: ${deviceName}`);
+                const cachedValue = mqttClient.getCachedSensorValue(deviceName);
+
+                if (cachedValue) {
+                    sensorData = {
+                        value: cachedValue.value,
+                        unit: cachedValue.unit,
+                        timestamp: new Date(cachedValue.timestamp).toISOString(),
+                        age: Math.round((Date.now() - cachedValue.timestamp) / 1000),
+                        commandClass: cachedValue.commandClass,
+                    };
+                    source = 'MQTT';
+                    console.warn(`[MCP Server] Found sensor data in MQTT cache (${sensorData.age}s old)`);
+                }
+            }
+
+            // Fall back to ZWave JS UI API if MQTT cache miss or MQTT disabled
+            if (!sensorData) {
+                console.warn(`[MCP Server] Querying Z-Wave JS UI API for sensor: ${deviceName}`);
+                const liveNodes = await zwaveClient.getLiveNodes();
+
+                // Find device by name (case-insensitive partial match)
+                const device = liveNodes.find(node => {
+                    const name = node.name || `Node ${node.id}`;
+                    return name.toLowerCase().includes(deviceName.toLowerCase()) ||
+                        deviceName.toLowerCase().includes(name.toLowerCase());
+                });
+
+                if (!device) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error: Sensor device "${deviceName}" not found. Use list_zwave_devices to see available devices.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+
+                if (!(device.ready && device.available)) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error: Sensor device "${device.name}" is offline or not ready.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+
+                // Extract sensor value from device values
+                // Look for sensor_multilevel command class (49)
+                if (device.values) {
+                    const sensorValues = Object.values(device.values).filter(v =>
+                        v.commandClass === 49 || // sensor_multilevel
+                        v.commandClassName === 'Multilevel Sensor' ||
+                        String(v.property).toLowerCase().includes('temperature') ||
+                        String(v.property).toLowerCase().includes('humidity') ||
+                        String(v.property).toLowerCase().includes('luminance')
+                    );
+
+                    if (sensorValues.length > 0) {
+                        // Use the first sensor value found (or prioritize currentValue)
+                        const primarySensor = sensorValues.find(v => v.property === 'currentValue') || sensorValues[0];
+
+                        sensorData = {
+                            value: primarySensor.value,
+                            unit: primarySensor.unit || 'unknown',
+                            timestamp: new Date().toISOString(),
+                            age: 0,
+                            commandClass: primarySensor.commandClassName || 'sensor_multilevel',
+                        };
+                        source = 'API';
+                        console.warn(`[MCP Server] Found sensor data from API:`, sensorData);
+                    }
+                }
+
+                if (!sensorData) {
+                    return {
+                        content: [
+                            {
+                                type: 'text',
+                                text: `Error: Device "${device.name}" does not have any sensor data available. It may not be a sensor device.`,
+                            },
+                        ],
+                        isError: true,
+                    };
+                }
+            }
+
+            // Format response for AI
+            const responseText = `Sensor: "${deviceName}"\nValue: ${sensorData.value}${sensorData.unit ? ' ' + sensorData.unit : ''}\nSource: ${source}\nAge: ${sensorData.age} seconds\nTimestamp: ${sensorData.timestamp}`;
+
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: responseText,
+                    },
+                ],
+            };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error getting sensor data';
+            console.error('[MCP Server] Error getting sensor data:', error);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `Failed to get sensor data: ${message}`,
                     },
                 ],
                 isError: true,
@@ -395,7 +666,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('Z-Wave MCP server ready on stdio');
 }
 
 main().catch((error) => {

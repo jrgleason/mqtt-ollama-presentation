@@ -1,0 +1,321 @@
+# Documentation Archive Summary
+
+**Last Updated:** 2025-10-22
+
+This README summarizes all historical documentation that has been archived or removed from the project. Key decisions and findings are preserved here for reference.
+
+---
+
+## Technology Decisions & Replacements
+
+### Piper TTS → ElevenLabs TTS
+
+**Decision Date:** October 2025
+
+**Why Changed:**
+- Better voice quality and naturalness
+- More voice options available
+- Simpler integration via API
+- Less resource-intensive than local Piper synthesis
+
+**Piper TTS Key Learnings (Preserved):**
+- Local TTS possible with Piper (offline-capable)
+- Voice models: `en_US-amy-medium.onnx` worked well
+- Synthesis speed on Pi 5: ~3-5 seconds for short responses
+- Quality tradeoff: Piper voices less natural than cloud TTS
+- Configuration: `TTS_VOLUME=1.0`, `TTS_SPEED=1.0` for optimal playback
+- ALSA playback on Linux, speaker.js on macOS
+- GLaDOS voice available as custom model (novelty feature)
+- Streaming not feasible due to sentence-by-sentence synthesis
+
+**What's Now Active:** ElevenLabs TTS via API (see voice-gateway-oww configuration)
+
+---
+
+### TypeScript → JavaScript
+
+**Decision Date:** September 2025
+
+**Why Changed:**
+- Simplified development workflow
+- Removed TypeScript compilation overhead
+- Using Zod for runtime validation instead
+- Easier for presentation/demo purposes
+
+**Key Migration Notes:**
+- All `.ts` and `.tsx` files converted to `.js` and `.jsx`
+- Type checking replaced with Zod schemas
+- JSDoc comments added for documentation
+- No breaking changes to functionality
+
+---
+
+### Porcupine → OpenWakeWord
+
+**Decision Date:** September 2025
+
+**Why Changed:**
+- Porcupine requires API key (not truly offline)
+- OpenWakeWord is fully offline and free
+- Better customization options
+- Community support for custom wake words
+
+**OpenWakeWord Key Implementation Details:**
+- Model architecture: Mel spectrogram → Embedding model → Wake word model
+- Input shape: `[1, 16, 96]` (batch, time_steps, features)
+- Temporal context: 1.28 seconds (16 × 80ms embeddings)
+- Detection threshold: 0.15-0.35 (tunable based on environment)
+- Models required: melspectrogram.onnx, embedding_model.onnx, wake_word.onnx
+- Custom training possible with 20-50 audio samples
+
+**What's Now Active:** OpenWakeWord in voice-gateway-oww service
+
+---
+
+## Architecture Decisions (Historical)
+
+### Next.js vs React Native
+
+**Decision:** Next.js chosen for Oracle app
+
+**Key Reasons:**
+- Server-side rendering for better initial load
+- Built-in API routes for LangChain integration
+- Better suited for web-based control panel
+- React Native would add mobile app complexity not needed for demo
+
+### Database Choice
+
+**Decision:** SQLite with Prisma ORM
+
+**Key Reasons:**
+- Local-first architecture (no cloud dependency)
+- Prisma provides excellent TypeScript/JavaScript support
+- SQLite perfect for single-user/demo scenario
+- Easy to seed and reset for demos
+
+### MCP Integration Approach
+
+**Decision:** Custom TypeScript MCP server + direct MQTT integration
+
+**Key Reasons:**
+- MCP server useful for Claude Desktop integration
+- Direct MQTT faster for real-time control
+- Dual approach demonstrates both patterns
+- MCP great for presentation "before/after" comparison
+
+---
+
+## Implementation Summaries (Historical)
+
+### Oracle Chatbot (Initial Implementation - October 2025)
+
+**What Was Built:**
+- Next.js 15 app with App Router
+- LangChain.js integration with Ollama
+- Streaming chat interface with SSE
+- Mock device control tools (later replaced with real MQTT)
+- shadcn/ui components for UI
+
+**Initial Tech Stack:**
+- TypeScript (later converted to JavaScript)
+- Qwen3:1.7b model (later optimized to qwen2.5:0.5b for speed)
+- Mock MQTT implementation (later replaced with real broker)
+
+**Key Learnings:**
+- Streaming SSE works well for real-time AI responses
+- LangChain tool calling excellent for device control
+- Mock data useful for initial development
+- TypeScript overhead not worth it for demo project
+
+---
+
+### CI/Build Fixes (October 2025)
+
+**Problem:** CI failing due to missing package-lock.json files
+
+**Root Cause:**
+- `.gitignore` files contained `package-lock.json`
+- `npm ci` requires lockfiles to be committed
+- Jest configured with non-existent test directories
+
+**Solution:**
+- Removed `package-lock.json` from `.gitignore`
+- Committed all lockfiles to git
+- Fixed Jest configurations (`passWithNoTests: true`)
+- Created placeholder test files
+
+**Status:** ✅ CI now passing (though test coverage still 0%)
+
+---
+
+### Dependency Updates (October 2025)
+
+**Major Updates:**
+- Prisma 6.16.3 → 6.17.1
+- MCP SDK 0.5.0 → 1.20.0 (breaking changes)
+- TypeScript 5.3.3 → 5.9.3
+- All MQTT packages → 5.14.1
+
+**Decisions:**
+- **Kept Zod at v3.x** (v4 breaks LangChain compatibility)
+- **Kept UUID at v9.x** (v13 too risky pre-demo)
+- All apps now have 0 security vulnerabilities
+
+**Lesson:** Don't update major versions right before demo!
+
+---
+
+### Voice Gateway Evolution
+
+**Phase 1: Porcupine + Whisper.cpp**
+- Used Picovoice Porcupine (requires API key)
+- Whisper.cpp with local models
+- Text-only responses (no TTS)
+- **Abandoned:** Not truly offline, complex build
+
+**Phase 2: OpenWakeWord + Whisper via Ollama**
+- Fully offline wake word detection
+- Whisper transcription via Ollama API
+- No TTS initially
+- **Issue:** Shape mismatch bugs (embedding buffer)
+
+**Phase 3: Current (OpenWakeWord + Whisper + ElevenLabs)**
+- OpenWakeWord for wake word
+- Whisper via Ollama for STT
+- ElevenLabs for TTS (API-based)
+- **Status:** ✅ Working, demo-ready
+
+---
+
+### Critical Bug Fixes (Preserved Learnings)
+
+**Wake Word Shape Mismatch:**
+- **Problem:** Model expected `[1, 16, 96]` but got `[1, 1, 96]`
+- **Cause:** Not accumulating 16 embeddings over time
+- **Fix:** Implemented rolling buffer of embeddings
+- **Lesson:** OpenWakeWord needs temporal context (1.28s of audio)
+
+**MQTT Client Options Loss:**
+- **Problem:** `publish()` only forwarding `qos`, dropping `retain`, `properties`
+- **Fix:** Use spread operator: `{ qos: 0, ...options }`
+- **Lesson:** Always preserve user options in wrapper functions
+
+**Voice Gateway State Machine Stuck:**
+- **Problem:** System stuck in "transcribing" state on timeout
+- **Fix:** Add 10s timeout + always re-enable wake word in error handler
+- **Lesson:** Every async operation needs timeout + recovery path
+
+---
+
+## MCP Research Findings
+
+**Initial Research (September 2025):**
+- MCP provides clean abstraction for AI ↔ tools integration
+- Works with Claude Desktop, Claude Code, and custom clients
+- MQTT remains source of truth for device state
+- MCP useful for multi-client scenarios
+
+**Testing Results:**
+- MCP Inspector excellent for debugging tools
+- Tool registration straightforward with @modelcontextprotocol/sdk
+- WebSocket transport works well for streaming
+- MQTT integration via MCP server maintains separation of concerns
+
+**Architecture Decision:**
+- Keep both direct MQTT (Oracle app) and MCP server (Claude Desktop)
+- Demonstrates two integration patterns in presentation
+- MCP not required for core demo but nice-to-have
+
+---
+
+## App Analysis (October 2025)
+
+**Oracle App Health:**
+- ✅ Stable, builds successfully
+- ⚠️ Wildcard dependencies ("*") replaced with specific versions
+- ⚠️ 0% test coverage (needs improvement)
+- ✅ No security vulnerabilities
+
+**zwave-mcp-server Health:**
+- ⚠️ MCP SDK outdated (0.5.0 → 1.20.0 updated)
+- ✅ Builds successfully
+- ⚠️ No tests
+
+**voice-gateway-oww Health:**
+- ✅ Core functionality working
+- ⚠️ Needs ElevenLabs integration completion
+- ⚠️ No tests
+- ✅ Audio pipeline stable
+
+**Overall:** Functional but lacking test coverage across all apps
+
+---
+
+## Project Evolution Timeline
+
+**September 2025:**
+- Initial project setup
+- TypeScript → JavaScript conversion
+- Porcupine → OpenWakeWord migration
+- Basic chat interface implemented
+
+**October 2025:**
+- MQTT integration completed
+- Wake word detection debugged
+- CI/build issues resolved
+- Dependency updates
+- Piper TTS → ElevenLabs migration started
+
+**Current Status (October 2025):**
+- ✅ Oracle chat app working
+- ✅ Z-Wave MQTT integration functional
+- 🔄 Voice gateway needs TTS completion
+- 🔄 Test coverage needed across all apps
+- 🔄 Final demo polish required
+
+---
+
+## Key Lessons Learned
+
+1. **Start Simple:** Mock implementations useful for initial development
+2. **Test Early:** 0% coverage makes changes risky
+3. **Lock Dependencies:** Wildcard versions cause instability
+4. **Document Decisions:** This archive prevents re-researching solved problems
+5. **Offline-First:** Local models (Ollama, OpenWakeWord) work great on Pi 5
+6. **Don't Over-Engineer:** TypeScript overhead not worth it for demo
+7. **Plan State Management:** Voice gateway state machine needed careful design
+8. **Timeouts Everywhere:** Every async operation needs timeout + recovery
+9. **Version Carefully:** Don't update major versions right before demo
+10. **Archive, Don't Delete:** Preserve decisions and learnings
+
+---
+
+## What's Currently Active
+
+For current documentation, see:
+
+- **Main Docs:** `/docs/README.md`
+- **Getting Started:** `/docs/GETTING-STARTED.md`
+- **Tasks:** `/docs/tasks.md`
+- **Requirements:** `/docs/requirements.md`
+- **Guidelines:** `/CLAUDE.md`
+
+---
+
+## Accessing Deleted Files
+
+If you need to recover any archived content:
+
+```bash
+# Search git history for deleted files
+git log --all --full-history --diff-filter=D -- "docs/archive/*"
+
+# Restore a specific file
+git checkout <commit-hash> -- path/to/file.md
+```
+
+---
+
+**This archive README is the ONLY file preserved in docs/archive/.**
+**All other historical documentation has been summarized above and deleted to reduce repository bloat.**

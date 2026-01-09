@@ -177,8 +177,8 @@ async function main() {
 
     console.log('\n✅ Setup complete!');
     console.log('\nNext steps:');
-    console.log('1. Copy .env.example to .env');
-    console.log('2. Verify microphone device in .env (default: hw:2,0)');
+    console.log('1. Copy .env.tmp.example to .env.tmp');
+    console.log('2. Verify microphone device in .env.tmp (default: hw:2,0)');
     console.log('3. Run: npm run dev');
     console.log('\nNo API key required - OpenWakeWord is completely free! 🎉');
 }

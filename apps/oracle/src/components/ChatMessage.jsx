@@ -3,7 +3,36 @@
 import {useState} from 'react';
 import {cn} from '../lib/utils.js';
 import {Bot, ChevronDown, ChevronUp, User} from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
+/**
+ * ChatMessage Component
+ *
+ * Renders a single chat message with support for markdown formatting, thinking blocks,
+ * and role-based styling (user vs assistant).
+ *
+ * Features:
+ * - Markdown rendering using react-markdown with GitHub-flavored markdown support (remarkGfm)
+ * - Extended thinking blocks (<think>...</think>) with collapsible UI
+ * - Dark mode support via Tailwind's prose-invert
+ * - Role-based avatars and message bubble styling
+ * - Message timestamps and assistant response duration
+ *
+ * Markdown Support:
+ * - Bold, italic, and inline code formatting
+ * - Lists (ordered and unordered)
+ * - Code blocks with syntax highlighting
+ * - Tables and task lists (via remarkGfm)
+ * - Links (auto-sanitized for XSS protection)
+ *
+ * @param {Object} props - Component props
+ * @param {Object} props.message - Message object
+ * @param {string} props.message.role - Message role ('user' or 'assistant')
+ * @param {string} props.message.content - Message content (may include markdown and <think> tags)
+ * @param {Date} props.message.timestamp - Message timestamp
+ * @param {number} [props.message.duration] - Assistant response duration in milliseconds
+ */
 export function ChatMessage({message}) {
     const isUser = message.role === 'user';
     const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
@@ -47,7 +76,11 @@ export function ChatMessage({message}) {
                         )}
                     >
                         {mainContent && (
-                            <p className="text-base leading-relaxed whitespace-pre-wrap break-words">{mainContent}</p>
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-base leading-relaxed">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {mainContent}
+                                </ReactMarkdown>
+                            </div>
                         )}
 
                         {!isUser && thinkingContent && !isThinkingInProgress && (
