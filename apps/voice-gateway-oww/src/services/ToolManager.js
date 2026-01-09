@@ -126,13 +126,17 @@ export class ToolManager {
         }
 
         const normalized = {};
+        let changed = false;
         for (const [key, value] of Object.entries(args)) {
             const mappedKey = mapping[key] || key;
+            if (mappedKey !== key) {
+                changed = true;
+            }
             normalized[mappedKey] = value;
         }
 
         // Log if normalization occurred
-        if (JSON.stringify(args) !== JSON.stringify(normalized)) {
+        if (changed) {
             console.log(`🔧 Normalized parameters for ${toolName}:`, {
                 original: args,
                 normalized: normalized

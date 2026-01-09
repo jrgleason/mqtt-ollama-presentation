@@ -214,4 +214,4 @@ To create custom wake words (e.g., "Hey Oracle", "Computer"):
 
 **Next Steps:**
 - See `/apps/voice-gateway-oww/README.md` for full setup instructions
-- Check `/docs/voice-gateway-troubleshooting.md` for platform-specific issues
+- Check `apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md` for platform-specific issues

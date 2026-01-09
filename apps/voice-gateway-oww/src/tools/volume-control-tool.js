@@ -5,6 +5,7 @@
  */
 
 import {config} from '../config.js';
+import {loadPrompt} from '../util/prompt-loader.js';
 
 // Volume limits
 const MIN_VOLUME = 0.0;
@@ -173,12 +174,13 @@ export function controlVolume(args) {
 
 /**
  * Tool definition for AI
+ * @see prompts/tools/volume-control.md
  */
 export const volumeControlTool = {
     type: 'function',
     function: {
         name: 'control_speaker_volume',
-        description: 'Control the speaker volume for the voice assistant. Can get current volume, set to specific level, increase, decrease, mute, or maximize volume. Use this when the user asks to change volume (e.g., "turn up the volume", "make it quieter", "set volume to 50%").',
+        description: loadPrompt('tools/volume-control'),
         parameters: {
             type: 'object',
             properties: {

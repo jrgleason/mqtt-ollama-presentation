@@ -31,7 +31,7 @@
     "@langchain/anthropic": "latest",
     "@langchain/core": "latest",
     "@langchain/mcp-adapters": "latest",
-    "@langchain/ollama": "^1.1.0",
+    "@langchain/ollama": "latest",
     "@modelcontextprotocol/sdk": "latest",
     "dotenv": "latest",
     "fft-js": "latest",

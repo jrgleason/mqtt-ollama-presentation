@@ -68,27 +68,15 @@ zwave/{nodeId}/{commandClass}/0/targetValue/set  # ❌ WRONG - numeric format
 - `apps/zwave-mcp-server/README.md` - Complete MQTT topic documentation
 - `apps/zwave-mcp-server/src/device-registry.js` - Topic building implementation
 
-## MQTT Integration (Dual Approach for Presentation)
+## MQTT Integration
 
-**Presentation Strategy:** Demonstrate BOTH simple custom tools AND enterprise MCP architecture
+**Current Approach:** Direct MQTT integration from the app using LangChain tools.
 
-### Part 1: Custom Tool (5 minutes)
+- LangChain tool decorator wraps MQTT.js client
+- User request → Tool call → MQTT publish → Physical device responds
+- Simple, reliable, and easy to demonstrate
 
-- Build simple MQTT tool live on stage (~15 lines)
-- Show: User request → Tool call → Physical device responds
-- Highlight limitations: code duplication, no reusability across AI clients
-
-### Part 2: MCP Server (5 minutes)
-
-- Introduce custom TypeScript MCP server (Anthropic's Model Context Protocol)
-- Demo same functionality with better architecture
-- Show: MCP Inspector, Claude Desktop integration, separation of concerns
-
-### Implementation Requirements
-
-- **Week 1-2:** Implement custom mqtt.js tool (for demo Part 1)
-- **Week 3:** Add TypeScript MCP server (for demo Part 2)
-- **Week 4:** Practice switching between approaches live
+**Note:** The MCP server approach has been archived. See `docs/requirements.md` for details.
 
 ### HiveMQ Broker Configuration
 
@@ -103,18 +91,8 @@ zwave/{nodeId}/{commandClass}/0/targetValue/set  # ❌ WRONG - numeric format
 - **TECH DEBT:** Enable RBAC for production
 
 **Connection Details:**
-- **Custom Tool:** MQTT.js + LangChain tool decorator
-- **MCP Server:** Custom TypeScript using @modelcontextprotocol/sdk + mqtt.js
-- **Note:** Using existing HiveMQ broker running in Kubernetes. Custom TypeScript MCP server works with any MQTT broker.
-
-### When to Use Each Approach
-
-- **Custom Tools:** Prototypes, learning, simple integrations
-- **MCP Servers:** Production, multiple AI clients, enterprise systems
-
-### See Also
-
-- `docs/notes.md` - "MQTT Integration - Dual Approach Strategy" for complete implementation guide
+- MQTT.js + LangChain tool decorator
+- Using existing HiveMQ broker running in Kubernetes
 
 ## Auth0 Authentication
 
@@ -183,7 +161,7 @@ OLLAMA_MODEL=qwen2.5:0.5b  # For voice-gateway-oww (speed optimized)
 ### See Also
 
 - `docs/TECH-STACK.md` - Detailed model recommendations and performance benchmarks
-- `docs/performance-optimization.md` - Optimization techniques
+- `docs/PERFORMANCE.md` - Optimization techniques
 
 ## Environment Variables Reference
 

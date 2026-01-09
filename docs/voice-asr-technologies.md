@@ -455,9 +455,9 @@ Do you need fully offline operation?
 ## Related Documentation
 
 - **[Voice Gateway README](../apps/voice-gateway-oww/README.md)** - Current implementation details
-- **[Voice Gateway Quickstart](voice-gateway-quickstart.md)** - Setup instructions
+- **[Voice Gateway Developer Guide](../apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md)** - Setup and troubleshooting
 - **[OpenWakeWord Guide](openwakeword-guide.md)** - Wake word detection
-- **[Performance Optimization](performance-optimization.md)** - Pi 5 tuning
+- **[Performance Optimization](PERFORMANCE.md)** - Pi 5 tuning
 - **[Presentation Outline](outline.md)** - Demo structure
 
 ---

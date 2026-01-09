@@ -14,10 +14,12 @@ import mqtt from 'mqtt';
 export class MQTTClientWrapper {
     /**
      * @param {MQTTConfig} config
+     * @param {import('./device-registry.js').DeviceRegistryBuilder} [registryBuilder] - Optional registry builder for activity tracking
      */
-    constructor(config) {
+    constructor(config, registryBuilder = null) {
         this.config = config;
         this.connected = false;
+        this.registryBuilder = registryBuilder;
         /** @type {Map<string, SensorCacheEntry>} */
         this.sensorCache = new Map();
         this.sensorTopicPattern = 'zwave/+/+/sensor_multilevel/+/currentValue';
@@ -113,6 +115,11 @@ export class MQTTClientWrapper {
             };
 
             this.sensorCache.set(deviceName, cacheEntry);
+
+            // Update device activity tracking if registry builder is available
+            if (this.registryBuilder) {
+                this.registryBuilder.updateDeviceActivity(deviceName);
+            }
 
             console.warn(`[MQTT] Cached sensor value for "${deviceName}":`, {
                 value: message.value,

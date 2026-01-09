@@ -215,4 +215,164 @@ describe('OllamaClient.cleanNonEnglish', () => {
         const result = OllamaClient.cleanNonEnglish(text);
         expect(result).toBe('Hello  World');
     });
+
+    it('should remove <think> tags from qwen3 models', () => {
+        const text = '<think>This is reasoning</think>The actual response';
+        const result = OllamaClient.cleanNonEnglish(text);
+        expect(result).toBe('The actual response');
+    });
+
+    it('should remove nested <think> tags', () => {
+        const text = 'Start<think>reason 1<think>nested</think>reason 2</think>End';
+        const result = OllamaClient.cleanNonEnglish(text);
+        // The regex removes the outermost <think>...</think> but may not handle deeply nested ones perfectly
+        // This is acceptable since nested thinking is rare and the outer layer is removed
+        expect(result.includes('<think>')).toBe(false);
+        expect(result.startsWith('Start')).toBe(true);
+        expect(result.endsWith('End')).toBe(true);
+    });
+});
+
+describe('OllamaClient Performance Configuration', () => {
+    let debugLogs;
+    let mockLogger;
+
+    beforeEach(() => {
+        debugLogs = [];
+        mockLogger = {
+            debug: (message, data) => debugLogs.push({ message, data }),
+            info: () => {},
+            warn: () => {},
+            error: () => {},
+        };
+    });
+
+    it('should use default performance settings when not provided', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://localhost:11434',
+                model: 'qwen3:0.6b',
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+
+        // Access the client to trigger initialization
+        client.client; // Trigger lazy initialization
+
+        // Verify debug logging includes default values
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog).toBeDefined();
+        expect(initLog.data.numCtx).toBe(2048);
+        expect(initLog.data.temperature).toBe(0.5);
+        expect(initLog.data.keepAlive).toBe(-1);
+    });
+
+    it('should use custom numCtx from config', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://localhost:11434',
+                model: 'qwen3:0.6b',
+                numCtx: 4096,
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+        client.client; // Trigger lazy initialization
+
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog.data.numCtx).toBe(4096);
+    });
+
+    it('should use custom temperature from config', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://localhost:11434',
+                model: 'qwen3:0.6b',
+                temperature: 0.7,
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+        client.client; // Trigger lazy initialization
+
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog.data.temperature).toBe(0.7);
+    });
+
+    it('should use custom keepAlive from config', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://localhost:11434',
+                model: 'qwen3:0.6b',
+                keepAlive: 3600,
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+        client.client; // Trigger lazy initialization
+
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog.data.keepAlive).toBe(3600);
+    });
+
+    it('should handle keepAlive=0 (immediate unload)', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://localhost:11434',
+                model: 'qwen3:0.6b',
+                keepAlive: 0,
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+        client.client; // Trigger lazy initialization
+
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog.data.keepAlive).toBe(0);
+    });
+
+    it('should use all custom performance settings together', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://custom:11434',
+                model: 'custom-model',
+                numCtx: 1024,
+                temperature: 0.3,
+                keepAlive: 7200,
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+        client.client; // Trigger lazy initialization
+
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog.data.baseUrl).toBe('http://custom:11434');
+        expect(initLog.data.model).toBe('custom-model');
+        expect(initLog.data.numCtx).toBe(1024);
+        expect(initLog.data.temperature).toBe(0.3);
+        expect(initLog.data.keepAlive).toBe(7200);
+    });
+
+    it('should log performance settings for debugging', () => {
+        const config = {
+            ollama: {
+                baseUrl: 'http://localhost:11434',
+                model: 'qwen3:0.6b',
+                numCtx: 2048,
+                temperature: 0.5,
+                keepAlive: -1,
+            }
+        };
+
+        const client = new OllamaClient(config, mockLogger);
+        client.client; // Trigger lazy initialization
+
+        // Verify that performance settings are logged
+        const initLog = debugLogs.find(log => log.message === '✅ ChatOllama client initialized');
+        expect(initLog).toBeDefined();
+        expect(initLog.data).toHaveProperty('numCtx', 2048);
+        expect(initLog.data).toHaveProperty('temperature', 0.5);
+        expect(initLog.data).toHaveProperty('keepAlive', -1);
+    });
 });

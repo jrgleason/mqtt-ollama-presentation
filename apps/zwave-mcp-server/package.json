@@ -10,7 +10,9 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "inspector": "npx @modelcontextprotocol/inspector node src/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector node src/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
   "keywords": [
     "mcp",
@@ -27,5 +29,8 @@
     "node-fetch": "latest",
     "socket.io-client": "latest",
     "zod": "latest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }

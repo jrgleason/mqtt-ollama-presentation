@@ -64,22 +64,29 @@ export class AIRouter {
     }
 
     /**
-     * Build system prompt with optional device context hint
+     * Build system prompt with optional device and datetime context hints
      *
      * With MCP tools integration, the AI queries devices on-demand using tools
      * instead of receiving device info upfront. This reduces prompt size and
      * ensures fresh data on every query.
      *
      * @param {boolean} includeDevices - Whether to hint that device tools are available
-     * @returns {Promise<string>} System prompt with optional device tool hint
+     * @param {boolean} includeDateTime - Whether to hint that datetime tool is available
+     * @returns {Promise<string>} System prompt with optional tool hints
      */
-    async buildSystemPrompt(includeDevices = false) {
+    async buildSystemPrompt(includeDevices = false, includeDateTime = false) {
         let prompt = this.defaultSystemPrompt;
 
         if (includeDevices) {
             // Add hint that device tools are available (AI will use list_zwave_devices tool)
             prompt += '\n\nYou have tools available to query and control Z-Wave devices. Use them when the user asks about devices.';
             this.logger.debug('AIRouter: Added device tool hint to system prompt');
+        }
+
+        if (includeDateTime) {
+            // Add hint that datetime tool is available
+            prompt += '\n\nYou have the get_current_datetime tool available. Use it for any time/date questions.';
+            this.logger.debug('AIRouter: Added datetime tool hint to system prompt');
         }
 
         return prompt;

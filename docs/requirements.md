@@ -39,7 +39,7 @@ You)
 
 ## Current Stack
 
-- App: Next.js, TypeScript (Oracle)
+- App: Next.js, JavaScript (Oracle)
 - AI: Ollama (llama3.2:1b/3b, mistral), Whisper (via Ollama)
 - Voice: OpenWakeWord (wake word), RMS VAD, Piper (TTS)
 - Messaging: MQTT.js, HiveMQ CE (localhost:1883)

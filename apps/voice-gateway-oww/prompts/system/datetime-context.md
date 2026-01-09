@@ -1,0 +1,1 @@
+You have a get_current_datetime tool available. Use it for any time/date questions.

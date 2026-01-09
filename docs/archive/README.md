@@ -1,6 +1,6 @@
 # Documentation Archive Summary
 
-**Last Updated:** 2025-10-22
+**Last Updated:** 2026-01-03
 
 This README summarizes all historical documentation that has been archived or removed from the project. Key decisions and findings are preserved here for reference.
 
@@ -295,11 +295,14 @@ This README summarizes all historical documentation that has been archived or re
 
 For current documentation, see:
 
-- **Main Docs:** `/docs/README.md`
-- **Getting Started:** `/docs/GETTING-STARTED.md`
+- **Documentation Index:** `/docs/README.md`
+- **Setup Guide:** `/docs/SETUP.md` (consolidated from GETTING-STARTED.md)
+- **Performance Guide:** `/docs/PERFORMANCE.md` (consolidated from multiple performance docs)
 - **Tasks:** `/docs/tasks.md`
 - **Requirements:** `/docs/requirements.md`
+- **Tech Stack:** `/docs/TECH-STACK.md`
 - **Guidelines:** `/CLAUDE.md`
+- **Voice Gateway:** `/apps/voice-gateway-oww/README.md` (includes AI provider switching)
 
 ---
 
@@ -314,6 +317,232 @@ git log --all --full-history --diff-filter=D -- "docs/archive/*"
 # Restore a specific file
 git checkout <commit-hash> -- path/to/file.md
 ```
+
+---
+
+## January 2026 Documentation Consolidation
+
+**Consolidation Date:** January 2026
+
+As part of a major documentation reorganization effort before the CodeMash 2026 presentation (January 12, 2026), several documents were consolidated to reduce redundancy, fix broken links, and improve navigation. The following files were archived:
+
+### GETTING-STARTED.md
+
+**Status:** Content merged into SETUP.md
+
+**Original Purpose:** Quick-start checklist for getting the demo running on laptop/desktop or Raspberry Pi 5.
+
+**Key Content Preserved:**
+- Environment setup instructions (Node.js 20+, Docker, Ollama)
+- Service configuration steps (Auth0, MQTT, Ollama env vars)
+- Stack launch commands with docker compose
+- Validation checklist (Oracle UI, zwave-js-ui, MQTT logs)
+
+**Why Archived:** Content was duplicative with other setup documentation. Merged into consolidated SETUP.md with broken links fixed and updated references.
+
+---
+
+### performance-analysis.md
+
+**Status:** Content merged into PERFORMANCE.md
+
+**Original Purpose:** Detailed analysis of voice gateway performance with industry benchmarks and optimization strategies.
+
+**Key Content Preserved:**
+- Performance benchmarks: Wake word <50ms, Whisper STT 265-342ms, Anthropic AI 1-2s (no tools), 2-4s (with tools), ElevenLabs TTS 1.2-1.8s
+- Industry comparison: Alexa target <1s certification, 3-4s reality
+- Finding: <500ms goal NOT achievable with cloud-based LLMs (TTFT alone is 360-700ms)
+- Debug logging instructions for performance profiling
+- Direct tool bypass strategy for datetime queries (0-1ms vs 2000ms)
+
+**Why Archived:** Consolidated with other performance docs into single PERFORMANCE.md reference.
+
+---
+
+### performance-optimization.md
+
+**Status:** Content merged into PERFORMANCE.md
+
+**Original Purpose:** Chronicle of the optimization journey from 27 seconds to 7 seconds (74% improvement).
+
+**Key Content Preserved:**
+- Optimization phases: qwen3:1.7b -> qwen2.5:1.5b -> qwen2.5:0.5b (93% faster)
+- Whisper model: ggml-base.bin -> ggml-tiny.bin (75% faster, 75MB vs 142MB)
+- System prompt engineering: Removed <think> tags, 85% reduction in response length
+- Final pipeline: Wake word 100ms, VAD 2.7s, Whisper 1.5s, Ollama 1s, TTS 1.7s
+- Model selection guidelines for voice gateway vs Oracle chatbot
+- Hardware-appropriate selection for Raspberry Pi 5
+
+**Why Archived:** Consolidated with other performance docs into single PERFORMANCE.md reference.
+
+---
+
+### optimization-summary.md
+
+**Status:** Content merged into PERFORMANCE.md
+
+**Original Purpose:** Summary of optimization changes and their impact on responsiveness.
+
+**Key Content Preserved:**
+- VAD silence detection optimization: 1500ms -> 800ms (700ms faster)
+- Search query bypass removal fix (Anthropic now handles searches properly)
+- Extended thinking NOT recommended for voice (adds 1-2s latency)
+- Final pipeline timeline: ~5-6 seconds total (down from 7-8 seconds)
+- Tuning guide for VAD settings (500ms-1500ms range)
+
+**Why Archived:** Consolidated with other performance docs into single PERFORMANCE.md reference.
+
+---
+
+### ai-provider-switching.md
+
+**Status:** Content moved to apps/voice-gateway-oww/README.md
+
+**Original Purpose:** Guide for switching between Anthropic and Ollama AI providers in the voice gateway.
+
+**Key Content Preserved:**
+- Provider configuration: AI_PROVIDER env var, --ollama flag
+- Anthropic models: claude-3-5-haiku (fast), claude-3-5-sonnet (balanced), claude-3-opus (capable)
+- Ollama models: qwen2.5:0.5b (1s), qwen2.5:1.5b (4.6s), qwen3:1.7b (14s, not recommended)
+- Cost comparison: Anthropic ~$0.50-1.00/1000 queries vs Ollama free
+- Recommendations: Anthropic for production/demo, Ollama for development/offline
+
+**Why Archived:** Documentation was specific to voice-gateway-oww app and belongs in that module's README rather than top-level docs.
+
+---
+
+### questions.md
+
+**Status:** All questions answered, decisions documented
+
+**Original Purpose:** Clarifying questions for CodeMash 2026 presentation with decision tracking.
+
+**Final Decisions Preserved:**
+- **Q1 (Z-Wave Integration):** Use zwave-js-ui as-is with built-in MQTT
+- **Q2 (Frontend):** Next.js with App Router
+- **Q4 (Wake Word):** OpenWakeWord (ONNX, offline), wake word "Hey Jarvis", Porcupine deprecated
+- **Q5 (Ollama Models):** Prefer llama3.2/mistral for reliable tool-calling; avoid qwen/gemma/phi for tool-calling
+- **Q6 (MQTT Broker):** HiveMQ CE at mqtt://localhost:1883
+- **Q7 (Voice Input):** Dedicated voice-gateway-oww service, browser mic approach deprecated
+- **Q8 (Auth):** Auth0 recommended but optional/deferred for demo to stay offline-friendly
+- **Database:** Start minimal (Users optional, Devices, UserPreferences); ConversationHistory is stretch goal
+- **Hardware:** Raspberry Pi 5 + Z-Wave daughter board + 2-3 physical devices
+- **Live Demo:** Yes, with offline/backup flows prepared
+
+**Status Summary at Archive:** 6/15 fully answered (Q1, Q2, Q4, Q5, Q6, Q7), 1 optional/deferred (Q8), remainder implementation details resolved during development.
+
+**Why Archived:** All questions answered and decisions made. Key decisions preserved above; remaining implementation choices documented in respective module READMEs.
+
+---
+
+---
+
+## TTS Migration Timeline
+
+**Analysis Date:** December 2025
+
+**Summary:** Analysis of the TTS system migration from Piper (local) to ElevenLabs (cloud).
+
+### Key Dates
+
+| Phase | Date | Event |
+|-------|------|-------|
+| Piper TTS Only | Oct 13-24, 2025 | Piper TTS added (commit c3b0817) |
+| Tag 0.0.1 | Oct 13, 2025 | First stable version (Piper only) |
+| Tag 0.0.2 | Oct 19, 2025 | Improvements and fixes (still Piper only) |
+| ElevenLabs Added | Oct 24, 2025 | ElevenLabs TTS added (commit 54c4423) |
+| ElevenLabs Default | Oct 27, 2025 | ElevenLabs becomes default (commit ec14a0d) |
+
+### Migration Highlights
+
+- **Neither tag 0.0.1 nor 0.0.2 reflect ElevenLabs** - both use Piper only
+- ElevenLabs introduced `TTS_PROVIDER` env var for switching providers
+- `TTS_STREAMING=true` enabled for streaming TTS
+- Piper still available for offline use via `TTS_PROVIDER=Piper`
+
+### Tag Recommendation
+
+Consider creating new tags:
+- `0.0.3` - ElevenLabs TTS added (commit 54c4423)
+- `0.1.0` - ElevenLabs default with streaming (commit ec14a0d)
+
+---
+
+## TTS Duplicate Analysis Results
+
+**Analysis Date:** December 22, 2025
+
+**Summary:** Analysis of duplicate TTS implementations during the class-based refactoring.
+
+### ElevenLabs TTS Duplicates
+
+| Implementation | File | Lines | Status |
+|---------------|------|-------|--------|
+| OLD (function-based) | `src/elevenlabs-tts.js` | 502 | In use by 3 files |
+| NEW (class-based) | `src/util/ElevenLabsTTS.js` | 222 | Not yet integrated |
+
+**Code Reduction:** New implementation is 56% smaller (222 vs 502 lines)
+
+### Audio Feedback Migration
+
+| Implementation | File | Status |
+|---------------|------|--------|
+| OLD (function-based) | `src/audio-feedback.js` | No active imports |
+| NEW (class-based) | `src/util/BeepUtil.js` | Fully migrated (3 imports) |
+
+**Result:** BeepUtil successfully replaced audio-feedback.js - old file can be safely deleted.
+
+### Recommended Priority
+
+1. **IMMEDIATE:** Delete `audio-feedback.js` (safe, no imports)
+2. **HIGH:** Migrate ElevenLabs TTS to class-based implementation
+3. **TESTING:** Comprehensive testing of voice interaction pipeline
+
+---
+
+## Voice Gateway Refactoring Status
+
+**Analysis Date:** December 22, 2025
+
+**Summary:** Analysis of voice gateway refactoring from monolithic to modular architecture.
+
+### Refactoring Progress: ~80% Complete
+
+**Completed Migrations:**
+- Logger moved to `util/` (20+ files updated)
+- AudioUtils moved to `audio/` (3 files updated)
+- BackgroundTranscriber replaced with VoiceInteractionOrchestrator
+- BeepUtil class created and integrated (3 files)
+- New directory structure: `ai/`, `audio/`, `services/`, `wake-word/`
+- Tool system refactored (ToolRegistry, ToolExecutor, individual tools)
+
+**In Progress:**
+- ElevenLabsTTS class created but not integrated
+- Streaming TTS still in root directory
+- Piper TTS still in root directory
+
+**Not Started:**
+- audio-feedback.js evaluation (keep vs migrate to BeepUtil)
+- Final cleanup of git-deleted files
+
+### New Directory Structure
+
+```
+apps/voice-gateway-oww/src/
+├── ai/           # AI routing logic
+├── audio/        # Audio processing (AudioUtils, VoiceActivityDetector)
+├── services/     # High-level orchestration (VoiceInteractionOrchestrator)
+├── wake-word/    # Wake word state management (DetectorStateManager)
+├── tools/        # Individual tool implementations
+└── util/         # Utilities (Logger, BeepUtil, OpenWakeWordDetector)
+```
+
+### Key Learnings
+
+- Class-based implementations are ~50% more concise
+- Module-level singletons replaced with dependency injection
+- XState v5 for state machine management
+- No breaking changes - all identified duplicates have clear migration paths
 
 ---
 

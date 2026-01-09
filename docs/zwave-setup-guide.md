@@ -450,4 +450,4 @@ journalctl -u zwave-js-ui -n 100 --no-pager
 - **MCP Architecture:** `/docs/mcp-architecture.md`
 - **MQTT Setup:** `/docs/mqtt-setup.md`
 - **MCP Setup Guide:** `/docs/mqtt-mcp-setup.md`
-- **Performance Optimization:** `/docs/performance-optimization.md`
+- **Performance Optimization:** `/docs/PERFORMANCE.md`
