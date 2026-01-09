@@ -355,4 +355,3 @@ The project SHALL define a process for keeping test coverage documentation curre
 - **GIVEN** the project is preparing for the presentation
 - **WHEN** the team reviews readiness
 - **THEN** they confirm test coverage percentages meet minimum thresholds (documented in the mapping)
-
