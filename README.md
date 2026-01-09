@@ -361,27 +361,9 @@ Payload: {"value": 72.5, "unit": "F"}
 - USB Speaker or DAC
 - [FFmpeg](https://ffmpeg.org/) - Audio processing
 
-<<<<<<< HEAD
 **Optional (for cloud features):**
 - [Anthropic API Key](https://console.anthropic.com/) - For Claude AI
 - [ElevenLabs API Key](https://elevenlabs.io/) - For cloud TTS
-=======
-1. Clone the repo and install dependencies for the services you plan to run.
-   ```bash
-   git clone https://github.com/yourusername/mqtt-ollama-presentation.git
-   cd mqtt-ollama-presentation
-   npm install --prefix apps/oracle
-   ```
-2. Copy the example environment file and fill in Auth0 + MQTT credentials.
-   ```bash
-   cp apps/oracle/.env.tmp.example apps/oracle/.env.tmp.local
-   ```
-3. Start the stack. Mosquitto and zwave-js-ui run locally; Ollama is expected on the host.
-   ```bash
-   docker compose up --build
-   ```
-4. Visit `http://localhost:3000` for the Oracle UI and `http://localhost:8091` for zwave-js-ui.
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 ### Installation
 
@@ -604,7 +586,7 @@ cd apps/voice-gateway-oww
 - **[Voice ASR Technologies](docs/voice-asr-technologies.md)** - Speech recognition comparison
 - **[Z-Wave Setup](docs/zwave-setup-guide.md)** - Device pairing and troubleshooting
 - **[OpenWakeWord Guide](docs/openwakeword-guide.md)** - Wake word detection setup
-- **[Voice Gateway Developer Guide](apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md)** - Setup, troubleshooting, internals
+- **[Voice Gateway Troubleshooting](docs/voice-gateway-troubleshooting.md)** - Common issues
 
 ### Reference
 - **[Documentation Index](docs/README.md)** - Complete documentation map

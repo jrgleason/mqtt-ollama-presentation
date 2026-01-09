@@ -8,21 +8,14 @@
  * - Exponential backoff retry logic for transient connection failures
  * - stderr capture from MCP server subprocess for debugging
  * - Graceful degradation when MCP server is unavailable
- * - Independent Playwright MCP initialization (optional, for web search fallback)
  */
 
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
-<<<<<<< HEAD
 import { logger } from '../util/Logger.js';
 import { MCP_STDERR_CAPTURE_MS, MCP_RETRY_BASE_DELAY_MS } from '../constants/timing.js';
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
-
-// Track Playwright MCP client separately for graceful degradation
-let playwrightMCPClient = null;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,11 +55,7 @@ async function captureStderr(mcpClient, logger) {
             const capturePromise = new Promise((resolve) => {
                 const timeout = setTimeout(() => {
                     resolve();
-<<<<<<< HEAD
                 }, MCP_STDERR_CAPTURE_MS);
-=======
-                }, 1000); // Capture stderr for 1 second
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
                 stderrStream.on('data', (chunk) => {
                     const text = chunk.toString().trim();
@@ -134,10 +123,7 @@ export async function createMCPClient(config, logger) {
             serverEnv.ZWAVE_UI_PASSWORD = process.env.ZWAVE_UI_PASSWORD;
         }
 
-        // Configure MCP servers - only include zwave (Playwright is handled separately)
-        // Note: Playwright MCP is not included here because it requires separate installation
-        // and would cause the entire MCP init to fail if not available
-        const mcpConfig = {
+        const client = new MultiServerMCPClient({
             zwave: {
                 transport: "stdio",
                 command: "node",
@@ -146,13 +132,9 @@ export async function createMCPClient(config, logger) {
                 // Enable stderr capture for debugging
                 stderr: 'pipe'
             }
-        };
-
-        const client = new MultiServerMCPClient(mcpConfig);
-
-        logger.info('✅ MCP client configured successfully', {
-            servers: Object.keys(mcpConfig)
         });
+
+        logger.info('✅ MCP client configured successfully', { server: 'zwave' });
         return client;
     } catch (error) {
         logger.error('❌ Failed to create MCP client', {
@@ -179,11 +161,7 @@ export async function createMCPClient(config, logger) {
  */
 export async function initializeMCPIntegration(config, logger) {
     const maxAttempts = config.mcp?.retryAttempts || 3;
-<<<<<<< HEAD
     const baseDelay = config.mcp?.retryBaseDelay || MCP_RETRY_BASE_DELAY_MS;
-=======
-    const baseDelay = config.mcp?.retryBaseDelay || 2000;
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
     let lastError = null;
     let stderrOutput = [];
@@ -290,84 +268,4 @@ export async function shutdownMCPClient(mcpClient, logger) {
             error: error.message
         });
     }
-
-    // Also shutdown Playwright MCP if it was initialized
-    if (playwrightMCPClient) {
-        try {
-            logger.info('🛑 Shutting down Playwright MCP client...');
-            await playwrightMCPClient.close();
-            playwrightMCPClient = null;
-            logger.info('✅ Playwright MCP client shutdown complete');
-        } catch (error) {
-            logger.debug('Error shutting down Playwright MCP client', {
-                error: error.message
-            });
-        }
-    }
-}
-
-/**
- * Initialize Playwright MCP client for web search fallback
- * This is optional - if it fails, the system continues without browser-based search
- *
- * @param {Object} config - Application configuration
- * @param {Object} logger - Logger instance
- * @returns {Promise<{client: MultiServerMCPClient|null, tools: Array}>} Playwright client and tools
- */
-export async function initializePlaywrightMCP(config, logger) {
-    // Check if web search fallback is enabled
-    if (config.webSearchFallback?.enabled === false) {
-        logger.info('🎭 Playwright MCP skipped (web search fallback disabled)');
-        return { client: null, tools: [] };
-    }
-
-    // Check if Playwright headless mode is configured
-    // Default to NOT headless (visible browser) so user can see any CAPTCHAs or issues
-    // Set PLAYWRIGHT_HEADLESS=true to run in headless mode
-    const headless = process.env.PLAYWRIGHT_HEADLESS === 'true';
-
-    logger.info('🎭 Initializing Playwright MCP for web search...', { headless });
-
-    try {
-        // Configure Playwright MCP using npx @playwright/mcp@latest
-        const playwrightConfig = {
-            playwright: {
-                transport: "stdio",
-                command: "npx",
-                args: headless
-                    ? ["@playwright/mcp@latest", "--headless"]
-                    : ["@playwright/mcp@latest"],
-                stderr: 'pipe'
-            }
-        };
-
-        const client = new MultiServerMCPClient(playwrightConfig);
-        const tools = await client.getTools();
-
-        // Store for later cleanup
-        playwrightMCPClient = client;
-
-        logger.info('✅ Playwright MCP initialized', {
-            toolCount: tools.length,
-            tools: tools.map(t => t.lc_name || t.name).slice(0, 5) // Just show first 5
-        });
-
-        return { client, tools };
-
-    } catch (error) {
-        logger.warn('⚠️ Playwright MCP not available (web search will use API fallback)', {
-            error: error.message
-        });
-
-        // Not a fatal error - system continues without browser-based search
-        return { client: null, tools: [] };
-    }
-}
-
-/**
- * Get Playwright MCP client if available
- * @returns {MultiServerMCPClient|null}
- */
-export function getPlaywrightMCPClient() {
-    return playwrightMCPClient;
 }

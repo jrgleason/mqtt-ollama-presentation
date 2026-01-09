@@ -1,23 +1,16 @@
-<<<<<<< HEAD
 import { TOOL_EXECUTION_TIMEOUT_MS, TOOL_EXECUTION_WARNING_MS } from '../constants/timing.js';
 
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 /**
  * Tool Executor
  *
  * Centralized tool execution with logging, error handling, and timeout protection.
  * Handles all tool calls from AI models in a consistent manner.
-<<<<<<< HEAD
  *
  * Uses ToolManager to access LangChain tools directly without unnecessary abstraction.
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
  */
 
 export class ToolExecutor {
     /**
-<<<<<<< HEAD
      * @param {ToolManager} toolManager - Tool manager instance
      * @param {Object} logger - Logger instance
      * @param {Object} options - Configuration options
@@ -27,17 +20,6 @@ export class ToolExecutor {
         this.toolManager = toolManager;
         this.logger = logger;
         this.timeout = options.timeout || TOOL_EXECUTION_TIMEOUT_MS;
-=======
-     * @param {ToolRegistry} registry - Tool registry instance
-     * @param {Object} logger - Logger instance
-     * @param {Object} options - Configuration options
-     * @param {number} options.timeout - Timeout in milliseconds (default: 30000)
-     */
-    constructor(registry, logger, options = {}) {
-        this.registry = registry;
-        this.logger = logger;
-        this.timeout = options.timeout || 30000; // 30 seconds default
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     }
 
     /**
@@ -50,7 +32,6 @@ export class ToolExecutor {
         const startTime = Date.now();
 
         try {
-<<<<<<< HEAD
             // Find tool in manager
             const tool = this.toolManager.findTool(toolName);
 
@@ -66,33 +47,14 @@ export class ToolExecutor {
 
             // Sanitize arguments for logging (redact sensitive fields)
             const sanitizedArgs = this.sanitizeForLogging(normalizedArgs);
-=======
-            // Get executor from registry
-            const executor = this.registry.getExecutor(toolName);
-
-            if (!executor) {
-                this.logger.warn(`Unknown tool requested: ${toolName}`, {
-                    availableTools: this.registry.getToolNames()
-                });
-                return `Error: Unknown tool "${toolName}". Available tools: ${this.registry.getToolNames().join(', ')}`;
-            }
-
-            // Sanitize arguments for logging (redact sensitive fields)
-            const sanitizedArgs = this.sanitizeForLogging(args);
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             this.logger.debug(`🔧 Executing tool: ${toolName}`, {
                 tool: toolName,
                 args: sanitizedArgs
             });
 
-<<<<<<< HEAD
             // Call LangChain tool directly: tool.invoke({ input: args })
             const result = await this.executeWithTimeout(tool, normalizedArgs);
-=======
-            // Execute with timeout protection
-            const result = await this.executeWithTimeout(executor, args);
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
             const duration = Date.now() - startTime;
 
@@ -104,19 +66,11 @@ export class ToolExecutor {
             });
 
             // Warn on slow tools
-<<<<<<< HEAD
             if (duration > TOOL_EXECUTION_WARNING_MS) {
                 this.logger.warn(`⚠️ Slow tool execution: ${toolName}`, {
                     tool: toolName,
                     duration: `${duration}ms`,
                     threshold: `${TOOL_EXECUTION_WARNING_MS}ms`
-=======
-            if (duration > 1000) {
-                this.logger.warn(`⚠️ Slow tool execution: ${toolName}`, {
-                    tool: toolName,
-                    duration: `${duration}ms`,
-                    threshold: '1000ms'
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 });
             }
 
@@ -138,7 +92,6 @@ export class ToolExecutor {
     }
 
     /**
-<<<<<<< HEAD
      * Execute a LangChain tool with timeout protection
      * @param {Object} tool - LangChain tool instance
      * @param {Object} args - Tool arguments
@@ -149,16 +102,6 @@ export class ToolExecutor {
             // LangChain MCP tools expect arguments passed directly (NOT wrapped in { input: args })
             // Custom tools may also use this pattern, so we always pass args directly
             tool.invoke(args),
-=======
-     * Execute a tool function with timeout protection
-     * @param {Function} executor - Tool executor function
-     * @param {Object} args - Tool arguments
-     * @returns {Promise<string>} Execution result
-     */
-    async executeWithTimeout(executor, args) {
-        return Promise.race([
-            executor(args),
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             new Promise((_, reject) =>
                 setTimeout(
                     () => reject(new Error(`Tool execution timeout after ${this.timeout}ms`)),
@@ -199,42 +142,12 @@ export class ToolExecutor {
     formatErrorMessage(toolName, error) {
         const errorMsg = error.message.toLowerCase();
 
-        // Z-Wave specific errors - check if this is a Z-Wave tool
-        const isZWaveTool = toolName.toLowerCase().includes('zwave') ||
-                           toolName.toLowerCase().includes('device') ||
-                           toolName.toLowerCase().includes('list_devices') ||
-                           toolName.toLowerCase().includes('verify_device') ||
-                           toolName.toLowerCase().includes('control') ||
-                           toolName.toLowerCase().includes('sensor');
-
-        if (isZWaveTool) {
-            // If the MCP server already returned a friendly message, use it
-            if (errorMsg.includes("can't reach the smart home") ||
-                errorMsg.includes("service isn't running") ||
-                errorMsg.includes("smart home system")) {
-                return error.message;
-            }
-
-            // Otherwise, translate technical errors to friendly messages
-            if (errorMsg.includes('timed out') || errorMsg.includes('timeout') || errorMsg.includes('etimedout')) {
-                return "The smart home system is taking too long to respond. It might be offline or experiencing issues.";
-            }
-
-            if (errorMsg.includes('econnrefused') || errorMsg.includes('connection refused') || errorMsg.includes('connect_error')) {
-                return "I can't connect to the smart home controller. Please check that it's running and connected to your network.";
-            }
-
-            if (errorMsg.includes('enotfound') || errorMsg.includes('not found')) {
-                return "I can't find the smart home controller on the network. Please check the network configuration.";
-            }
-        }
-
-        // Network errors (general)
+        // Network errors
         if (errorMsg.includes('network') || errorMsg.includes('econnrefused') || errorMsg.includes('enotfound')) {
             return `The ${toolName} service is currently unavailable. Please check your network connection.`;
         }
 
-        // Timeout errors (general)
+        // Timeout errors
         if (errorMsg.includes('timeout')) {
             return `The ${toolName} operation timed out. Please try again later.`;
         }
@@ -254,13 +167,8 @@ export class ToolExecutor {
      */
     getStats() {
         return {
-<<<<<<< HEAD
             registeredTools: this.toolManager.toolCount,
             toolNames: this.toolManager.getToolNames(),
-=======
-            registeredTools: this.registry.toolCount,
-            toolNames: this.registry.getToolNames(),
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             timeout: this.timeout
         };
     }

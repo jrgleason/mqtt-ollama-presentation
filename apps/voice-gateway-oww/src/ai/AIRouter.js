@@ -1,12 +1,5 @@
 import { OllamaClient } from '../OllamaClient.js';
 import { AnthropicClient } from '../AnthropicClient.js';
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-import { getDevicesForAI } from 'zwave-mcp-server/client';
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 import { conversationManager } from '../ConversationManager.js';
 import { errMsg } from '../util/Logger.js';
 
@@ -39,22 +32,11 @@ export class AIRouter {
         this.ollamaClient = null;
         this.anthropicClient = null;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         // System prompt (use config override if provided, otherwise use default)
         // For Ollama/qwen3: explicitly disable thinking mode
         const isOllama = config.ai.provider === 'ollama';
         this.defaultSystemPrompt = config.ai.systemPrompt ||
             `You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.${isOllama ? ' Do NOT use <think> tags.' : ''}`;
-=======
-        // Default system prompt
-        this.defaultSystemPrompt = 'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-        // System prompt (use config override if provided, otherwise use default)
-        this.defaultSystemPrompt = config.ai.systemPrompt ||
-            'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
     }
 
     /**
@@ -82,8 +64,6 @@ export class AIRouter {
     }
 
     /**
-<<<<<<< HEAD
-<<<<<<< HEAD
      * Build system prompt with optional device context hint
      *
      * With MCP tools integration, the AI queries devices on-demand using tools
@@ -92,51 +72,14 @@ export class AIRouter {
      *
      * @param {boolean} includeDevices - Whether to hint that device tools are available
      * @returns {Promise<string>} System prompt with optional device tool hint
-=======
-     * Build system prompt with optional device context
-     *
-     * @param {boolean} includeDevices - Whether to include device information
-     * @returns {Promise<string>} System prompt with device info if requested
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-     * Build system prompt with optional device context hint
-     *
-     * With MCP tools integration, the AI queries devices on-demand using tools
-     * instead of receiving device info upfront. This reduces prompt size and
-     * ensures fresh data on every query.
-     *
-     * @param {boolean} includeDevices - Whether to hint that device tools are available
-     * @returns {Promise<string>} System prompt with optional device tool hint
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
      */
     async buildSystemPrompt(includeDevices = false) {
         let prompt = this.defaultSystemPrompt;
 
         if (includeDevices) {
-<<<<<<< HEAD
-<<<<<<< HEAD
             // Add hint that device tools are available (AI will use list_zwave_devices tool)
             prompt += '\n\nYou have tools available to query and control Z-Wave devices. Use them when the user asks about devices.';
             this.logger.debug('AIRouter: Added device tool hint to system prompt');
-=======
-            try {
-                const deviceInfo = await getDevicesForAI();
-                prompt += `\n\n${deviceInfo}`;
-                this.logger.debug('AIRouter: Added device info to system prompt', {
-                    deviceInfoLength: deviceInfo.length
-                });
-            } catch (error) {
-                this.logger.warn('AIRouter: Failed to fetch devices for AI', {
-                    error: errMsg(error)
-                });
-                // Continue without device info (graceful degradation)
-            }
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-            // Add hint that device tools are available (AI will use list_zwave_devices tool)
-            prompt += '\n\nYou have tools available to query and control Z-Wave devices. Use them when the user asks about devices.';
-            this.logger.debug('AIRouter: Added device tool hint to system prompt');
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
         }
 
         return prompt;
@@ -184,11 +127,7 @@ export class AIRouter {
             const queryOptions = {
                 messages,
                 systemPrompt,
-<<<<<<< HEAD
                 tools: options.tools || (this.toolExecutor?.toolManager?.getTools() || []),
-=======
-                tools: options.tools || (this.toolExecutor?.registry?.getDefinitions() || []),
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 toolExecutor: this.executeTool.bind(this),
             };
 

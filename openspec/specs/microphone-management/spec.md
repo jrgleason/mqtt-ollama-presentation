@@ -239,7 +239,6 @@ The refactored implementation SHALL maintain 100% backward compatibility with th
 - **AND** CPU usage SHALL NOT increase by more than 5%
 - **AND** memory usage SHALL remain within acceptable bounds (<50MB increase)
 
-<<<<<<< HEAD
 ### Requirement: Beep Audio Isolation
 
 The system SHALL prevent microphone from capturing system-generated beep audio during voice recording to avoid false transcriptions and feedback loops.
@@ -282,5 +281,3 @@ The system SHALL prevent microphone from capturing system-generated beep audio d
 - **THEN** recording flag is set to false
 - **AND** beep playback resumes normal operation
 
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)

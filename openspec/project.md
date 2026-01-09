@@ -256,7 +256,6 @@ See `docs/EXTERNAL-INTEGRATIONS.md` for complete configuration details.
 
 ### Known Technical Debt
 
-<<<<<<< HEAD
 **Recently Resolved (refactor-code-quality-improvements):**
 - ~~Magic numbers without context~~ - RESOLVED: Constants extracted to `timing.js` and `thresholds.js`
 - ~~Duplicate code patterns (query detection)~~ - RESOLVED: IntentClassifier service created
@@ -282,23 +281,6 @@ See `docs/EXTERNAL-INTEGRATIONS.md` for complete configuration details.
 2. Consider refactoring setupMic() if time permits
 3. Add comprehensive test coverage
 4. Performance profiling for optimization opportunities
-=======
-- God classes (BackgroundTranscriber, AudioUtils)
-- Monolithic functions (setupMic - 157 lines)
-- Duplicate code patterns (query detection, tool execution)
-- Magic numbers without context
-- Anonymous MQTT authentication (should use RBAC)
-- Mixed abstraction levels in utilities
-
-### Next Steps
-
-1. Create OpenSpec change proposals for refactoring
-2. Split BackgroundTranscriber into focused services
-3. Refactor main.js setupMic() function
-4. Organize AudioUtils.js into focused modules
-5. Test refactored code with actual hardware
-6. Merge to main when stable
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 ## Presentation Strategy
 
@@ -336,7 +318,7 @@ See `docs/EXTERNAL-INTEGRATIONS.md` for complete configuration details.
 
 ### Troubleshooting Guides
 
-- `apps/voice-gateway-oww/docs/DEVELOPER_GUIDE.md` - Voice gateway setup & troubleshooting
+- `docs/voice-gateway-troubleshooting.md` - Voice gateway debugging
 - `docs/performance-analysis.md` - Performance optimization tips
 - `docs/optimization-summary.md` - Model selection and benchmarks
 

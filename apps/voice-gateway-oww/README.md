@@ -8,12 +8,8 @@ Offline voice command gateway for MQTT + Ollama home automation using OpenWakeWo
 - **Voice Activity Detection:** WebRTC VAD with trailing silence detection
 - **Speech-to-Text:** Local Whisper.cpp (tiny model, 1.5s transcription)
 - **AI Response:** Ollama with qwen2.5:0.5b (~1s response time, optimized for Pi 5) or llama3.2:1b for better tool support (not suitable for lower-resource devices)
-<<<<<<< HEAD
 - **Text-to-Speech:** ElevenLabs API with streaming (high-quality voice synthesis)
 - **Volume Control:** Voice commands to adjust speaker volume ("turn up the volume", "set volume to 50%")
-=======
-- **Text-to-Speech:** Piper TTS with local voice models (1.7s synthesis)
->>>>>>> 9cf57b1 (docs: clarify llama3.2:1b not suitable for low-resource devices)
 - **MQTT Integration:** Communicates with Oracle chatbot
 - **Local-First Processing:** Wake word, STT, and AI processing happen locally
 - **Cloud TTS:** High-quality voice output via ElevenLabs (requires internet)
@@ -231,90 +227,6 @@ npm run dev
 
 See `.env.example` for full configuration options.
 
-## AI Provider Configuration
-
-The voice gateway supports two AI providers: **Anthropic (Claude)** for cloud-based AI and **Ollama** for local AI processing.
-
-### Switching Providers
-
-**Using Anthropic (Default):**
-```bash
-# Set your API key in .env.tmp
-ANTHROPIC_API_KEY=your_api_key_here
-
-# Run with Anthropic
-npm run dev
-```
-
-**Using Ollama:**
-```bash
-# Use the --ollama flag
-npm run dev --ollama
-
-# Or use the convenience script
-npm run dev:ollama
-
-# Or set environment variable
-AI_PROVIDER=ollama npm run dev
-```
-
-### Environment Variables
-
-```bash
-# AI Provider Selection
-AI_PROVIDER=anthropic  # or 'ollama'
-
-# Anthropic Configuration
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-ANTHROPIC_MODEL=claude-3-5-haiku-20241022
-
-# Ollama Configuration
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:0.5b
-```
-
-### Available Models
-
-**Anthropic Models:**
-| Model | Speed | Use Case |
-|-------|-------|----------|
-| `claude-3-5-haiku-20241022` | Fast | Recommended for voice interactions |
-| `claude-3-5-sonnet-20241022` | Balanced | Better quality, slower |
-| `claude-3-opus-20240229` | Slow | Most capable, expensive |
-
-**Ollama Models:**
-| Model | Response Time | Use Case |
-|-------|---------------|----------|
-| `qwen2.5:0.5b` | ~1s | Fastest, good for simple queries |
-| `qwen2.5:1.5b` | ~4.6s | Better accuracy, recommended if quality matters |
-| `qwen3:1.7b` | ~14s | Legacy, not recommended |
-
-### Performance Comparison
-
-| Aspect | Anthropic | Ollama |
-|--------|-----------|--------|
-| Response Time | 500-1500ms | 1-15s (model dependent) |
-| Quality | Higher | Good (model dependent) |
-| Cost | ~$0.50-1.00 per 1000 queries | Free |
-| Internet | Required | Not required |
-| Privacy | Cloud-based | 100% local |
-
-**Recommendations:**
-- **Production/Demo:** Use Anthropic (claude-3-5-haiku) for speed and reliability
-- **Development/Testing:** Use Ollama (qwen2.5:0.5b) for free, offline testing
-- **Offline/Privacy:** Use Ollama (qwen2.5:1.5b) for fully local processing
-
-### Troubleshooting
-
-**Anthropic Issues:**
-- "ANTHROPIC_API_KEY is required" - Set `ANTHROPIC_API_KEY` in `.env.tmp`
-- Get your API key from: https://console.anthropic.com/settings/keys
-
-**Ollama Issues:**
-- "Ollama not ready" - Start Ollama: `ollama serve`
-- Pull model: `ollama pull qwen2.5:0.5b`
-- Verify running: `curl http://localhost:11434/api/tags`
-
 ## Architecture
 
 ```
@@ -340,7 +252,7 @@ USB Speaker (plughw:2,0) - Audio playback (~3s)
 - **Before optimization:** 27 seconds (base Whisper + qwen3:1.7b)
 - **After optimization:** 7 seconds (74% improvement)
 - **False trigger optimization:** <1 second (skips transcription when no speech detected)
-- See [Performance Guide](../../docs/PERFORMANCE.md) for details
+- See [Performance Optimization Guide](../../docs/performance-optimization.md) for details
 
 ## Smart Transcription Skipping
 
@@ -709,7 +621,7 @@ If you need further optimization:
 |             | qwen2.5:1.5b | ~4.6s | Better  |
 |             | qwen3:1.7b   | ~14s  | Best    |
 
-**See [Performance Guide](../../docs/PERFORMANCE.md) for detailed optimization process.**
+**See [Performance Optimization Guide](../../docs/performance-optimization.md) for detailed optimization process.**
 
 ## Comparison: OpenWakeWord vs Picovoice Porcupine
 
@@ -757,10 +669,11 @@ voice-gateway-oww/
 
 ## Documentation
 
-- **Performance:** [docs/PERFORMANCE.md](../../docs/PERFORMANCE.md)
-- **Developer Guide:** [docs/DEVELOPER_GUIDE.md](./docs/DEVELOPER_GUIDE.md)
-- **Network Dependencies:** [docs/network-dependencies.md](../../docs/network-dependencies.md)
+- **Performance Optimization:** [docs/performance-optimization.md](../../docs/performance-optimization.md) ⭐
+- **Architecture:** [docs/voice-gateway-architecture.md](../../docs/voice-gateway-architecture.md)
+- **ALSA Setup:** [docs/alsa-setup.md](../../docs/alsa-setup.md)
 - **OpenWakeWord:** https://github.com/dscripka/openWakeWord
+- **Network Dependencies:** [docs/network-dependencies.md](../../docs/network-dependencies.md)
 
 ## Model Downloads
 

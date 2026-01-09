@@ -5,21 +5,10 @@ import {checkOllamaHealth} from '../OllamaClient.js';
 import {checkAnthropicHealth} from '../AnthropicClient.js';
 import {connectMQTT} from '../mqttClient.js';
 import {ElevenLabsTTS} from "./ElevenLabsTTS.js";
-<<<<<<< HEAD
 import {synthesizeSpeech as piperSynthesize} from '../piperTTS.js';
 import {checkAlsaDevice} from "../audio/AudioUtils.js";
 import {AudioPlayer} from "../audio/AudioPlayer.js";
 import {safeDetectorReset} from "./XStateHelpers.js";
-=======
-import {checkAlsaDevice} from "../audio/AudioUtils.js";
-import {AudioPlayer} from "../audio/AudioPlayer.js";
-import {safeDetectorReset} from "./XStateHelpers.js";
-<<<<<<< HEAD
-import {getDevicesForAI} from "zwave-mcp-server/client";
-import {initializeMCPClient} from "../mcpZWaveClient.js";
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 import {OpenWakeWordDetector} from "./OpenWakeWordDetector.js";
 
 // Platform helpers
@@ -34,15 +23,7 @@ async function initServices() {
     await checkAIHealth();
     await checkTTSHealth();
     if (isLinux) await checkAlsa();
-<<<<<<< HEAD
-<<<<<<< HEAD
     // Note: Z-Wave MCP initialization is now handled in main.js with tool registry
-=======
-    await initZWave();
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-    // Note: Z-Wave MCP initialization is now handled in main.js with tool registry
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 }
 
 async function initMQTT() {
@@ -96,8 +77,6 @@ async function checkAlsa() {
     }
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 async function setupWakeWordDetector(wakeWordMachine = null) {
     const modelsDir = path.dirname(config.openWakeWord.modelPath);
     const modelFile = path.basename(config.openWakeWord.modelPath);
@@ -182,42 +161,11 @@ async function startTTSWelcome(audioBuffer, detector, audioPlayer, beeps = null)
         logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: No audio buffer or TTS disabled, skipping welcome');
         return null;
     }
-=======
-async function initZWave() {
-    try {
-        logger.info('🔌 Initializing ZWave MCP client...');
-        await initializeMCPClient();
-        const deviceInfo = await getDevicesForAI();
-        logger.info('✅ Z-Wave connection successful!');
-        logger.debug('📋 Devices:', deviceInfo);
-    } catch (err) {
-        logger.error('❌ ZWave MCP client initialization failed', {error: errMsg(err)});
-    }
-}
-
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
-async function setupWakeWordDetector() {
-    const modelsDir = path.dirname(config.openWakeWord.modelPath);
-    const modelFile = path.basename(config.openWakeWord.modelPath);
-    const detector = new OpenWakeWordDetector(modelsDir, modelFile, config.openWakeWord.threshold, config.openWakeWord.embeddingFrames);
-    await detector.initialize();
-
-    // Warm-up will happen automatically in background once mic starts feeding audio
-    logger.info('✅ Detector initialized (warm-up will occur automatically)');
-
-    return detector;
-}
-
-async function startTTSWelcome(detector, audioPlayer) {
-    if (!config.tts.enabled) return;
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
     // Create AudioPlayer if not provided (for backward compatibility)
     const player = audioPlayer || new AudioPlayer(config, logger);
 
     try {
-<<<<<<< HEAD
         logger.debug('🔧 [STARTUP-DEBUG] startTTSWelcome: Starting playback of pre-synthesized audio...');
 
         if (audioBuffer.length > 0) {
@@ -262,32 +210,12 @@ async function startTTSWelcome(detector, audioPlayer) {
     }
 
     return null;
-=======
-        const tts = new ElevenLabsTTS(config, logger);
-        const welcomeMessage = 'Hello, I am Jarvis. How can I help?';
-        const audioBuffer = await tts.synthesizeSpeech(welcomeMessage, {
-            volume: config.tts.volume,
-            speed: config.tts.speed
-        });
-        if (audioBuffer && audioBuffer.length > 0) {
-            await player.play(audioBuffer);
-            logger.info('✅ Welcome message spoken');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            safeDetectorReset(detector, 'post-startup-tts');
-        }
-    } catch (err) {
-        logger.error('❌ Failed to speak welcome message', {error: err.message});
-    }
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 }
 
 export {
     initServices,
     setupWakeWordDetector,
-<<<<<<< HEAD
     synthesizeWelcomeMessage,
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     startTTSWelcome,
     checkAIHealth,
     checkAlsa,

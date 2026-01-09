@@ -151,11 +151,7 @@ Access at: http://localhost:3000
 ```bash
 cd apps/voice-gateway-oww
 npm install
-<<<<<<< HEAD
 ./scripts/setup.sh  # Downloads models
-=======
-./setup.sh  # Downloads models
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 cp .env.tmp.example .env.tmp
 # Edit .env.tmp with configuration
 npm run dev

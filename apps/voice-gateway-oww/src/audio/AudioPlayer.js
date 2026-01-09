@@ -24,14 +24,7 @@ export class AudioPlayer {
         this.config = config;
         this.logger = logger;
         this.isMacOS = process.platform === 'darwin';
-<<<<<<< HEAD
-<<<<<<< HEAD
         this.currentPlayback = null; // Track active playback for interruption
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-        this.currentPlayback = null; // Track active playback for interruption
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
     }
 
     /**
@@ -61,10 +54,6 @@ export class AudioPlayer {
     }
 
     /**
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
      * Play PCM audio with interruption support (cancellable playback)
      *
      * @param {Buffer} pcmAudio - PCM audio data (Int16LE format)
@@ -114,11 +103,6 @@ export class AudioPlayer {
     }
 
     /**
-<<<<<<< HEAD
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
      * Play audio on macOS using afplay
      * @private
      */
@@ -182,10 +166,6 @@ export class AudioPlayer {
     }
 
     /**
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
      * Play audio on macOS using afplay with interruption support
      * @private
      * @returns {{cancel: Function, wavPath: string}} Cancel callback and WAV path
@@ -299,11 +279,6 @@ export class AudioPlayer {
     }
 
     /**
-<<<<<<< HEAD
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
      * Clean up temporary WAV file
      * @private
      */

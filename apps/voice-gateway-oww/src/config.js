@@ -7,18 +7,8 @@ import dotenv from 'dotenv';
 import { WAKE_WORD_THRESHOLD } from './constants/thresholds.js';
 import { MCP_RETRY_BASE_DELAY_MS } from './constants/timing.js';
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 // Load .env file (quiet mode to suppress verbose logging)
 dotenv.config({ quiet: true });
-=======
-// Load .env.tmp file
-dotenv.config();
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-// Load .env file (quiet mode to suppress verbose logging)
-dotenv.config({ quiet: true });
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
 
 // Parse command-line arguments
 // Support: npm run dev --ollama (default is Anthropic)
@@ -98,13 +88,8 @@ const config = {
         port: process.env.HEALTHCHECK_PORT ? Number(process.env.HEALTHCHECK_PORT) : 3002,
     },
     mcp: {
-<<<<<<< HEAD
         retryAttempts: process.env.MCP_RETRY_ATTEMPTS ? Number(process.env.MCP_RETRY_ATTEMPTS) : 2,
         retryBaseDelay: process.env.MCP_RETRY_BASE_DELAY ? Number(process.env.MCP_RETRY_BASE_DELAY) : MCP_RETRY_BASE_DELAY_MS,
-=======
-        retryAttempts: process.env.MCP_RETRY_ATTEMPTS ? Number(process.env.MCP_RETRY_ATTEMPTS) : 3,
-        retryBaseDelay: process.env.MCP_RETRY_BASE_DELAY ? Number(process.env.MCP_RETRY_BASE_DELAY) : 2000,
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
     },
     ai: {
         // Default to Anthropic unless --ollama flag is passed or AI_PROVIDER is set to 'ollama'
@@ -213,47 +198,3 @@ if (config.audio.sampleRate !== 16000) {
     console.warn('⚠️  Warning: Sample rate is not 16000 Hz. OpenWakeWord expects 16kHz audio.');
 }
 
-<<<<<<< HEAD
-=======
-// Config logging removed - health checks in InitUtil.js provide this information
-// Uncomment below for detailed config debugging if needed
-/*
-console.log('🤖 AI Provider:', {
-    provider: config.ai.provider,
-    model: config.ai.provider === 'anthropic' ? config.anthropic.model : config.ollama.model,
-    hasApiKey: config.ai.provider === 'anthropic' ? !!config.anthropic.apiKey : 'N/A (local)',
-});
-
-if (config.ai.provider === 'anthropic') {
-    console.log('🔑 Anthropic API Key Configuration:', {
-        hasApiKey: !!config.anthropic.apiKey,
-        apiKeyLength: config.anthropic.apiKey?.length || 0,
-        apiKeyPreview: config.anthropic.apiKey
-            ? `${config.anthropic.apiKey.substring(0, 8)}...${config.anthropic.apiKey.slice(-4)}`
-            : 'NOT_SET',
-        envVarSet: !!process.env.ANTHROPIC_API_KEY,
-    });
-}
-
-console.log('🔊 TTS Configuration:', {
-    enabled: config.tts.enabled,
-    speed: config.tts.speed,
-    volume: config.tts.volume,
-    provider: config.tts.provider,
-});
-
-if (config.tts.provider === 'ElevenLabs') {
-    console.log('🌐 ElevenLabs Configuration:', {
-        hasApiKey: !!config.elevenlabs.apiKey,
-        apiKeyLength: config.elevenlabs.apiKey?.length || 0,
-        apiKeyPreview: config.elevenlabs.apiKey ? `${config.elevenlabs.apiKey.substring(0, 8)}...` : 'NOT_SET',
-        voiceId: config.elevenlabs.voiceId,
-        modelId: config.elevenlabs.modelId,
-        stability: config.elevenlabs.stability,
-        similarityBoost: config.elevenlabs.similarityBoost,
-        style: config.elevenlabs.style,
-        useSpeakerBoost: config.elevenlabs.useSpeakerBoost,
-    });
-}
-*/
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)

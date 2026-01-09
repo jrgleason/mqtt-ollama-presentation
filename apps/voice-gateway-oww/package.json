@@ -30,16 +30,8 @@
     "@elevenlabs/elevenlabs-js": "latest",
     "@langchain/anthropic": "latest",
     "@langchain/core": "latest",
-<<<<<<< HEAD
-<<<<<<< HEAD
     "@langchain/mcp-adapters": "latest",
-    "@langchain/ollama": "^1.1.0",
-=======
-    "@langchain/mcp-adapters": "^1.1.1",
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-    "@langchain/mcp-adapters": "latest",
->>>>>>> e4aafe6 (feat: skip transcription when no speech detected)
+    "@langchain/ollama": "latest",
     "@modelcontextprotocol/sdk": "latest",
     "dotenv": "latest",
     "fft-js": "latest",

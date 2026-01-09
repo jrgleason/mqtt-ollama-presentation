@@ -2,10 +2,7 @@ import wav from "wav";
 import { spawn } from 'child_process';
 import { SAMPLE_RATE } from './constants.js';
 import { logger } from '../util/Logger.js';
-<<<<<<< HEAD
 import { WAV_WRITER_TIMEOUT_MS, ALSA_CHECK_TIMEOUT_MS } from '../constants/timing.js';
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 /**
  * Calculate the root mean square (RMS) energy of audio samples
@@ -49,11 +46,7 @@ export const writeWavFile = async (wavPath, samples, { channels = 1, sampleRate 
     await new Promise((resolve, reject) => {
         writer.on('finish', resolve);
         writer.on('error', reject);
-<<<<<<< HEAD
         setTimeout(() => reject(new Error(`WAV writer timeout after ${WAV_WRITER_TIMEOUT_MS}ms`)), WAV_WRITER_TIMEOUT_MS);
-=======
-        setTimeout(() => reject(new Error('WAV writer timeout after 5s')), 5000);
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     });
 };
 
@@ -96,11 +89,7 @@ export const checkAlsaDevice = async function (alsaDevice, rate = SAMPLE_RATE, c
             });
         }),
         new Promise((_, reject) =>
-<<<<<<< HEAD
             setTimeout(() => reject(new Error(`ALSA check timeout after ${ALSA_CHECK_TIMEOUT_MS}ms`)), ALSA_CHECK_TIMEOUT_MS)
-=======
-            setTimeout(() => reject(new Error('ALSA check timeout after 5s')), 5000)
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         )
     ]);
 

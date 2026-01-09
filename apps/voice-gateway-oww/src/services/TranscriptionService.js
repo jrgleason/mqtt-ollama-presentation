@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-<<<<<<< HEAD
 import {execSync, spawn} from 'child_process';
 import { SAMPLE_RATE } from '../audio/constants.js';
 import { rmsEnergy, writeWavFile } from '../audio/AudioUtils.js';
@@ -11,12 +10,6 @@ import {
     MILLISECONDS_PER_SECOND
 } from '../constants/timing.js';
 import { MIN_AUDIO_ENERGY, MIN_AUDIO_DURATION_SECONDS } from '../constants/thresholds.js';
-=======
-import { SAMPLE_RATE } from '../audio/constants.js';
-import { rmsEnergy, writeWavFile } from '../audio/AudioUtils.js';
-import { transcribeWithWhisper } from '@jrg-voice/common';
-import { errMsg } from '../util/Logger.js';
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
 /**
  * TranscriptionService - Orchestrate Whisper transcription workflow
@@ -42,7 +35,6 @@ export class TranscriptionService {
         }
 
         this.whisperModel = config.whisper.modelPath;
-<<<<<<< HEAD
         this.minDuration = MIN_AUDIO_DURATION_SECONDS;
         this.minEnergy = MIN_AUDIO_ENERGY;
         this.timeoutMs = WHISPER_TRANSCRIPTION_TIMEOUT_MS;
@@ -52,11 +44,6 @@ export class TranscriptionService {
         this.language = config.whisper.language || 'en';
         this.beamSize = config.whisper.beamSize || 1;
         this.bestOf = config.whisper.bestOf || 1;
-=======
-        this.minDuration = 0.15; // seconds
-        this.minEnergy = 1e-6; // RMS energy threshold
-        this.timeoutMs = 60000; // 60 seconds
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
     }
 
     /**
@@ -102,11 +89,7 @@ export class TranscriptionService {
             });
 
             // Transcribe with Whisper (with timeout)
-<<<<<<< HEAD
             const transcription = await this._transcribeWithWhisper(
-=======
-            const transcription = await transcribeWithWhisper(
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
                 this.whisperModel,
                 wavPath,
                 { timeoutMs: this.timeoutMs }
@@ -183,7 +166,6 @@ export class TranscriptionService {
             energy
         };
     }
-<<<<<<< HEAD
 
     /**
      * Resolve whisper-cli executable path
@@ -323,6 +305,4 @@ export class TranscriptionService {
             });
         });
     }
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 }

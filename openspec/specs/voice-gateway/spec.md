@@ -303,16 +303,9 @@ The system SHALL log performance metrics for voice interaction stages.
 
 ---
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 ### Requirement: Startup Sequence
 
 The voice gateway SHALL initialize all subsystems in an order that ensures the system is fully ready before announcing readiness to the user, with optimized parallelization for faster boot times while maintaining detector warm-up and promise orchestration.
-=======
-### Requirement: Startup Sequence
-
-The voice gateway SHALL initialize all subsystems in an order that ensures the system is fully ready before announcing readiness to the user.
->>>>>>> aeee250 (In a working state with the device list working)
 
 #### Scenario: Tool system ready before welcome message (MODIFIED)
 
@@ -321,7 +314,6 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 - **THEN** the tool system must already be initialized and registered
 - **AND** the voice orchestrator must be created
 - **AND** the state machine must be set up
-<<<<<<< HEAD
 - **AND** the wake word detector must be warmed up and stable
 - **AND** only the microphone activation remains pending
 
@@ -344,33 +336,6 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 - Welcome message TTS synthesis runs during MCP initialization
 - Post-welcome detector reset delay removed (redundant with warm-up)
 - Health checks run concurrently instead of sequentially
-=======
-- **AND** only the microphone activation remains pending
-
-**Rationale:** The welcome message asks "How can I help?" which implies the system is ready to process commands. Saying this before tools are initialized creates user confusion and perceived system lag.
-
-**Previous Behavior:**
-```
-1. Services init
-2. Wake word detector init
-3. Welcome message: "How can I help?"
-4. Tool system init ← Delay here!
-5. Orchestrator created
-6. State machine setup
-7. Microphone started
-```
-
-**New Behavior:**
-```
-1. Services init
-2. Wake word detector init
-3. Tool system init
-4. Orchestrator created
-5. State machine setup
-6. Welcome message: "How can I help?" ← Now truly ready!
-7. Microphone started
-```
->>>>>>> aeee250 (In a working state with the device list working)
 
 #### Scenario: Immediate responsiveness after welcome
 
@@ -379,10 +344,7 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 - **THEN** the system responds without delay
 - **AND** all tools are available for command execution
 - **AND** no "initializing" or "not ready" errors occur
-<<<<<<< HEAD
 - **AND** detector is fully stable (no cutoffs, no false negatives)
-=======
->>>>>>> aeee250 (In a working state with the device list working)
 
 **Rationale:** Users expect to interact immediately after hearing "How can I help?". Any delay creates confusion and breaks user trust in the system.
 
@@ -390,7 +352,6 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 
 - **GIVEN** the voice gateway is starting up
 - **WHEN** reviewing the startup logs
-<<<<<<< HEAD
 - **THEN** detector warm-up logs appear before tool initialization completion logs
 - **AND** MCP initialization logs may interleave with other startup phases (parallel execution)
 - **AND** "Tool system initialized" appears before "Voice Gateway ready"
@@ -430,13 +391,6 @@ The voice gateway SHALL initialize all subsystems in an order that ensures the s
 - **AND** playback still occurs after detector warm-up completes
 
 **Rationale:** TTS synthesis takes ~1s and blocks startup unnecessarily. Pre-synthesizing during parallel MCP init removes this from the critical path while maintaining correct playback timing.
-=======
-- **THEN** tool initialization logs appear before TTS synthesis logs
-- **AND** "Tool system initialized" appears before "Welcome message spoken"
-- **AND** "Voice Gateway ready" appears after welcome message
-
-**Rationale:** Logs should accurately reflect the initialization order so developers can diagnose timing issues.
->>>>>>> aeee250 (In a working state with the device list working)
 
 ---
 
@@ -466,7 +420,6 @@ The voice gateway SHALL only announce readiness (via welcome message) when genui
 
 **Rationale:** Provides clear validation criteria for correct initialization order.
 
-<<<<<<< HEAD
 ### Requirement: Startup Readiness Validation
 
 The voice gateway SHALL only announce readiness (via welcome message) when genuinely ready to accept and process user commands without delays or errors.
@@ -767,7 +720,3 @@ The voice gateway SHALL allow configuration of the detector warm-up timer to ena
 
 **Rationale:** Input validation prevents misconfiguration from degrading system accuracy or stability.
 
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> aeee250 (In a working state with the device list working)

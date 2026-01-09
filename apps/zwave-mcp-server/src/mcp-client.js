@@ -72,15 +72,7 @@ export class MCPZWaveClient {
             this.pendingRequests.clear();
         });
 
-<<<<<<< HEAD
         // Wait for server to be ready (initialization is event-driven, no arbitrary timeout needed)
-=======
-        // TODO: This seems wrong
-        // Give the server a moment to fully initialize its stdio transport
-        // await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Wait for server to be ready
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
         await this.initialize();
     }
 
@@ -235,88 +227,6 @@ export class MCPZWaveClient {
                 reject(err);
             }
         });
-    }
-
-    /**
-     * Get paginated list of Z-Wave devices with status information
-     * @param {Object} [options] - Pagination options
-     * @param {number} [options.limit=10] - Number of devices to return
-     * @param {number} [options.offset=0] - Number of devices to skip
-     * @returns {Promise<string>} Human-readable paginated device list
-     */
-    async listDevicesPaginated(options = {}) {
-        if (!this.isReady) {
-            await this.start();
-        }
-
-        const args = {
-            limit: options.limit || 10,
-            offset: options.offset || 0,
-        };
-
-        console.warn('[mcp-client] listDevicesPaginated called with:', args);
-
-        const message = {
-            jsonrpc: '2.0',
-            id: this.messageId++,
-            method: 'tools/call',
-            params: {
-                name: 'list_devices',
-                arguments: args
-            }
-        };
-
-        try {
-            const result = await this.sendRequest(message);
-            const content = result.content?.[0]?.text;
-            if (!content) {
-                console.warn('[mcp-client] No content in result, returning default message');
-                return 'No devices found.';
-            }
-
-            console.warn('[mcp-client] Device list preview:', content.substring(0, 200));
-            return content;
-        } catch (error) {
-            console.error('❌ Failed to list devices:', error.message);
-            throw error;
-        }
-    }
-
-    /**
-     * Verify if a device exists and get its status
-     * @param {string} deviceName - Name of the device to verify
-     * @returns {Promise<string>} Device status or error message with suggestions
-     */
-    async verifyDevice(deviceName) {
-        if (!this.isReady) {
-            await this.start();
-        }
-
-        console.warn('[mcp-client] verifyDevice called with:', deviceName);
-
-        const message = {
-            jsonrpc: '2.0',
-            id: this.messageId++,
-            method: 'tools/call',
-            params: {
-                name: 'verify_device',
-                arguments: { deviceName }
-            }
-        };
-
-        try {
-            const result = await this.sendRequest(message);
-            const content = result.content?.[0]?.text;
-            if (!content) {
-                throw new Error('No content in MCP response');
-            }
-
-            console.warn('[mcp-client] verifyDevice result:', content);
-            return content;
-        } catch (error) {
-            console.error('❌ Failed to verify device:', error.message);
-            throw error;
-        }
     }
 
     /**
@@ -491,28 +401,6 @@ export async function controlDevice(deviceName, action, level) {
 export async function getDevicesForAI(options) {
     const client = getMCPClient();
     return client.getDevicesForAI(options);
-}
-
-/**
- * Get paginated list of devices
- * @param {Object} [options] - Pagination options
- * @param {number} [options.limit=10] - Number of devices to return
- * @param {number} [options.offset=0] - Number of devices to skip
- * @returns {Promise<string>}
- */
-export async function listDevicesPaginated(options) {
-    const client = getMCPClient();
-    return client.listDevicesPaginated(options);
-}
-
-/**
- * Verify if a device exists and get its status
- * @param {string} deviceName - Name of the device to verify
- * @returns {Promise<string>}
- */
-export async function verifyDevice(deviceName) {
-    const client = getMCPClient();
-    return client.verifyDevice(deviceName);
 }
 
 /**

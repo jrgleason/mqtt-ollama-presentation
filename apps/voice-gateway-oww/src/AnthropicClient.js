@@ -8,7 +8,6 @@ import {ChatAnthropic} from '@langchain/anthropic';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 import {logger} from './util/Logger.js';
 import {config} from './config.js';
-import {loadPrompt} from './util/prompt-loader.js';
 
 export class AnthropicClient {
     #client = null;
@@ -40,25 +39,6 @@ export class AnthropicClient {
         return this.#client;
     }
 
-<<<<<<< HEAD
-=======
-    /**
-     * Convert tool definition from Ollama format to LangChain/Anthropic format
-     * @param {Object} tool - Tool in Ollama format
-     * @returns {Object} Tool in LangChain format
-     */
-    static convertToolToLangChainFormat(tool) {
-        return {
-            name: tool.function.name,
-            description: tool.function.description,
-            input_schema: {
-                type: 'object',
-                properties: tool.function.parameters.properties || {},
-                required: tool.function.parameters.required || [],
-            },
-        };
-    }
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
 
     /**
      * Normalize Anthropic (LangChain) content into a plain string
@@ -127,8 +107,7 @@ export class AnthropicClient {
                     }
                     // Ignore: tool_use, input_json_delta, tool_result, etc.
                 }
-                // Concatenate directly - text parts already have natural spacing
-                return texts.join('');
+                return texts.join(' ').trim();
             } catch {
                 return '';
             }
@@ -153,7 +132,7 @@ export class AnthropicClient {
     async query(prompt, options = {}) {
         let client = this.client;
         const systemPrompt = options.systemPrompt ||
-            loadPrompt('system/home-assistant');
+            'You are a helpful home automation assistant. Answer in 1 sentence or less. Be direct. No explanations. English only.';
 
         const onToken = options.onToken; // optional streaming callback
 
@@ -194,7 +173,6 @@ export class AnthropicClient {
             const messageBuildTime = Date.now() - messageBuildStart;
             this.logger.debug(`⏱️ Message building took ${messageBuildTime}ms`);
 
-<<<<<<< HEAD
             // Bind LangChain tools to model if provided
             // Tools from ToolManager are already in LangChain format (no conversion needed)
             const toolBindStart = Date.now();
@@ -209,21 +187,6 @@ export class AnthropicClient {
                 // Bind tools to the model using .bindTools()
                 // Tools are already LangChain-compatible from ToolManager
                 client = client.bindTools(options.tools);
-=======
-            // Convert tools to Anthropic format and bind to model if provided
-            const toolBindStart = Date.now();
-            if (options.tools && options.tools.length > 0) {
-                const langchainTools = options.tools.map(AnthropicClient.convertToolToLangChainFormat);
-                this.logger.debug('🔧 Tools provided', {
-                    toolCount: langchainTools.length,
-                    tools: langchainTools.map(t => t.name),
-                    // Log full tool schema for first tool to debug format issues
-                    firstToolSchema: JSON.stringify(langchainTools[0], null, 2).substring(0, 500)
-                });
-
-                // Bind tools to the model using .bindTools()
-                client = client.bindTools(langchainTools);
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
             }
             const toolBindTime = Date.now() - toolBindStart;
             this.logger.debug(`⏱️ Tool binding took ${toolBindTime}ms`);
@@ -280,8 +243,6 @@ export class AnthropicClient {
                     let chunkIndex = 0;
                     for await (const chunk of stream) {
                         chunkIndex++;
-<<<<<<< HEAD
-<<<<<<< HEAD
 
                         // Debug: log full chunk structure for first few chunks
                         if (chunkIndex <= 3) {
@@ -298,44 +259,15 @@ export class AnthropicClient {
                         }
 
                         const c = chunk?.content;
-=======
-                        const c = chunk?.content;
-                        // Debug: log content block types for first few chunks
-=======
-
-                        // Debug: log full chunk structure for first few chunks
->>>>>>> aeee250 (In a working state with the device list working)
-                        if (chunkIndex <= 3) {
-                            this.logger.debug('🔎 Stream chunk details (after tools)', {
-                                idx: chunkIndex,
-                                chunkKeys: Object.keys(chunk || {}),
-                                contentType: typeof chunk?.content,
-                                contentIsArray: Array.isArray(chunk?.content),
-                                contentLength: Array.isArray(chunk?.content) ? chunk.content.length : 'n/a',
-                                rawContent: typeof chunk?.content === 'string'
-                                    ? chunk.content.substring(0, 100)
-                                    : JSON.stringify(chunk?.content).substring(0, 200)
-                            });
-                        }
-<<<<<<< HEAD
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-
-                        const c = chunk?.content;
->>>>>>> aeee250 (In a working state with the device list working)
                         const piece = AnthropicClient.extractTextOnly(c);
                         if (piece) {
                             onToken(piece);
-                            // Concatenate directly - streaming chunks preserve natural spacing
-                            finalText += piece;
+                            // Add a space before concatenating to avoid word glue, then trim
+                            finalText += (finalText && !finalText.endsWith(' ') ? ' ' : '') + piece;
                         }
                     }
                     const finalApiTime = Date.now() - finalApiStart;
                     this.logger.debug(`⏱️ Final Anthropic streaming took ${finalApiTime}ms`);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> aeee250 (In a working state with the device list working)
 
                     this.logger.debug('📊 Stream summary (after tools)', {
                         totalChunks: chunkIndex,
@@ -343,11 +275,6 @@ export class AnthropicClient {
                         extractedTextPreview: finalText.substring(0, 100)
                     });
 
-<<<<<<< HEAD
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> aeee250 (In a working state with the device list working)
                     const totalTime = Date.now() - overallStartTime;
                     const normalized = finalText.replace(/\s{2,}/g, ' ').trim();
                     this.logger.info(`✅ Anthropic response (with tools, streamed) received in ${totalTime}ms`, {
@@ -393,8 +320,6 @@ export class AnthropicClient {
                 let chunkIndex = 0;
                 for await (const chunk of stream) {
                     chunkIndex++;
-<<<<<<< HEAD
-<<<<<<< HEAD
 
                     // Debug: log full chunk structure for first few chunks
                     if (chunkIndex <= 3) {
@@ -414,43 +339,12 @@ export class AnthropicClient {
                     }
 
                     const c = chunk?.content;
-=======
-                    const c = chunk?.content;
-=======
-
-                    // Debug: log full chunk structure for first few chunks
->>>>>>> aeee250 (In a working state with the device list working)
-                    if (chunkIndex <= 3) {
-                        this.logger.debug('🔎 Stream chunk details', {
-                            idx: chunkIndex,
-                            chunkKeys: Object.keys(chunk || {}),
-                            contentType: typeof chunk?.content,
-                            contentIsArray: Array.isArray(chunk?.content),
-                            contentLength: Array.isArray(chunk?.content) ? chunk.content.length : 'n/a',
-                            rawContent: typeof chunk?.content === 'string'
-                                ? chunk.content.substring(0, 100)
-                                : JSON.stringify(chunk?.content).substring(0, 200),
-                            hasAdditionalKwargs: !!chunk?.additional_kwargs,
-                            additionalKwargsKeys: chunk?.additional_kwargs ? Object.keys(chunk.additional_kwargs) : []
-                        });
-                    }
-<<<<<<< HEAD
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-
-                    const c = chunk?.content;
->>>>>>> aeee250 (In a working state with the device list working)
                     const piece = AnthropicClient.extractTextOnly(c);
                     if (piece) {
                         onToken(piece);
-                        // Concatenate directly - streaming chunks preserve natural spacing
-                        text += piece;
+                        text += (text && !text.endsWith(' ') ? ' ' : '') + piece;
                     }
                 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> aeee250 (In a working state with the device list working)
 
                 this.logger.debug('📊 Stream summary', {
                     totalChunks: chunkIndex,
@@ -458,11 +352,6 @@ export class AnthropicClient {
                     extractedTextPreview: text.substring(0, 100)
                 });
 
-<<<<<<< HEAD
-=======
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
->>>>>>> aeee250 (In a working state with the device list working)
                 return text.replace(/\s{2,}/g, ' ').trim();
             }
 
@@ -486,8 +375,6 @@ export class AnthropicClient {
 
             return aiResponse;
         } catch (error) {
-<<<<<<< HEAD
-<<<<<<< HEAD
             // Log full error details for debugging
             this.logger.error('❌ Anthropic query failed', {
                 error: error.message,
@@ -506,31 +393,6 @@ export class AnthropicClient {
                 });
             }
 
-=======
-=======
-            // Log full error details for debugging
->>>>>>> aeee250 (In a working state with the device list working)
-            this.logger.error('❌ Anthropic query failed', {
-                error: error.message,
-                errorName: error.name,
-                errorType: error.constructor.name,
-                statusCode: error.status || error.statusCode,
-                model: this.config.anthropic.model,
-                prompt: prompt ? prompt.substring(0, 50) : '[conversation]',
-            });
-<<<<<<< HEAD
->>>>>>> f5a9006 (refactor: standardize file naming to PascalCase/camelCase)
-=======
-
-            // If error has response data, log it too
-            if (error.response) {
-                this.logger.error('❌ Anthropic API error details', {
-                    status: error.response.status,
-                    data: JSON.stringify(error.response.data).substring(0, 500)
-                });
-            }
-
->>>>>>> aeee250 (In a working state with the device list working)
             throw error;
         }
     }
