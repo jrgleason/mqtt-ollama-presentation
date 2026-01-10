@@ -4,11 +4,11 @@
  */
 
 import dotenv from 'dotenv';
-import { WAKE_WORD_THRESHOLD } from './constants/thresholds.js';
-import { MCP_RETRY_BASE_DELAY_MS } from './constants/timing.js';
+import {WAKE_WORD_THRESHOLD} from './constants/thresholds.js';
+import {MCP_RETRY_BASE_DELAY_MS} from './constants/timing.js';
 
 // Load .env file (quiet mode to suppress verbose logging)
-dotenv.config({ quiet: true });
+dotenv.config({quiet: true});
 
 // Parse command-line arguments
 // Support: npm run dev --ollama (default is Anthropic)

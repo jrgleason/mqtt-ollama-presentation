@@ -10,12 +10,11 @@
  * - Graceful degradation when MCP server is unavailable
  */
 
-import { MultiServerMCPClient } from "@langchain/mcp-adapters";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import {MultiServerMCPClient} from "@langchain/mcp-adapters";
+import {StdioClientTransport} from "@modelcontextprotocol/sdk/client/stdio.js";
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { logger } from '../util/Logger.js';
-import { MCP_STDERR_CAPTURE_MS, MCP_RETRY_BASE_DELAY_MS } from '../constants/timing.js';
+import {fileURLToPath} from 'url';
+import {MCP_RETRY_BASE_DELAY_MS, MCP_STDERR_CAPTURE_MS} from '../constants/timing.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,7 +60,7 @@ async function captureStderr(mcpClient, logger) {
                     const text = chunk.toString().trim();
                     if (text) {
                         stderrLines.push(text);
-                        logger.debug('MCP stderr:', { line: text });
+                        logger.debug('MCP stderr:', {line: text});
                     }
                 });
 
@@ -74,7 +73,7 @@ async function captureStderr(mcpClient, logger) {
             await capturePromise;
         }
     } catch (error) {
-        logger.debug('Error capturing stderr', { error: error.message });
+        logger.debug('Error capturing stderr', {error: error.message});
     }
 
     return stderrLines;
@@ -134,7 +133,7 @@ export async function createMCPClient(config, logger) {
             }
         });
 
-        logger.info('✅ MCP client configured successfully', { server: 'zwave' });
+        logger.info('✅ MCP client configured successfully', {server: 'zwave'});
         return client;
     } catch (error) {
         logger.error('❌ Failed to create MCP client', {
@@ -188,7 +187,7 @@ export async function initializeMCPIntegration(config, logger) {
                 attemptNumber: attempt
             });
 
-            return { mcpClient, tools };
+            return {mcpClient, tools};
 
         } catch (error) {
             lastError = error;
@@ -199,7 +198,7 @@ export async function initializeMCPIntegration(config, logger) {
                     const stderrLines = await captureStderr(mcpClient, logger);
                     stderrOutput = stderrOutput.concat(stderrLines);
                 } catch (stderrError) {
-                    logger.debug('Failed to capture stderr', { error: stderrError.message });
+                    logger.debug('Failed to capture stderr', {error: stderrError.message});
                 }
             }
 

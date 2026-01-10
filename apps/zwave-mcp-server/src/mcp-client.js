@@ -120,7 +120,7 @@ export class MCPZWaveClient {
             } else {
                 resolve(message.result);
             }
-            return;
+
         }
 
         // Handle notifications or other messages (silently ignore)

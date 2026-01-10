@@ -1,5 +1,5 @@
-import { assign, createMachine, interpret } from "xstate";
-import { logger } from "../util/Logger.js";
+import {assign, createMachine, interpret} from "xstate";
+import {logger} from "../util/Logger.js";
 
 /**
  * RecordingMachine - Manage audio recording session with VAD
@@ -41,7 +41,7 @@ function createRecordingMachine() {
                 }
             },
             recording: {
-                entry: ({ context }) => {
+                entry: ({context}) => {
                     logger.info('[RecordingMachine] State: recording - capturing audio');
                 },
                 on: {

@@ -31,7 +31,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import {useCallback, useEffect, useState} from 'react';
 
 /**
  * Hook for connecting to MCP server from browser
@@ -42,7 +42,7 @@ import { useState, useEffect, useCallback } from 'react';
  * @returns {Object} MCP client state and methods
  */
 export function useMCPClient(options = {}) {
-    const { url = '/api/mcp', autoConnect = true } = options;
+    const {url = '/api/mcp', autoConnect = true} = options;
 
     const [isConnected, setIsConnected] = useState(false);
     const [tools, setTools] = useState([]);
@@ -104,8 +104,8 @@ export function useMCPClient(options = {}) {
             // For now, this is a placeholder
             const response = await fetch('/api/mcp/call', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tool: toolName, params }),
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({tool: toolName, params}),
             });
 
             if (!response.ok) {

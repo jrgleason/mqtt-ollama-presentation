@@ -5,7 +5,7 @@
  * to Ollama during startup to eliminate first-query delays.
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
 
 describe('Ollama Model Warmup', () => {
     let originalFetch;
@@ -22,15 +22,15 @@ describe('Ollama Model Warmup', () => {
         it('should send correct warmup request to Ollama API', async () => {
             const fetchCalls = [];
             global.fetch = jest.fn((url, options) => {
-                fetchCalls.push({ url, options });
+                fetchCalls.push({url, options});
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({ response: 'Hi' })
+                    json: () => Promise.resolve({response: 'Hi'})
                 });
             });
 
             const config = {
-                ai: { provider: 'ollama' },
+                ai: {provider: 'ollama'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -43,7 +43,7 @@ describe('Ollama Model Warmup', () => {
             // Simulate warmup logic
             await fetch(`${config.ollama.baseUrl}/api/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: config.ollama.model,
                     prompt: 'Hello',
@@ -74,15 +74,15 @@ describe('Ollama Model Warmup', () => {
         it('should use default values when config options are missing', async () => {
             const fetchCalls = [];
             global.fetch = jest.fn((url, options) => {
-                fetchCalls.push({ url, options });
+                fetchCalls.push({url, options});
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({ response: 'Hi' })
+                    json: () => Promise.resolve({response: 'Hi'})
                 });
             });
 
             const config = {
-                ai: { provider: 'ollama' },
+                ai: {provider: 'ollama'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -93,7 +93,7 @@ describe('Ollama Model Warmup', () => {
             // Simulate warmup logic with defaults
             await fetch(`${config.ollama.baseUrl}/api/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: config.ollama.model,
                     prompt: 'Hello',
@@ -116,11 +116,11 @@ describe('Ollama Model Warmup', () => {
         it('should handle successful warmup response', async () => {
             global.fetch = jest.fn(() => Promise.resolve({
                 ok: true,
-                json: () => Promise.resolve({ response: 'Hi' })
+                json: () => Promise.resolve({response: 'Hi'})
             }));
 
             const config = {
-                ai: { provider: 'ollama' },
+                ai: {provider: 'ollama'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -132,7 +132,7 @@ describe('Ollama Model Warmup', () => {
 
             const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: config.ollama.model,
                     prompt: 'Hello',
@@ -157,7 +157,7 @@ describe('Ollama Model Warmup', () => {
             }));
 
             const config = {
-                ai: { provider: 'ollama' },
+                ai: {provider: 'ollama'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -166,7 +166,7 @@ describe('Ollama Model Warmup', () => {
 
             const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: config.ollama.model,
                     prompt: 'Hello',
@@ -188,7 +188,7 @@ describe('Ollama Model Warmup', () => {
             global.fetch = jest.fn(() => Promise.reject(new Error('Network error')));
 
             const config = {
-                ai: { provider: 'ollama' },
+                ai: {provider: 'ollama'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -198,7 +198,7 @@ describe('Ollama Model Warmup', () => {
             try {
                 await fetch(`${config.ollama.baseUrl}/api/generate`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         model: config.ollama.model,
                         prompt: 'Hello',
@@ -220,40 +220,49 @@ describe('Ollama Model Warmup', () => {
 
     describe('Warmup Timing', () => {
         it('should measure warmup duration', async () => {
+            // Use fake timers to make timing deterministic
+            jest.useFakeTimers();
+
             global.fetch = jest.fn(() => {
                 return new Promise(resolve => {
                     setTimeout(() => {
                         resolve({
                             ok: true,
-                            json: () => Promise.resolve({ response: 'Hi' })
+                            json: () => Promise.resolve({response: 'Hi'})
                         });
                     }, 100);
                 });
             });
 
-            const startTime = Date.now();
-            const response = await fetch('http://localhost:11434/api/generate', {
+            const fetchPromise = fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: 'qwen2.5:0.5b',
                     prompt: 'Hello',
                     stream: false,
-                    options: { num_predict: 1, num_ctx: 2048, temperature: 0.5 },
+                    options: {num_predict: 1, num_ctx: 2048, temperature: 0.5},
                     keep_alive: -1,
                 }),
             });
-            const duration = Date.now() - startTime;
+
+            // Advance timers by 100ms to trigger the setTimeout
+            await jest.advanceTimersByTimeAsync(100);
+
+            const response = await fetchPromise;
 
             expect(response.ok).toBe(true);
-            expect(duration).toBeGreaterThanOrEqual(100);
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+
+            // Restore real timers
+            jest.useRealTimers();
         });
     });
 
     describe('Configuration-based Warmup', () => {
         it('should skip warmup when AI provider is not ollama', () => {
             const config = {
-                ai: { provider: 'anthropic' },
+                ai: {provider: 'anthropic'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -266,7 +275,7 @@ describe('Ollama Model Warmup', () => {
 
         it('should skip warmup when health check fails', () => {
             const healthResults = {
-                ai: { healthy: false, error: 'Ollama server unreachable' }
+                ai: {healthy: false, error: 'Ollama server unreachable'}
             };
 
             // Warmup should only run if healthResults.ai.healthy === true
@@ -275,7 +284,7 @@ describe('Ollama Model Warmup', () => {
 
         it('should run warmup when provider is ollama and health check passes', () => {
             const config = {
-                ai: { provider: 'ollama' },
+                ai: {provider: 'ollama'},
                 ollama: {
                     baseUrl: 'http://localhost:11434',
                     model: 'qwen2.5:0.5b',
@@ -283,7 +292,7 @@ describe('Ollama Model Warmup', () => {
             };
 
             const healthResults = {
-                ai: { healthy: true, error: null }
+                ai: {healthy: true, error: null}
             };
 
             // Both conditions met - warmup should run
@@ -296,16 +305,16 @@ describe('Ollama Model Warmup', () => {
         it('should use minimal num_predict to speed up warmup', async () => {
             const fetchCalls = [];
             global.fetch = jest.fn((url, options) => {
-                fetchCalls.push({ url, options });
+                fetchCalls.push({url, options});
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({ response: 'Hi' })
+                    json: () => Promise.resolve({response: 'Hi'})
                 });
             });
 
             await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: 'qwen2.5:0.5b',
                     prompt: 'Hello',
@@ -326,16 +335,16 @@ describe('Ollama Model Warmup', () => {
         it('should disable streaming for faster warmup', async () => {
             const fetchCalls = [];
             global.fetch = jest.fn((url, options) => {
-                fetchCalls.push({ url, options });
+                fetchCalls.push({url, options});
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({ response: 'Hi' })
+                    json: () => Promise.resolve({response: 'Hi'})
                 });
             });
 
             await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: 'qwen2.5:0.5b',
                     prompt: 'Hello',
@@ -356,16 +365,16 @@ describe('Ollama Model Warmup', () => {
         it('should use simple prompt for warmup', async () => {
             const fetchCalls = [];
             global.fetch = jest.fn((url, options) => {
-                fetchCalls.push({ url, options });
+                fetchCalls.push({url, options});
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve({ response: 'Hi' })
+                    json: () => Promise.resolve({response: 'Hi'})
                 });
             });
 
             await fetch('http://localhost:11434/api/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     model: 'qwen2.5:0.5b',
                     prompt: 'Hello', // Simple prompt

@@ -1,6 +1,6 @@
-import { assign, createMachine, interpret } from "xstate";
-import { logger } from "../util/Logger.js";
-import { config } from "../config.js";
+import {assign, createMachine, interpret} from "xstate";
+import {logger} from "../util/Logger.js";
+import {config} from "../config.js";
 
 /**
  * PlaybackMachine - Manage TTS and beep playback with interruption support
@@ -46,7 +46,7 @@ function createPlaybackMachine() {
                 }
             },
             playing: {
-                entry: ({ context }) => {
+                entry: ({context}) => {
                     const type = context.playbackType || 'unknown';
                     logger.debug(`[PlaybackMachine] State: playing - ${type} playback active`);
                 },
@@ -62,7 +62,7 @@ function createPlaybackMachine() {
                 }
             },
             cooldown: {
-                entry: ({ context }) => {
+                entry: ({context}) => {
                     logger.debug('[PlaybackMachine] State: cooldown - waiting before next interaction', {
                         cooldownMs: context.cooldownMs
                     });
@@ -93,7 +93,7 @@ function createPlaybackMachine() {
         }
     }, {
         actions: {
-            storePlayback: assign(({ context, event }) => {
+            storePlayback: assign(({context, event}) => {
                 return {
                     activePlayback: event.playback || null,
                     playbackType: event.playbackType || 'unknown'
@@ -105,7 +105,7 @@ function createPlaybackMachine() {
                     playbackType: null
                 };
             }),
-            cancelPlayback: assign(({ context }) => {
+            cancelPlayback: assign(({context}) => {
                 // Cancel active playback if it exists
                 if (context.activePlayback && typeof context.activePlayback.cancel === 'function') {
                     try {

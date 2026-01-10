@@ -1,4 +1,4 @@
-import { logger } from './Logger.js';
+import {logger} from './Logger.js';
 
 /**
  * Get XState service snapshot (compatible with v4 and v5)
@@ -30,6 +30,6 @@ export function safeDetectorReset(detector, context = '') {
             logger.debug(`🔄 Detector reset (${context})`);
         }
     } catch (err) {
-        logger.error('Failed to reset detector', { context, error: err.message });
+        logger.error('Failed to reset detector', {context, error: err.message});
     }
 }

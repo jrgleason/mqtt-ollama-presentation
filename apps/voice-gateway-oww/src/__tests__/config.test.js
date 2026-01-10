@@ -10,7 +10,7 @@
  * the actual configuration values from the environment at test time.
  */
 
-import { config } from '../config.js';
+import {config} from '../config.js';
 
 describe('Ollama Configuration Defaults', () => {
     describe('Performance Settings', () => {

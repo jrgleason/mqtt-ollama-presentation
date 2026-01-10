@@ -17,7 +17,7 @@
  * detection to separate classes.
  */
 
-import { PRE_ROLL_SAMPLES } from './constants.js';
+import {PRE_ROLL_SAMPLES} from './constants.js';
 
 export class AudioRecordingState {
     /**

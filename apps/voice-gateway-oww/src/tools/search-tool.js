@@ -35,7 +35,7 @@ function getCurrentDateISO() {
  */
 function getSearchToolDescription() {
     const currentDate = getCurrentDateISO();
-    return loadPrompt('tools/search-web', { CURRENT_DATE: currentDate });
+    return loadPrompt('tools/search-web', {CURRENT_DATE: currentDate});
 }
 
 /**
@@ -44,7 +44,7 @@ function getSearchToolDescription() {
  */
 function getSearchQueryDescription() {
     const currentDate = getCurrentDateISO();
-    return loadPrompt('tools/search-web-query', { CURRENT_DATE: currentDate });
+    return loadPrompt('tools/search-web-query', {CURRENT_DATE: currentDate});
 }
 
 /**
@@ -69,7 +69,7 @@ async function searchWithGoogleAPI(query) {
     }
 
     try {
-        logger.info('🔍 Performing Google Custom Search API query', { query });
+        logger.info('🔍 Performing Google Custom Search API query', {query});
 
         const url = new URL('https://www.googleapis.com/customsearch/v1');
         url.searchParams.set('key', apiKey);
@@ -83,7 +83,7 @@ async function searchWithGoogleAPI(query) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            logger.warn('🔍 Google API error', { status: response.status, error: errorText });
+            logger.warn('🔍 Google API error', {status: response.status, error: errorText});
             return null;
         }
 
@@ -110,7 +110,7 @@ async function searchWithGoogleAPI(query) {
         logger.debug('🔍 Google search results breakdown', {
             query,
             resultCount: results.length,
-            results: results.map((r, i) => ({ index: i, preview: r.substring(0, 100) }))
+            results: results.map((r, i) => ({index: i, preview: r.substring(0, 100)}))
         });
 
         logger.info('✅ Google API search complete', {
@@ -122,7 +122,7 @@ async function searchWithGoogleAPI(query) {
         return resultText || null;
 
     } catch (error) {
-        logger.warn('🔍 Google API search failed', { error: error.message, query });
+        logger.warn('🔍 Google API search failed', {error: error.message, query});
         return null;
     }
 }
@@ -138,7 +138,7 @@ async function searchDuckDuckGoAPI(query) {
         const encodedQuery = encodeURIComponent(query);
         const url = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1&skip_disambig=1`;
 
-        logger.info('🔍 Trying DuckDuckGo API', { query });
+        logger.info('🔍 Trying DuckDuckGo API', {query});
 
         const response = await fetch(url);
         const data = await response.json();
@@ -165,7 +165,7 @@ async function searchDuckDuckGoAPI(query) {
         }
 
         if (result) {
-            logger.info('✅ DuckDuckGo API result found', { preview: result.substring(0, 80) });
+            logger.info('✅ DuckDuckGo API result found', {preview: result.substring(0, 80)});
         } else {
             logger.debug('🔍 DuckDuckGo API returned no useful results');
         }
@@ -173,7 +173,7 @@ async function searchDuckDuckGoAPI(query) {
         return result || null;
 
     } catch (error) {
-        logger.warn('🔍 DuckDuckGo API failed', { error: error.message });
+        logger.warn('🔍 DuckDuckGo API failed', {error: error.message});
         return null;
     }
 }
@@ -216,7 +216,9 @@ export const searchTool = {
     type: 'function',
     function: {
         name: 'search_web',
-        get description() { return getSearchToolDescription(); },
+        get description() {
+            return getSearchToolDescription();
+        },
         parameters: {
             type: 'object',
             description: 'Parameters for performing a web search query.',
@@ -225,7 +227,9 @@ export const searchTool = {
                     type: 'string',
                     minLength: 1,
                     maxLength: 256,
-                    get description() { return getSearchQueryDescription(); }
+                    get description() {
+                        return getSearchQueryDescription();
+                    }
                 }
             },
             required: ['query'],

@@ -20,7 +20,7 @@ export class OpenWakeWordDetector extends EventEmitter {
         this.wakeWordSession = null;
 
         // Initialize detector state manager
-        this.stateManager = new DetectorStateManager({ frames: 76, bins: 32 });
+        this.stateManager = new DetectorStateManager({frames: 76, bins: 32});
         const detState = this.stateManager.newDetectorState();
         this.melBuffer = detState.melBuffer;
         this.melBufferFilled = detState.melBufferFilled;

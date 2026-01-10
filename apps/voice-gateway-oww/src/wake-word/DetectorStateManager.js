@@ -18,7 +18,7 @@ export class DetectorStateManager {
      * @param {number} [options.frames=76] - Number of mel-spectrogram frames
      * @param {number} [options.bins=32] - Number of mel-spectrogram bins per frame
      */
-    constructor({ frames = 76, bins = 32 } = {}) {
+    constructor({frames = 76, bins = 32} = {}) {
         this.frames = frames;
         this.bins = bins;
     }
@@ -29,7 +29,7 @@ export class DetectorStateManager {
      * @returns {Array<Float32Array>} Mel buffer with configured dimensions
      */
     createMelBuffer() {
-        return Array.from({ length: this.frames }, () => new Float32Array(this.bins));
+        return Array.from({length: this.frames}, () => new Float32Array(this.bins));
     }
 
     /**

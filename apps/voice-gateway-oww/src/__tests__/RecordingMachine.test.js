@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { createRecordingMachine, setupRecordingMachine, isRecording } from '../state-machines/RecordingMachine.js';
+import {afterEach, beforeEach, describe, expect, it} from '@jest/globals';
+import {createRecordingMachine, isRecording, setupRecordingMachine} from '../state-machines/RecordingMachine.js';
 
 describe('RecordingMachine', () => {
     let service;
@@ -22,32 +22,32 @@ describe('RecordingMachine', () => {
         });
 
         it('should transition from idle to recording on START_RECORDING', () => {
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('recording');
         });
 
         it('should transition from recording to processing on SILENCE_DETECTED', () => {
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'SILENCE_DETECTED' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'SILENCE_DETECTED'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('processing');
         });
 
         it('should transition from recording to processing on MAX_LENGTH_REACHED', () => {
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'MAX_LENGTH_REACHED' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'MAX_LENGTH_REACHED'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('processing');
         });
 
         it('should transition from processing to idle on RECORDING_COMPLETE', () => {
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'SILENCE_DETECTED' });
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'SILENCE_DETECTED'});
+            service.send({type: 'RECORDING_COMPLETE'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('idle');
@@ -57,7 +57,7 @@ describe('RecordingMachine', () => {
     describe('Context Management', () => {
         it('should initialize context on START_RECORDING', () => {
             const beforeStart = Date.now();
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             const afterStart = Date.now();
 
             const snapshot = service.getSnapshot();
@@ -68,9 +68,9 @@ describe('RecordingMachine', () => {
         });
 
         it('should clear buffer on RECORDING_COMPLETE', () => {
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'SILENCE_DETECTED' });
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'SILENCE_DETECTED'});
+            service.send({type: 'RECORDING_COMPLETE'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.context.audioBuffer).toEqual([]);
@@ -78,7 +78,7 @@ describe('RecordingMachine', () => {
         });
 
         it('should preserve startedAt timestamp during recording', () => {
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             const snapshot1 = service.getSnapshot();
             const initialTimestamp = snapshot1.context.startedAt;
 
@@ -109,7 +109,7 @@ describe('RecordingMachine', () => {
 
     describe('Helper Functions', () => {
         it('isRecording should return true when recording', () => {
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(isRecording(service)).toBe(true);
         });
 
@@ -118,26 +118,26 @@ describe('RecordingMachine', () => {
         });
 
         it('isRecording should return false when processing', () => {
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'SILENCE_DETECTED' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'SILENCE_DETECTED'});
             expect(isRecording(service)).toBe(false);
         });
     });
 
     describe('Event Handling', () => {
         it('should ignore invalid events in idle state', () => {
-            service.send({ type: 'SILENCE_DETECTED' }); // Invalid in idle state
+            service.send({type: 'SILENCE_DETECTED'}); // Invalid in idle state
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('idle'); // Should remain in idle state
         });
 
         it('should ignore START_RECORDING in recording state', () => {
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             const snapshot1 = service.getSnapshot();
             const firstTimestamp = snapshot1.context.startedAt;
 
-            service.send({ type: 'START_RECORDING' }); // Should be ignored
+            service.send({type: 'START_RECORDING'}); // Should be ignored
 
             const snapshot2 = service.getSnapshot();
             expect(snapshot2.value).toBe('recording');
@@ -145,8 +145,8 @@ describe('RecordingMachine', () => {
         });
 
         it('should ignore RECORDING_COMPLETE in recording state', () => {
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'RECORDING_COMPLETE' }); // Invalid in recording state
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'RECORDING_COMPLETE'}); // Invalid in recording state
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('recording'); // Should remain in recording
@@ -154,20 +154,20 @@ describe('RecordingMachine', () => {
 
         it('should handle multiple recording cycles', () => {
             // First recording
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().value).toBe('recording');
 
-            service.send({ type: 'SILENCE_DETECTED' });
+            service.send({type: 'SILENCE_DETECTED'});
             expect(service.getSnapshot().value).toBe('processing');
 
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'RECORDING_COMPLETE'});
             expect(service.getSnapshot().value).toBe('idle');
 
             // Second recording
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().value).toBe('recording');
 
-            service.send({ type: 'MAX_LENGTH_REACHED' });
+            service.send({type: 'MAX_LENGTH_REACHED'});
             expect(service.getSnapshot().value).toBe('processing');
         });
     });
@@ -177,13 +177,13 @@ describe('RecordingMachine', () => {
             // Start recording
             expect(service.getSnapshot().value).toBe('idle');
 
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().value).toBe('recording');
 
-            service.send({ type: 'SILENCE_DETECTED' });
+            service.send({type: 'SILENCE_DETECTED'});
             expect(service.getSnapshot().value).toBe('processing');
 
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'RECORDING_COMPLETE'});
             expect(service.getSnapshot().value).toBe('idle');
         });
 
@@ -191,24 +191,24 @@ describe('RecordingMachine', () => {
             // Start recording
             expect(service.getSnapshot().value).toBe('idle');
 
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().value).toBe('recording');
 
-            service.send({ type: 'MAX_LENGTH_REACHED' });
+            service.send({type: 'MAX_LENGTH_REACHED'});
             expect(service.getSnapshot().value).toBe('processing');
 
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'RECORDING_COMPLETE'});
             expect(service.getSnapshot().value).toBe('idle');
         });
 
         it('should handle rapid recording sessions', () => {
             // First session
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'SILENCE_DETECTED' });
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'SILENCE_DETECTED'});
+            service.send({type: 'RECORDING_COMPLETE'});
 
             // Second session immediately after
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().value).toBe('recording');
             expect(service.getSnapshot().context.audioBuffer).toEqual([]);
             expect(service.getSnapshot().context.hasSpoken).toBe(false);
@@ -216,7 +216,7 @@ describe('RecordingMachine', () => {
 
         it('should track recording duration', () => {
             const beforeRecording = Date.now();
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             const afterRecording = Date.now();
 
             const snapshot = service.getSnapshot();
@@ -228,16 +228,16 @@ describe('RecordingMachine', () => {
 
         it('should handle both silence and max length termination conditions', () => {
             // Test silence detection
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'SILENCE_DETECTED' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'SILENCE_DETECTED'});
             expect(service.getSnapshot().value).toBe('processing');
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'RECORDING_COMPLETE'});
 
             // Test max length
-            service.send({ type: 'START_RECORDING' });
-            service.send({ type: 'MAX_LENGTH_REACHED' });
+            service.send({type: 'START_RECORDING'});
+            service.send({type: 'MAX_LENGTH_REACHED'});
             expect(service.getSnapshot().value).toBe('processing');
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'RECORDING_COMPLETE'});
 
             expect(service.getSnapshot().value).toBe('idle');
         });
@@ -245,24 +245,24 @@ describe('RecordingMachine', () => {
 
     describe('State Invariants', () => {
         it('should always have empty buffer when entering recording state', () => {
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().context.audioBuffer).toEqual([]);
 
-            service.send({ type: 'SILENCE_DETECTED' });
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'SILENCE_DETECTED'});
+            service.send({type: 'RECORDING_COMPLETE'});
 
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().context.audioBuffer).toEqual([]);
         });
 
         it('should always reset hasSpoken flag when starting new recording', () => {
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().context.hasSpoken).toBe(false);
 
-            service.send({ type: 'SILENCE_DETECTED' });
-            service.send({ type: 'RECORDING_COMPLETE' });
+            service.send({type: 'SILENCE_DETECTED'});
+            service.send({type: 'RECORDING_COMPLETE'});
 
-            service.send({ type: 'START_RECORDING' });
+            service.send({type: 'START_RECORDING'});
             expect(service.getSnapshot().context.hasSpoken).toBe(false);
         });
     });

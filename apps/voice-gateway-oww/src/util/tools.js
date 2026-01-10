@@ -6,6 +6,6 @@
  * and do not need manual exports here.
  */
 
-export { executeDateTimeTool } from '../tools/datetime-tool.js';
-export { executeSearchTool } from '../tools/search-tool.js';
-export { executeVolumeControlTool } from '../tools/volume-control-tool.js';
+export {executeDateTimeTool} from '../tools/datetime-tool.js';
+export {executeSearchTool} from '../tools/search-tool.js';
+export {executeVolumeControlTool} from '../tools/volume-control-tool.js';

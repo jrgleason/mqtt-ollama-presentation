@@ -22,12 +22,12 @@
  */
 
 import mic from 'mic';
-import { AudioRecordingState } from './AudioRecordingState.js';
-import { VoiceActivityDetector } from './VoiceActivityDetector.js';
-import { WakeWordProcessor } from './WakeWordProcessor.js';
-import { CHUNK_SIZE } from './constants.js';
-import { getServiceSnapshot } from '../util/XStateHelpers.js';
-import { errMsg } from '../util/Logger.js';
+import {AudioRecordingState} from './AudioRecordingState.js';
+import {VoiceActivityDetector} from './VoiceActivityDetector.js';
+import {WakeWordProcessor} from './WakeWordProcessor.js';
+import {CHUNK_SIZE} from './constants.js';
+import {getServiceSnapshot} from '../util/XStateHelpers.js';
+import {errMsg} from '../util/Logger.js';
 
 export class MicrophoneManager {
     /**
@@ -123,7 +123,7 @@ export class MicrophoneManager {
                 if (audioSnapshot.length > 0 && hasSpoken) {
                     // Process voice interaction in background (transcribe + AI + TTS)
                     this.orchestrator.processVoiceInteraction(audioSnapshot).catch(err => {
-                        this.logger.error('Voice interaction error', { error: errMsg(err) });
+                        this.logger.error('Voice interaction error', {error: errMsg(err)});
                     });
                 } else if (audioSnapshot.length > 0 && !hasSpoken) {
                     // Skip transcription when no speech detected (false wake word trigger)
@@ -200,7 +200,7 @@ export class MicrophoneManager {
 
             if (result.detected) {
                 // Wake word detected - trigger state transition
-                this.voiceService.send({ type: 'TRIGGER', ts: Date.now() });
+                this.voiceService.send({type: 'TRIGGER', ts: Date.now()});
             }
         }
     }
@@ -217,9 +217,9 @@ export class MicrophoneManager {
         if (vadResult.shouldStop) {
             // Send appropriate event to state machine
             if (vadResult.reason === 'SILENCE_DETECTED') {
-                this.voiceService.send({ type: 'SILENCE_DETECTED' });
+                this.voiceService.send({type: 'SILENCE_DETECTED'});
             } else if (vadResult.reason === 'MAX_LENGTH_REACHED') {
-                this.voiceService.send({ type: 'MAX_LENGTH_REACHED' });
+                this.voiceService.send({type: 'MAX_LENGTH_REACHED'});
             }
         }
     }

@@ -8,7 +8,7 @@
  * - Configuration validation
  */
 
-import { AIRouter } from '../ai/AIRouter.js';
+import {AIRouter} from '../ai/AIRouter.js';
 
 describe('AIRouter', () => {
     let mockConfig;
@@ -43,7 +43,7 @@ describe('AIRouter', () => {
             info: (...args) => infoCalls.push(args),
             error: (...args) => errorCalls.push(args),
             warn: (...args) => warnCalls.push(args),
-            _calls: { debug: debugCalls, info: infoCalls, error: errorCalls, warn: warnCalls }
+            _calls: {debug: debugCalls, info: infoCalls, error: errorCalls, warn: warnCalls}
         };
 
         // Mock tool executor
@@ -166,7 +166,7 @@ describe('AIRouter', () => {
         });
 
         it('should delegate to toolExecutor', async () => {
-            const result = await router.executeTool('test_tool', { arg: 'value' });
+            const result = await router.executeTool('test_tool', {arg: 'value'});
             expect(result).toBe('Mock result for test_tool');
         });
 
@@ -226,7 +226,7 @@ describe('AIRouter', () => {
 
         it('should return healthy status for Anthropic', async () => {
             mockConfig.ai.provider = 'anthropic';
-            mockConfig.anthropic = { model: 'claude-3-5-haiku-20241022' };
+            mockConfig.anthropic = {model: 'claude-3-5-haiku-20241022'};
             const router = new AIRouter(mockConfig, mockLogger, mockToolExecutor);
             const health = await router.healthCheck();
             expect(health.healthy).toBe(true);

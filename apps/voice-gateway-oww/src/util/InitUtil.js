@@ -8,7 +8,6 @@ import {ElevenLabsTTS} from "./ElevenLabsTTS.js";
 import {synthesizeSpeech as piperSynthesize} from '../piperTTS.js';
 import {checkAlsaDevice} from "../audio/AudioUtils.js";
 import {AudioPlayer} from "../audio/AudioPlayer.js";
-import {safeDetectorReset} from "./XStateHelpers.js";
 import {OpenWakeWordDetector} from "./OpenWakeWordDetector.js";
 
 // Platform helpers
@@ -92,12 +91,12 @@ async function setupWakeWordDetector(wakeWordMachine = null) {
     // Connect detector to WakeWordMachine if provided
     if (wakeWordMachine) {
         // Notify machine that detector is initialized
-        wakeWordMachine.send({ type: 'DETECTOR_INITIALIZED', detector });
+        wakeWordMachine.send({type: 'DETECTOR_INITIALIZED', detector});
 
         // Listen for warmup-complete event and notify machine
         detector.on('warmup-complete', () => {
             logger.debug('[InitUtil] Detector warmup-complete event received, notifying WakeWordMachine');
-            wakeWordMachine.send({ type: 'WARMUP_COMPLETE' });
+            wakeWordMachine.send({type: 'WARMUP_COMPLETE'});
         });
 
         logger.debug('[InitUtil] Detector connected to WakeWordMachine');
@@ -189,7 +188,7 @@ async function startTTSWelcome(audioBuffer, detector, audioPlayer, beeps = null)
                                 logger.debug('✅ Ready beep played');
                             })
                             .catch(err => {
-                                logger.warn('⚠️ Failed to play ready beep', { error: err.message });
+                                logger.warn('⚠️ Failed to play ready beep', {error: err.message});
                                 // Non-critical failure - continue
                             });
                     }

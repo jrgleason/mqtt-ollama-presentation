@@ -23,10 +23,10 @@
  * 5. If error, log and return negative result (don't crash)
  */
 
-import { safeDetectorReset } from '../util/XStateHelpers.js';
-import { BeepUtil } from '../util/BeepUtil.js';
-import { AudioPlayer } from './AudioPlayer.js';
-import { errMsg } from '../util/Logger.js';
+import {safeDetectorReset} from '../util/XStateHelpers.js';
+import {BeepUtil} from '../util/BeepUtil.js';
+import {AudioPlayer} from './AudioPlayer.js';
+import {errMsg} from '../util/Logger.js';
 
 export class WakeWordProcessor {
     /**
@@ -79,7 +79,7 @@ export class WakeWordProcessor {
 
                 // Play audio feedback (beep)
                 this.audioPlayer.play(this.beep.BEEPS.wakeWord).catch(err => {
-                    this.logger.debug('Beep playback failed', { error: errMsg(err) });
+                    this.logger.debug('Beep playback failed', {error: errMsg(err)});
                 });
 
                 return {
