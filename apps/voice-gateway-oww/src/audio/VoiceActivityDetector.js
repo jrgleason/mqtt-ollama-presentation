@@ -19,13 +19,13 @@
  * 5. Force stop after maximum recording length (default 10000ms)
  */
 
-import { rmsEnergy } from './AudioUtils.js';
+import {rmsEnergy} from './AudioUtils.js';
 import {
-    MIN_SPEECH_SAMPLES,
-    getTrailingSilenceSamples,
-    getMaxRecordingSamples,
     getGraceBeforeStopMs,
-    getSilenceThreshold
+    getMaxRecordingSamples,
+    getSilenceThreshold,
+    getTrailingSilenceSamples,
+    MIN_SPEECH_SAMPLES
 } from './constants.js';
 
 export class VoiceActivityDetector {
@@ -67,7 +67,7 @@ export class VoiceActivityDetector {
      */
     processSamples(samples, recordingState) {
         if (!samples || samples.length === 0) {
-            return { shouldStop: false, reason: null, hasSpoken: this.hasSpokenDuringRecording };
+            return {shouldStop: false, reason: null, hasSpoken: this.hasSpokenDuringRecording};
         }
 
         // Check maximum recording length (safety timeout)

@@ -408,7 +408,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const limit = Number(args.limit) || 10;
         const offset = Number(args.offset) || 0;
 
-        console.warn('[mcp-server] list_devices called', { limit, offset });
+        console.warn('[mcp-server] list_devices called', {limit, offset});
 
         try {
             // Fetch live nodes from Z-Wave JS UI
@@ -483,7 +483,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (name === 'verify_device') {
         const args = rawArgs || {};
-        const { deviceName } = args;
+        const {deviceName} = args;
 
         if (!deviceName) {
             return {
@@ -497,7 +497,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             };
         }
 
-        console.warn('[mcp-server] verify_device called', { deviceName });
+        console.warn('[mcp-server] verify_device called', {deviceName});
 
         try {
             // Fetch live nodes and build registry
@@ -526,7 +526,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     responseText += '\n\n⚠️ Warning: Device exists but may not be responding.';
                 }
 
-                console.warn('[mcp-server] verify_device found device', { name: device.name });
+                console.warn('[mcp-server] verify_device found device', {name: device.name});
 
                 return {
                     content: [

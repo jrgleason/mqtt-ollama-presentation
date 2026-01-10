@@ -1,7 +1,7 @@
 import {createOllamaClient} from '../../../lib/ollama/client.js';
 import {createAnthropicClient} from '../../../lib/anthropic/client.js';
 import {createCalculatorTool} from '../../../lib/langchain/tools/calculator-tool.js';
-import {initializeMCPIntegration, shutdownMCPClient} from '../../../lib/mcp/integration.js';
+import {initializeMCPIntegration} from '../../../lib/mcp/integration.js';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 
 export const runtime = 'nodejs';
@@ -113,7 +113,7 @@ export async function POST(req) {
                 console.log('[chat/route] Initializing MCP integration...');
             }
             try {
-                const { mcpClient, tools: mcpTools } = await initializeMCPIntegration({ debug: isDebug });
+                const {mcpClient, tools: mcpTools} = await initializeMCPIntegration({debug: isDebug});
                 globalMCPClient = mcpClient;
                 globalMCPTools = mcpTools;
                 if (isDebug) {

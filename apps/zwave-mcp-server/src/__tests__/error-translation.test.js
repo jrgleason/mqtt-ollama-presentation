@@ -19,7 +19,7 @@ describe('Z-Wave Error Translation', () => {
 
             timeoutMessages.forEach(msg => {
                 const isTimeout = msg.toLowerCase().includes('timed out') ||
-                                msg.toLowerCase().includes('timeout');
+                    msg.toLowerCase().includes('timeout');
                 expect(isTimeout).toBe(true);
             });
 
@@ -37,8 +37,8 @@ describe('Z-Wave Error Translation', () => {
 
             connectionRefusedMessages.forEach(msg => {
                 const isConnectionRefused = msg.toLowerCase().includes('econnrefused') ||
-                                           msg.toLowerCase().includes('connection refused') ||
-                                           msg.toLowerCase().includes('connect_error');
+                    msg.toLowerCase().includes('connection refused') ||
+                    msg.toLowerCase().includes('connect_error');
                 expect(isConnectionRefused).toBe(true);
             });
         });
@@ -52,7 +52,7 @@ describe('Z-Wave Error Translation', () => {
 
             notFoundMessages.forEach(msg => {
                 const isNotFound = msg.toLowerCase().includes('enotfound') ||
-                                  msg.toLowerCase().includes('not found');
+                    msg.toLowerCase().includes('not found');
                 expect(isNotFound).toBe(true);
             });
         });
@@ -65,7 +65,7 @@ describe('Z-Wave Error Translation', () => {
 
             authMessages.forEach(msg => {
                 const isAuthError = msg.toLowerCase().includes('authentication') ||
-                                   msg.toLowerCase().includes('unauthorized');
+                    msg.toLowerCase().includes('unauthorized');
                 expect(isAuthError).toBe(true);
             });
 

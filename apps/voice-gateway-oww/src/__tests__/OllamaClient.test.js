@@ -5,14 +5,14 @@
  * simple message objects to LangChain message objects.
  */
 
-import { OllamaClient } from '../OllamaClient.js';
-import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
+import {OllamaClient} from '../OllamaClient.js';
+import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 
 describe('OllamaClient.convertToLangChainMessages', () => {
     describe('Basic Message Conversion', () => {
         it('should convert system message to SystemMessage', () => {
             const messages = [
-                { role: 'system', content: 'You are a helpful assistant' }
+                {role: 'system', content: 'You are a helpful assistant'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -24,7 +24,7 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should convert user message to HumanMessage', () => {
             const messages = [
-                { role: 'user', content: 'Hello, how are you?' }
+                {role: 'user', content: 'Hello, how are you?'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -36,7 +36,7 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should convert assistant message to AIMessage', () => {
             const messages = [
-                { role: 'assistant', content: 'I am doing well, thank you!' }
+                {role: 'assistant', content: 'I am doing well, thank you!'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -65,7 +65,7 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should convert unknown role to HumanMessage', () => {
             const messages = [
-                { role: 'unknown', content: 'Unknown message' }
+                {role: 'unknown', content: 'Unknown message'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -79,9 +79,9 @@ describe('OllamaClient.convertToLangChainMessages', () => {
     describe('Multiple Messages Conversion', () => {
         it('should convert array of multiple messages (typical conversation)', () => {
             const messages = [
-                { role: 'system', content: 'You are a helpful assistant' },
-                { role: 'user', content: 'What time is it?' },
-                { role: 'assistant', content: 'Let me check for you.' }
+                {role: 'system', content: 'You are a helpful assistant'},
+                {role: 'user', content: 'What time is it?'},
+                {role: 'assistant', content: 'Let me check for you.'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -94,11 +94,11 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should convert conversation with tool usage', () => {
             const messages = [
-                { role: 'system', content: 'You are a helpful assistant' },
-                { role: 'user', content: 'What time is it?' },
-                { role: 'assistant', content: 'Calling tool...' },
-                { role: 'tool', content: '2025-01-12 14:30:00', tool_call_id: 'call_456' },
-                { role: 'assistant', content: 'It is 2:30 PM' }
+                {role: 'system', content: 'You are a helpful assistant'},
+                {role: 'user', content: 'What time is it?'},
+                {role: 'assistant', content: 'Calling tool...'},
+                {role: 'tool', content: '2025-01-12 14:30:00', tool_call_id: 'call_456'},
+                {role: 'assistant', content: 'It is 2:30 PM'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -114,7 +114,7 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should not mutate original messages array', () => {
             const messages = [
-                { role: 'user', content: 'Hello' }
+                {role: 'user', content: 'Hello'}
             ];
 
             const originalMessagesCopy = JSON.parse(JSON.stringify(messages));
@@ -134,7 +134,7 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should handle messages with empty content', () => {
             const messages = [
-                { role: 'user', content: '' }
+                {role: 'user', content: ''}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -148,9 +148,9 @@ describe('OllamaClient.convertToLangChainMessages', () => {
     describe('Voice Gateway Message Flow', () => {
         it('should convert typical voice gateway conversation', () => {
             const messages = [
-                { role: 'system', content: 'You are a home automation assistant' },
-                { role: 'user', content: 'List all devices' },
-                { role: 'assistant', content: 'Let me check the devices for you.' }
+                {role: 'system', content: 'You are a home automation assistant'},
+                {role: 'user', content: 'List all devices'},
+                {role: 'assistant', content: 'Let me check the devices for you.'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -166,11 +166,11 @@ describe('OllamaClient.convertToLangChainMessages', () => {
 
         it('should convert multi-turn conversation with device control', () => {
             const messages = [
-                { role: 'system', content: 'You are a home automation assistant' },
-                { role: 'user', content: 'List devices' },
-                { role: 'assistant', content: 'Here are your devices: Living Room Light, Kitchen Light' },
-                { role: 'user', content: 'Turn on the living room light' },
-                { role: 'assistant', content: 'Turning on Living Room Light' }
+                {role: 'system', content: 'You are a home automation assistant'},
+                {role: 'user', content: 'List devices'},
+                {role: 'assistant', content: 'Here are your devices: Living Room Light, Kitchen Light'},
+                {role: 'user', content: 'Turn on the living room light'},
+                {role: 'assistant', content: 'Turning on Living Room Light'}
             ];
 
             const result = OllamaClient.convertToLangChainMessages(messages);
@@ -240,10 +240,13 @@ describe('OllamaClient Performance Configuration', () => {
     beforeEach(() => {
         debugLogs = [];
         mockLogger = {
-            debug: (message, data) => debugLogs.push({ message, data }),
-            info: () => {},
-            warn: () => {},
-            error: () => {},
+            debug: (message, data) => debugLogs.push({message, data}),
+            info: () => {
+            },
+            warn: () => {
+            },
+            error: () => {
+            },
         };
     });
 

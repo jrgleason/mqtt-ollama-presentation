@@ -1,5 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { createPlaybackMachine, setupPlaybackMachine, isPlaybackActive, isPlaying } from '../state-machines/PlaybackMachine.js';
+import {afterEach, beforeEach, describe, expect, it, jest} from '@jest/globals';
+import {
+    createPlaybackMachine,
+    isPlaybackActive,
+    isPlaying,
+    setupPlaybackMachine
+} from '../state-machines/PlaybackMachine.js';
 
 describe('PlaybackMachine', () => {
     let service;
@@ -50,7 +55,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('cooldown');
@@ -68,7 +73,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'INTERRUPT' });
+            service.send({type: 'INTERRUPT'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('interrupted');
@@ -86,8 +91,8 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'INTERRUPT' });
-            service.send({ type: 'INTERRUPT_HANDLED' });
+            service.send({type: 'INTERRUPT'});
+            service.send({type: 'INTERRUPT_HANDLED'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('idle');
@@ -104,7 +109,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
 
             expect(service.getSnapshot().value).toBe('cooldown');
 
@@ -127,11 +132,11 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
 
             expect(service.getSnapshot().value).toBe('cooldown');
 
-            service.send({ type: 'INTERRUPT' });
+            service.send({type: 'INTERRUPT'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('idle');
@@ -167,7 +172,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.context.activePlayback).toBeNull();
@@ -185,7 +190,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'INTERRUPT' });
+            service.send({type: 'INTERRUPT'});
 
             const snapshot = service.getSnapshot();
             expect(snapshot.context.activePlayback).toBeNull();
@@ -205,7 +210,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'INTERRUPT' });
+            service.send({type: 'INTERRUPT'});
 
             expect(mockPlayback.cancel).toHaveBeenCalledTimes(1);
         });
@@ -224,7 +229,7 @@ describe('PlaybackMachine', () => {
 
             // Should not throw
             expect(() => {
-                service.send({ type: 'INTERRUPT' });
+                service.send({type: 'INTERRUPT'});
             }).not.toThrow();
 
             const snapshot = service.getSnapshot();
@@ -233,7 +238,9 @@ describe('PlaybackMachine', () => {
 
         it('should handle cancel() throwing error', () => {
             const mockPlayback = {
-                cancel: jest.fn(() => { throw new Error('Cancel failed'); }),
+                cancel: jest.fn(() => {
+                    throw new Error('Cancel failed');
+                }),
                 promise: Promise.resolve()
             };
 
@@ -245,7 +252,7 @@ describe('PlaybackMachine', () => {
 
             // Should not throw - error is caught internally
             expect(() => {
-                service.send({ type: 'INTERRUPT' });
+                service.send({type: 'INTERRUPT'});
             }).not.toThrow();
 
             const snapshot = service.getSnapshot();
@@ -300,7 +307,7 @@ describe('PlaybackMachine', () => {
                 playback: mockPlayback,
                 playbackType: 'tts'
             });
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
 
             expect(isPlaybackActive(service)).toBe(true);
         });
@@ -327,14 +334,14 @@ describe('PlaybackMachine', () => {
             expect(isPlaying(service)).toBe(true);
 
             // Transition to cooldown
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
             expect(isPlaying(service)).toBe(false);
         });
     });
 
     describe('Event Handling', () => {
         it('should ignore invalid events in idle state', () => {
-            service.send({ type: 'PLAYBACK_COMPLETE' }); // Invalid in idle state
+            service.send({type: 'PLAYBACK_COMPLETE'}); // Invalid in idle state
 
             const snapshot = service.getSnapshot();
             expect(snapshot.value).toBe('idle'); // Should remain in idle state
@@ -386,10 +393,10 @@ describe('PlaybackMachine', () => {
             });
             expect(service.getSnapshot().value).toBe('playing');
 
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
             expect(service.getSnapshot().value).toBe('cooldown');
 
-            service.send({ type: 'INTERRUPT' }); // Skip cooldown
+            service.send({type: 'INTERRUPT'}); // Skip cooldown
             expect(service.getSnapshot().value).toBe('idle');
 
             // Second playback
@@ -420,7 +427,7 @@ describe('PlaybackMachine', () => {
             });
             expect(service.getSnapshot().value).toBe('playing');
 
-            service.send({ type: 'PLAYBACK_COMPLETE' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
             expect(service.getSnapshot().value).toBe('cooldown');
         });
 
@@ -437,11 +444,11 @@ describe('PlaybackMachine', () => {
             });
             expect(service.getSnapshot().value).toBe('playing');
 
-            service.send({ type: 'INTERRUPT' });
+            service.send({type: 'INTERRUPT'});
             expect(service.getSnapshot().value).toBe('interrupted');
             expect(mockPlayback.cancel).toHaveBeenCalled();
 
-            service.send({ type: 'INTERRUPT_HANDLED' });
+            service.send({type: 'INTERRUPT_HANDLED'});
             expect(service.getSnapshot().value).toBe('idle');
         });
 
@@ -463,8 +470,8 @@ describe('PlaybackMachine', () => {
             });
             expect(service.getSnapshot().context.playbackType).toBe('tts');
 
-            service.send({ type: 'PLAYBACK_COMPLETE' });
-            service.send({ type: 'INTERRUPT' });
+            service.send({type: 'PLAYBACK_COMPLETE'});
+            service.send({type: 'INTERRUPT'});
 
             // Beep playback
             service.send({

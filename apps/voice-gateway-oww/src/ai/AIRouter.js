@@ -1,7 +1,7 @@
-import { OllamaClient } from '../OllamaClient.js';
-import { AnthropicClient } from '../AnthropicClient.js';
-import { conversationManager } from '../ConversationManager.js';
-import { errMsg } from '../util/Logger.js';
+import {OllamaClient} from '../OllamaClient.js';
+import {AnthropicClient} from '../AnthropicClient.js';
+import {conversationManager} from '../ConversationManager.js';
+import {errMsg} from '../util/Logger.js';
 
 /**
  * AIRouter - Route AI queries to the appropriate provider with tool support
@@ -106,7 +106,7 @@ export class AIRouter {
         }
 
         // Fallback if toolExecutor not available (should not happen)
-        this.logger.error('AIRouter: ToolExecutor not available', { toolName });
+        this.logger.error('AIRouter: ToolExecutor not available', {toolName});
         return `Error: Tool execution not configured`;
     }
 

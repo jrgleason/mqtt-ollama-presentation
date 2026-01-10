@@ -6,8 +6,6 @@
 
 import {ChatAnthropic} from '@langchain/anthropic';
 import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
-import {logger} from './util/Logger.js';
-import {config} from './config.js';
 
 export class AnthropicClient {
     #client = null;

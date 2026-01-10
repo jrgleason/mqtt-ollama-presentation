@@ -11,9 +11,9 @@
  * - Error handling and logging
  */
 
-import { MultiServerMCPClient } from "@langchain/mcp-adapters";
+import {MultiServerMCPClient} from "@langchain/mcp-adapters";
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -116,7 +116,7 @@ export async function initializeMCPIntegration(options = {}) {
             });
         }
 
-        return { mcpClient, tools };
+        return {mcpClient, tools};
 
     } catch (error) {
         console.error('[mcp/integration] MCP initialization failed', {

@@ -5,7 +5,7 @@
  */
 
 import {logger} from './util/Logger.js';
-import { CONVERSATION_TIMEOUT_MS } from './constants/timing.js';
+import {CONVERSATION_TIMEOUT_MS} from './constants/timing.js';
 
 class ConversationManager {
     constructor() {

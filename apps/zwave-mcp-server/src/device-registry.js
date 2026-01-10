@@ -336,7 +336,7 @@ export class DeviceRegistryBuilder {
                 score += 10;
             }
 
-            return { deviceName, score };
+            return {deviceName, score};
         });
 
         // Sort by score (highest first) and return top matches

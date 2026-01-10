@@ -1,15 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import {execSync, spawn} from 'child_process';
-import { SAMPLE_RATE } from '../audio/constants.js';
-import { rmsEnergy, writeWavFile } from '../audio/AudioUtils.js';
-import { errMsg } from '../util/Logger.js';
-import {
-    WHISPER_TRANSCRIPTION_TIMEOUT_MS,
-    WHISPER_PROCESS_DEFAULT_TIMEOUT_MS,
-    MILLISECONDS_PER_SECOND
-} from '../constants/timing.js';
-import { MIN_AUDIO_ENERGY, MIN_AUDIO_DURATION_SECONDS } from '../constants/thresholds.js';
+import {SAMPLE_RATE} from '../audio/constants.js';
+import {rmsEnergy, writeWavFile} from '../audio/AudioUtils.js';
+import {errMsg} from '../util/Logger.js';
+import {WHISPER_PROCESS_DEFAULT_TIMEOUT_MS, WHISPER_TRANSCRIPTION_TIMEOUT_MS} from '../constants/timing.js';
+import {MIN_AUDIO_DURATION_SECONDS, MIN_AUDIO_ENERGY} from '../constants/thresholds.js';
 
 /**
  * TranscriptionService - Orchestrate Whisper transcription workflow
@@ -92,7 +88,7 @@ export class TranscriptionService {
             const transcription = await this._transcribeWithWhisper(
                 this.whisperModel,
                 wavPath,
-                { timeoutMs: this.timeoutMs }
+                {timeoutMs: this.timeoutMs}
             );
 
             // Log transcription duration
@@ -123,7 +119,7 @@ export class TranscriptionService {
             try {
                 if (fs.existsSync(wavPath)) {
                     fs.unlinkSync(wavPath);
-                    this.logger.debug('Cleaned up temporary WAV file', { wavPath });
+                    this.logger.debug('Cleaned up temporary WAV file', {wavPath});
                 }
             } catch (cleanupErr) {
                 this.logger.error('Failed to clean up WAV file', {
@@ -186,7 +182,8 @@ export class TranscriptionService {
         try {
             const whichOut = execSync('which whisper-cli', {encoding: 'utf8'}).trim();
             if (whichOut) return whichOut;
-        } catch { /* not found via which */ }
+        } catch { /* not found via which */
+        }
 
         // Scan PATH manually
         const pathDirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
@@ -209,7 +206,7 @@ export class TranscriptionService {
      * @throws {Error} If transcription fails or times out
      */
     async _transcribeWithWhisper(modelRel, wavPath, options = {}) {
-        const { timeoutMs = WHISPER_PROCESS_DEFAULT_TIMEOUT_MS } = options;
+        const {timeoutMs = WHISPER_PROCESS_DEFAULT_TIMEOUT_MS} = options;
 
         return new Promise((resolve, reject) => {
             const whisperModelAbs = path.isAbsolute(modelRel) ? modelRel : path.resolve(process.cwd(), modelRel);

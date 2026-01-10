@@ -13,7 +13,7 @@
  *
  * Value: 0.01
  */
-export { SILENCE_THRESHOLD as VAD_SILENCE_THRESHOLD } from '../audio/constants.js';
+export {SILENCE_THRESHOLD as VAD_SILENCE_THRESHOLD} from '../audio/constants.js';
 
 /**
  * MIN_AUDIO_ENERGY - Minimum RMS energy to attempt transcription

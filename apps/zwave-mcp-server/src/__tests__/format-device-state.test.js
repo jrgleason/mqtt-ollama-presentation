@@ -231,7 +231,7 @@ describe('formatDeviceState', () => {
             const values = {
                 'currentValue': {
                     property: 'currentValue',
-                    value: { nested: 'object' }
+                    value: {nested: 'object'}
                 }
             };
             expect(formatDeviceState(values)).toBe('[object Object]');

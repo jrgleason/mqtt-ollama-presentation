@@ -7,7 +7,7 @@
 import mqtt from 'mqtt';
 import {logger} from './util/Logger.js';
 import {config} from './config.js';
-import { MQTT_CONNECTION_TIMEOUT_MS, MQTT_RECONNECT_INTERVAL_MS } from './constants/timing.js';
+import {MQTT_CONNECTION_TIMEOUT_MS, MQTT_RECONNECT_INTERVAL_MS} from './constants/timing.js';
 
 let client = null;
 let isConnected = false;

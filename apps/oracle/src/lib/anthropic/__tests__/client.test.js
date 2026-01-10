@@ -154,7 +154,8 @@ describe('Anthropic Client', () => {
             process.env.LOG_LEVEL = 'debug';
 
             // Mock console.log to verify debug output
-            const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+            const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {
+            });
 
             // Import with debug mode
             await import('../client.js');

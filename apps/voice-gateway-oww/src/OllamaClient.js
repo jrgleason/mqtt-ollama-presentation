@@ -14,9 +14,7 @@
  */
 
 import {ChatOllama} from '@langchain/ollama';
-import {HumanMessage, AIMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
-import {logger} from './util/Logger.js';
-import {config} from './config.js';
+import {AIMessage, HumanMessage, SystemMessage, ToolMessage} from '@langchain/core/messages';
 
 export class OllamaClient {
     #client = null;
@@ -233,10 +231,10 @@ export class OllamaClient {
             if (toolCalls.length === 0 && response.content && options.toolExecutor) {
                 const textToolCall = OllamaClient.parseTextToolCall(response.content);
                 this.logger.debug('🔍 Text tool call parse result', {
-                    parsed: textToolCall ? { name: textToolCall.name, hasArgs: !!textToolCall.args } : null
+                    parsed: textToolCall ? {name: textToolCall.name, hasArgs: !!textToolCall.args} : null
                 });
                 if (textToolCall) {
-                    this.logger.debug('🔧 Detected text-based tool call', { name: textToolCall.name });
+                    this.logger.debug('🔧 Detected text-based tool call', {name: textToolCall.name});
                     toolCalls = [textToolCall];
                     isTextBasedToolCall = true;
                 }
@@ -273,7 +271,7 @@ export class OllamaClient {
                             normalizedContent = String(toolResult);
                         }
 
-                        toolResultStrings.push({ name: toolName, result: normalizedContent, id: toolCall.id });
+                        toolResultStrings.push({name: toolName, result: normalizedContent, id: toolCall.id});
                     } catch (toolError) {
                         this.logger.error(`❌ Tool execution failed: ${toolName}`, {error: toolError.message});
                         toolResultStrings.push({

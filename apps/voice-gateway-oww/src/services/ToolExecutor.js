@@ -1,4 +1,4 @@
-import { TOOL_EXECUTION_TIMEOUT_MS, TOOL_EXECUTION_WARNING_MS } from '../constants/timing.js';
+import {TOOL_EXECUTION_TIMEOUT_MS, TOOL_EXECUTION_WARNING_MS} from '../constants/timing.js';
 
 /**
  * Tool Executor

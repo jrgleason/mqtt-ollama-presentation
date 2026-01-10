@@ -5,7 +5,7 @@
  * web search using Playwright MCP to provide better answers.
  */
 
-import { logger } from '../util/Logger.js';
+import {logger} from '../util/Logger.js';
 
 /**
  * Patterns that indicate the AI doesn't know the answer
@@ -55,7 +55,7 @@ export class WebSearchFallback {
 
         // Trigger on null, undefined, or non-string responses
         if (response === null || response === undefined || typeof response !== 'string') {
-            logger.debug('🔍 Fallback trigger: invalid response type', { type: typeof response });
+            logger.debug('🔍 Fallback trigger: invalid response type', {type: typeof response});
             return true;
         }
 
@@ -89,7 +89,7 @@ export class WebSearchFallback {
             return null;
         }
 
-        logger.info('🌐 Performing web search fallback', { query });
+        logger.info('🌐 Performing web search fallback', {query});
         const startTime = Date.now();
 
         try {
@@ -115,7 +115,7 @@ export class WebSearchFallback {
             // Fall back to DuckDuckGo API (faster but less current)
             logger.debug('🔄 Playwright unavailable, falling back to DuckDuckGo API');
             const result = await this._executeWithTimeout(
-                execute('search_web', { query }),
+                execute('search_web', {query}),
                 this.timeout,
                 'Search timeout'
             );
@@ -161,7 +161,7 @@ export class WebSearchFallback {
 
             // Wait for results to load
             await this._executeWithTimeout(
-                execute('browser_wait_for', { time: 2 }),
+                execute('browser_wait_for', {time: 2}),
                 5000,
                 'Wait timeout'
             );
@@ -177,16 +177,17 @@ export class WebSearchFallback {
             const results = this._extractSearchResults(snapshot);
 
             // Close the browser tab
-            await execute('browser_close', {}).catch(() => {});
+            await execute('browser_close', {}).catch(() => {
+            });
 
             return results;
 
         } catch (error) {
             // Playwright not available or failed - log and return null
             if (error.message.includes('Unknown tool') || error.message.includes('not found')) {
-                logger.debug('🎭 Playwright MCP not available', { reason: error.message });
+                logger.debug('🎭 Playwright MCP not available', {reason: error.message});
             } else {
-                logger.warn('🎭 Playwright search failed', { error: error.message });
+                logger.warn('🎭 Playwright search failed', {error: error.message});
                 // Try to close browser on error
                 try {
                     await execute('browser_close', {});
@@ -292,4 +293,4 @@ export class WebSearchFallback {
 /**
  * Export the fallback trigger patterns for testing
  */
-export { FALLBACK_TRIGGER_PATTERNS };
+export {FALLBACK_TRIGGER_PATTERNS};
