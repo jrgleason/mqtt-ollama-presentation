@@ -1,8 +1,8 @@
 import {errMsg, logger} from "./Logger.js";
 import {config} from '../config.js';
 import path from 'path';
-import {checkOllamaHealth} from '../OllamaClient.js';
-import {checkAnthropicHealth} from '../AnthropicClient.js';
+import {OllamaClient} from '../OllamaClient.js';
+import {AnthropicClient} from '../AnthropicClient.js';
 import {connectMQTT} from '../mqttClient.js';
 import {ElevenLabsTTS} from "./ElevenLabsTTS.js";
 import {synthesizeSpeech as piperSynthesize} from '../piperTTS.js';
@@ -39,7 +39,8 @@ async function checkAIHealth() {
     if (config.ai.provider === 'anthropic') {
         logger.info('🤖 Using Anthropic (Claude) for AI inference');
         try {
-            const ready = await checkAnthropicHealth();
+            const client = new AnthropicClient(config, logger);
+            const ready = await client.checkHealth();
             if (!ready) logger.warn('⚠️ Anthropic not ready - AI responses may fail');
         } catch (err) {
             logger.error('❌ Anthropic health check failed', {error: errMsg(err)});
@@ -47,7 +48,8 @@ async function checkAIHealth() {
     } else {
         logger.info('🤖 Using Ollama for AI inference');
         try {
-            const ready = await checkOllamaHealth();
+            const client = new OllamaClient(config, logger);
+            const ready = await client.checkHealth();
             if (!ready) logger.warn('⚠️ Ollama not ready - AI responses may fail');
         } catch (err) {
             logger.error('❌ Ollama health check failed', {error: errMsg(err)});
