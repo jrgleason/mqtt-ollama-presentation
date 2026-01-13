@@ -9,6 +9,8 @@
  * This simplified version aligns with LangChain patterns.
  */
 
+import {logger} from '../util/Logger.js';
+
 // Static parameter mappings for known MCP tools
 // Maps snake_case parameter names (from LangChain adapter) to camelCase (expected by MCP server)
 //
@@ -33,6 +35,14 @@ export class ToolManager {
     }
 
     /**
+     * Get the number of registered tools
+     * @returns {number} Number of tools
+     */
+    get toolCount() {
+        return this.tools.length;
+    }
+
+    /**
      * Add MCP tools from LangChain adapters
      * @param {Array} mcpTools - Array of LangChain tool instances
      */
@@ -45,7 +55,7 @@ export class ToolManager {
             const toolName = tool.lc_name || tool.name;
 
             if (!toolName) {
-                console.warn('⚠️ Skipping tool with no name:', tool);
+                logger.warn('Skipping tool with no name', {tool});
                 continue;
             }
 
@@ -56,7 +66,7 @@ export class ToolManager {
             }
 
             this.tools.push(tool);
-            console.log(`✅ Added MCP tool: ${toolName}`);
+            logger.info('Added MCP tool', {toolName});
         }
     }
 
@@ -80,7 +90,7 @@ export class ToolManager {
         }
 
         this.tools.push(tool);
-        console.log(`✅ Added custom tool: ${toolName}`);
+        logger.info('Added custom tool', {toolName});
     }
 
     /**
@@ -137,21 +147,14 @@ export class ToolManager {
 
         // Log if normalization occurred
         if (changed) {
-            console.log(`🔧 Normalized parameters for ${toolName}:`, {
+            logger.info('Normalized parameters', {
+                toolName,
                 original: args,
-                normalized: normalized
+                normalized
             });
         }
 
         return normalized;
-    }
-
-    /**
-     * Get the number of registered tools
-     * @returns {number} Number of tools
-     */
-    get toolCount() {
-        return this.tools.length;
     }
 
     /**

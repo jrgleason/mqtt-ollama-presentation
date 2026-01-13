@@ -1,8 +1,8 @@
 import wav from "wav";
-import { spawn } from 'child_process';
-import { SAMPLE_RATE } from './constants.js';
-import { logger } from '../util/Logger.js';
-import { WAV_WRITER_TIMEOUT_MS, ALSA_CHECK_TIMEOUT_MS } from '../constants/timing.js';
+import {spawn} from 'child_process';
+import {SAMPLE_RATE} from './constants.js';
+import {logger} from '../util/Logger.js';
+import {ALSA_CHECK_TIMEOUT_MS, WAV_WRITER_TIMEOUT_MS} from '../constants/timing.js';
 
 /**
  * Calculate the root mean square (RMS) energy of audio samples
@@ -30,8 +30,8 @@ export const rmsEnergy = (samples) => {
  * @param {number} [options.bitDepth=16] - Bit depth (16 or 24)
  * @returns {Promise<void>} Resolves when file is written, rejects on error or timeout
  */
-export const writeWavFile = async (wavPath, samples, { channels = 1, sampleRate = SAMPLE_RATE, bitDepth = 16 } = {}) => {
-    const writer = new wav.FileWriter(wavPath, { channels, sampleRate, bitDepth });
+export const writeWavFile = async (wavPath, samples, {channels = 1, sampleRate = SAMPLE_RATE, bitDepth = 16} = {}) => {
+    const writer = new wav.FileWriter(wavPath, {channels, sampleRate, bitDepth});
 
     // Convert Float32 samples to Int16
     const int16Audio = new Int16Array(samples.length);

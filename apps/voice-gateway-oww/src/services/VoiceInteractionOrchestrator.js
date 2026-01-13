@@ -1,17 +1,17 @@
-import { BeepUtil } from '../util/BeepUtil.js';
-import { SAMPLE_RATE } from '../audio/constants.js';
-import { AudioPlayer } from '../audio/AudioPlayer.js';
-import { TranscriptionService } from './TranscriptionService.js';
-import { IntentClassifier } from './IntentClassifier.js';
-import { AIRouter } from '../ai/AIRouter.js';
-import { conversationManager } from '../ConversationManager.js';
-import { publishTranscription, publishAIResponse } from '../mqttClient.js';
-import { ElevenLabsTTS } from '../util/ElevenLabsTTS.js';
-import { synthesizeSpeech as piperSynthesize } from '../piperTTS.js';
-import { streamSpeak } from '../streamingTTS.js';
-import { executeDateTimeTool } from '../util/tools.js';
-import { errMsg } from '../util/Logger.js';
-import { isPlaying } from '../state-machines/PlaybackMachine.js';
+import {BeepUtil} from '../util/BeepUtil.js';
+import {SAMPLE_RATE} from '../audio/constants.js';
+import {AudioPlayer} from '../audio/AudioPlayer.js';
+import {TranscriptionService} from './TranscriptionService.js';
+import {IntentClassifier} from './IntentClassifier.js';
+import {AIRouter} from '../ai/AIRouter.js';
+import {conversationManager} from '../ConversationManager.js';
+import {publishAIResponse, publishTranscription} from '../mqttClient.js';
+import {ElevenLabsTTS} from '../util/ElevenLabsTTS.js';
+import {synthesizeSpeech as piperSynthesize} from '../piperTTS.js';
+import {streamSpeak} from '../streamingTTS.js';
+import {executeDateTimeTool} from '../util/tools.js';
+import {errMsg} from '../util/Logger.js';
+import {isPlaying} from '../state-machines/PlaybackMachine.js';
 
 /**
  * VoiceInteractionOrchestrator - Coordinate complete voice interaction pipeline
@@ -119,7 +119,7 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // STAGE 4: AI Query or Direct Tool Execution
             // ============================================
-            const { response: aiResponse, streamingUsed } = await this._handleAIOrDirectTools(transcription, intent);
+            const {response: aiResponse, streamingUsed} = await this._handleAIOrDirectTools(transcription, intent);
 
             this.logger.info(`🤖 AI Response: "${aiResponse}"`);
 
@@ -191,7 +191,7 @@ export class VoiceInteractionOrchestrator {
             // ============================================
             // Notify state machine that interaction is done (transitions to cooldown → listening)
             if (this.voiceService) {
-                this.voiceService.send({ type: 'INTERACTION_COMPLETE' });
+                this.voiceService.send({type: 'INTERACTION_COMPLETE'});
                 this.logger.debug('✅ Signaled INTERACTION_COMPLETE to state machine');
             }
         }
@@ -228,9 +228,9 @@ export class VoiceInteractionOrchestrator {
             const snapshot = this.playbackMachine.getSnapshot();
             if (snapshot.matches('playing')) {
                 this.logger.info('🛑 Cancelling active playback via PlaybackMachine');
-                this.playbackMachine.send({ type: 'INTERRUPT' });
+                this.playbackMachine.send({type: 'INTERRUPT'});
                 // Transition to idle after interruption handled
-                this.playbackMachine.send({ type: 'INTERRUPT_HANDLED' });
+                this.playbackMachine.send({type: 'INTERRUPT_HANDLED'});
             }
             return;
         }
@@ -262,7 +262,7 @@ export class VoiceInteractionOrchestrator {
         if (intent.isDateTimeQuery) {
             this.logger.debug('VoiceInteractionOrchestrator: Direct datetime tool execution');
             const response = await executeDateTimeTool({}, transcription);
-            return { response, streamingUsed: false }; // Direct tool = no streaming
+            return {response, streamingUsed: false}; // Direct tool = no streaming
         }
 
         // Device control queries now go through AI + ToolExecutor (MCP tools)
@@ -282,10 +282,10 @@ export class VoiceInteractionOrchestrator {
         // Check if streaming is enabled (Anthropic + TTS streaming)
         if (this.aiRouter.isStreamingEnabled()) {
             const response = await this._queryAIWithStreaming(transcription, intent);
-            return { response, streamingUsed: true }; // Streaming was used
+            return {response, streamingUsed: true}; // Streaming was used
         } else {
             const response = await this._queryAIWithoutStreaming(transcription, intent);
-            return { response, streamingUsed: false }; // No streaming
+            return {response, streamingUsed: false}; // No streaming
         }
     }
 
@@ -304,7 +304,7 @@ export class VoiceInteractionOrchestrator {
         const abortController = new AbortController();
 
         // Initialize streaming TTS with abort support
-        const tts = await streamSpeak('', { abortController });
+        const tts = await streamSpeak('', {abortController});
 
         // Track streaming TTS as active playback (for interruption)
         this.activePlayback = {
@@ -402,7 +402,7 @@ export class VoiceInteractionOrchestrator {
 
                     // Notify PlaybackMachine of completion
                     if (this.playbackMachine) {
-                        this.playbackMachine.send({ type: 'PLAYBACK_COMPLETE' });
+                        this.playbackMachine.send({type: 'PLAYBACK_COMPLETE'});
                     }
                 } catch (playbackErr) {
                     // Playback was cancelled or failed

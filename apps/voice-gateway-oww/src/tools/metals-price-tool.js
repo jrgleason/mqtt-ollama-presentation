@@ -14,10 +14,10 @@ import {logger} from '../util/Logger.js';
  * Supported metals and their identifiers
  */
 const SUPPORTED_METALS = {
-    gold: { symbol: 'XAU', name: 'Gold' },
-    silver: { symbol: 'XAG', name: 'Silver' },
-    platinum: { symbol: 'XPT', name: 'Platinum' },
-    palladium: { symbol: 'XPD', name: 'Palladium' }
+    gold: {symbol: 'XAU', name: 'Gold'},
+    silver: {symbol: 'XAG', name: 'Silver'},
+    platinum: {symbol: 'XPT', name: 'Platinum'},
+    palladium: {symbol: 'XPD', name: 'Palladium'}
 };
 
 /**
@@ -38,11 +38,11 @@ async function getMetalsLivePrice(metal) {
             }
         });
 
-        logger.debug('🔍 metals.live response', { status: response.status, ok: response.ok });
+        logger.debug('🔍 metals.live response', {status: response.status, ok: response.ok});
 
         if (!response.ok) {
             const errorText = await response.text().catch(() => 'unknown');
-            logger.warn('metals.live API error', { status: response.status, error: errorText });
+            logger.warn('metals.live API error', {status: response.status, error: errorText});
             return null;
         }
 
@@ -107,7 +107,7 @@ async function getGoldApiPrice(metal) {
         });
 
         if (!response.ok) {
-            logger.warn('goldapi.io API error', { status: response.status });
+            logger.warn('goldapi.io API error', {status: response.status});
             return null;
         }
 
@@ -123,7 +123,7 @@ async function getGoldApiPrice(metal) {
 
         return null;
     } catch (error) {
-        logger.warn('goldapi.io API failed', { error: error.message });
+        logger.warn('goldapi.io API failed', {error: error.message});
         return null;
     }
 }

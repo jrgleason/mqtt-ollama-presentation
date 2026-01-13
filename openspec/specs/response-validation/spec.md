@@ -1,7 +1,8 @@
-# response-validation Spec Delta
+# response-validation Specification
 
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change add-response-validation-pass. Update Purpose after archive.
+## Requirements
 ### Requirement: Optional Response Validation Pass
 
 The system SHALL support an optional validation pass that cleans AI responses before TTS synthesis to catch formatting issues and streaming artifacts.
@@ -45,3 +46,4 @@ The validation pass SHALL use a configurable model, defaulting to a fast/cheap m
 - **WHEN** response validation runs
 - **THEN** the specified model is used for validation
 - **AND** validation latency is logged for monitoring
+

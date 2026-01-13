@@ -2,7 +2,7 @@
  * Tests for WebSearchFallback service
  */
 
-import { WebSearchFallback, FALLBACK_TRIGGER_PATTERNS } from '../services/WebSearchFallback.js';
+import {FALLBACK_TRIGGER_PATTERNS, WebSearchFallback} from '../services/WebSearchFallback.js';
 
 describe('WebSearchFallback', () => {
     let fallback;
@@ -15,7 +15,7 @@ describe('WebSearchFallback', () => {
 
         mockToolExecutor = {
             execute: async (name, args) => {
-                toolCalls.push({ name, args });
+                toolCalls.push({name, args});
                 return 'Mock result';
             }
         };
@@ -74,7 +74,7 @@ describe('WebSearchFallback', () => {
 
         it('should NOT trigger when disabled', () => {
             const disabledConfig = {
-                webSearchFallback: { enabled: false }
+                webSearchFallback: {enabled: false}
             };
             const disabledFallback = new WebSearchFallback(disabledConfig, mockToolExecutor);
 
@@ -150,7 +150,7 @@ describe('WebSearchFallback', () => {
             // Mock that returns "Unknown tool" for Playwright, success for search_web
             let callCount = 0;
             mockToolExecutor.execute = async (name) => {
-                toolCalls.push({ name, args: {} });
+                toolCalls.push({name, args: {}});
                 callCount++;
                 if (name === 'browser_navigate') {
                     throw new Error('Unknown tool: browser_navigate');
@@ -170,7 +170,7 @@ describe('WebSearchFallback', () => {
         it('should use Playwright results if available', async () => {
             // Mock successful Playwright search
             mockToolExecutor.execute = async (name, args) => {
-                toolCalls.push({ name, args });
+                toolCalls.push({name, args});
                 if (name === 'browser_snapshot') {
                     return 'The current US president is Donald Trump.';
                 }

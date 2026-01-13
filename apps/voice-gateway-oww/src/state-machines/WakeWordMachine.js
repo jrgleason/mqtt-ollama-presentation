@@ -1,5 +1,5 @@
-import { assign, createMachine, interpret } from "xstate";
-import { logger } from "../util/Logger.js";
+import {assign, createMachine, interpret} from "xstate";
+import {logger} from "../util/Logger.js";
 
 /**
  * WakeWordMachine - Manage wake word detector lifecycle and readiness
@@ -80,7 +80,7 @@ function createWakeWordMachine() {
         }
     }, {
         actions: {
-            storeDetector: assign(({ context, event }) => {
+            storeDetector: assign(({context, event}) => {
                 return {
                     detector: event.detector
                 };
@@ -90,14 +90,14 @@ function createWakeWordMachine() {
                     warmupStartTime: Date.now()
                 };
             }),
-            logWarmupDuration: assign(({ context }) => {
+            logWarmupDuration: assign(({context}) => {
                 const duration = Date.now() - context.warmupStartTime;
                 logger.info('[WakeWordMachine] Warm-up complete', {
                     durationMs: duration
                 });
                 return {};
             }),
-            recordTrigger: assign(({ context, event }) => {
+            recordTrigger: assign(({context, event}) => {
                 return {
                     lastTriggerScore: event.score || 0,
                     lastTriggerTime: Date.now()

@@ -6,13 +6,13 @@
 import {errMsg, logger} from './util/Logger.js';
 import {config} from './config.js';
 import {VoiceInteractionOrchestrator} from "./services/VoiceInteractionOrchestrator.js";
-import {initServices, setupWakeWordDetector, synthesizeWelcomeMessage, startTTSWelcome} from "./util/InitUtil.js";
+import {initServices, setupWakeWordDetector, startTTSWelcome, synthesizeWelcomeMessage} from "./util/InitUtil.js";
 import {setupVoiceStateMachine} from "./util/VoiceGateway.js";
 import {setupWakeWordMachine} from "./state-machines/WakeWordMachine.js";
-import {setupPlaybackMachine, isPlaying as isPlaybackActive} from "./state-machines/PlaybackMachine.js";
+import {isPlaying as isPlaybackActive, setupPlaybackMachine} from "./state-machines/PlaybackMachine.js";
 import {initializeMCPIntegration, shutdownMCPClient} from "./services/MCPIntegration.js";
 import mic from 'mic';
-import {SAMPLE_RATE, CHUNK_SIZE, getSilenceThreshold} from "./audio/constants.js";
+import {CHUNK_SIZE, getSilenceThreshold, SAMPLE_RATE} from "./audio/constants.js";
 import {getServiceSnapshot, safeDetectorReset} from "./util/XStateHelpers.js";
 import {DETECTOR_WARMUP_TIMEOUT_MS} from './constants/timing.js';
 import {AudioPlayer} from "./audio/AudioPlayer.js";
@@ -20,18 +20,9 @@ import {BeepUtil} from "./util/BeepUtil.js";
 import {ToolManager} from './services/ToolManager.js';
 import {ToolExecutor} from './services/ToolExecutor.js';
 import {validateProviders} from './util/ProviderHealthCheck.js';
-import {
-    dateTimeTool,
-    executeDateTimeTool
-} from './tools/datetime-tool.js';
-import {
-    searchTool,
-    executeSearchTool
-} from './tools/search-tool.js';
-import {
-    volumeControlTool,
-    executeVolumeControlTool
-} from './tools/volume-control-tool.js';
+import {dateTimeTool, executeDateTimeTool} from './tools/datetime-tool.js';
+import {executeSearchTool, searchTool} from './tools/search-tool.js';
+import {executeVolumeControlTool, volumeControlTool} from './tools/volume-control-tool.js';
 
 // Initialize audio player and beep util
 const audioPlayer = new AudioPlayer(config, logger);
@@ -229,8 +220,8 @@ function setupMic(voiceService, orchestrator, detector, playbackMachine, onRecor
                 const category = avgEnergy < 0.002
                     ? 'True silence'
                     : avgEnergy <= 0.004
-                    ? 'Close to threshold - consider lowering VAD_SILENCE_THRESHOLD'
-                    : 'Just below threshold';
+                        ? 'Close to threshold - consider lowering VAD_SILENCE_THRESHOLD'
+                        : 'Just below threshold';
 
                 // Skip transcription when no speech detected (false wake word trigger)
                 logger.info('Skipping transcription - no speech detected', {
@@ -471,21 +462,21 @@ async function main() {
             name: dateTimeTool.function.name,
             description: dateTimeTool.function.description,
             schema: dateTimeTool.function.parameters,
-            invoke: async ({ input }) => executeDateTimeTool(input)
+            invoke: async ({input}) => executeDateTimeTool(input)
         });
 
         toolManager.addCustomTool({
             name: searchTool.function.name,
             description: searchTool.function.description,
             schema: searchTool.function.parameters,
-            invoke: async ({ input }) => executeSearchTool(input)
+            invoke: async ({input}) => executeSearchTool(input)
         });
 
         toolManager.addCustomTool({
             name: volumeControlTool.function.name,
             description: volumeControlTool.function.description,
             schema: volumeControlTool.function.parameters,
-            invoke: async ({ input }) => executeVolumeControlTool(input)
+            invoke: async ({input}) => executeVolumeControlTool(input)
         });
 
         logger.debug('🔧 [STARTUP-DEBUG] Phase 3: Local tools registered, MCP init and welcome synthesis running in background...');

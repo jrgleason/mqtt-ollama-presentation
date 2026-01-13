@@ -7,9 +7,9 @@
  * @see prompts/README.md for documentation
  */
 
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import {readFileSync} from 'fs';
+import {dirname, join} from 'path';
+import {fileURLToPath} from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPTS_DIR = join(__dirname, '../../prompts');
@@ -34,7 +34,7 @@ const promptCache = new Map();
  * const prompt = loadPrompt('tools/search-web', { year: 2026 });
  */
 export function loadPrompt(name, vars = {}) {
-    const cacheKey = JSON.stringify({ name, vars });
+    const cacheKey = JSON.stringify({name, vars});
 
     if (promptCache.has(cacheKey)) {
         return promptCache.get(cacheKey);

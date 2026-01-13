@@ -8,7 +8,7 @@
  * - Edge cases and input validation
  */
 
-import { IntentClassifier } from '../services/IntentClassifier.js';
+import {IntentClassifier} from '../services/IntentClassifier.js';
 
 describe('IntentClassifier', () => {
     let classifier;

@@ -1,8 +1,8 @@
 import wav from "wav";
-import { spawn } from 'child_process';
+import {spawn} from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { SAMPLE_RATE } from './constants.js';
+import {SAMPLE_RATE} from './constants.js';
 
 /**
  * Platform-specific audio player for PCM audio playback
@@ -69,7 +69,8 @@ export class AudioPlayer {
         if (!pcmAudio || pcmAudio.length === 0) {
             this.logger.debug('⚠️ No audio to play');
             return {
-                cancel: () => {},
+                cancel: () => {
+                },
                 promise: Promise.resolve()
             };
         }
@@ -99,7 +100,7 @@ export class AudioPlayer {
             }
         };
 
-        return { cancel, promise };
+        return {cancel, promise};
     }
 
     /**
@@ -227,7 +228,7 @@ export class AudioPlayer {
             }
         };
 
-        return { cancel, wavPath };
+        return {cancel, wavPath};
     }
 
     /**
@@ -286,7 +287,7 @@ export class AudioPlayer {
         try {
             fs.unlinkSync(wavPath);
         } catch (err) {
-            this.logger.error('Failed to delete temp WAV file', { path: wavPath, error: err.message });
+            this.logger.error('Failed to delete temp WAV file', {path: wavPath, error: err.message});
         }
     }
 }

@@ -6,6 +6,7 @@
 
 import {config} from '../config.js';
 import {loadPrompt} from '../util/prompt-loader.js';
+import {logger} from '../util/Logger.js';
 
 // Volume limits
 const MIN_VOLUME = 0.0;
@@ -163,7 +164,7 @@ export function controlVolume(args) {
             message
         };
     } catch (error) {
-        console.error('❌ Volume control error:', error);
+        logger.error('Volume control error', {error: error.message, stack: error.stack});
         return {
             success: false,
             error: error.message,
@@ -213,14 +214,14 @@ export const volumeControlTool = {
  * @returns {string} Human-readable result message
  */
 export function executeVolumeControlTool(args) {
-    console.log('🔊 Volume control tool called:', args);
+    logger.debug('Volume control tool called', {args});
 
     const result = controlVolume(args);
 
     if (result.success) {
-        console.log(`🔊 Volume changed: ${result.percentage}% (${result.description})`);
+        logger.info('Volume changed', {percentage: result.percentage, description: result.description});
     } else {
-        console.error('❌ Volume control failed:', result.error);
+        logger.error('Volume control failed', {error: result.error});
     }
 
     return result.message;

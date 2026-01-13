@@ -2,12 +2,7 @@
  * Tests for prompt-loader utility
  */
 
-import {
-    loadPrompt,
-    preloadPrompts,
-    clearPromptCache,
-    getRequiredPrompts
-} from '../util/prompt-loader.js';
+import {clearPromptCache, getRequiredPrompts, loadPrompt, preloadPrompts} from '../util/prompt-loader.js';
 
 describe('prompt-loader', () => {
     beforeEach(() => {
@@ -30,7 +25,7 @@ describe('prompt-loader', () => {
 
         it('should substitute template variables when provided', () => {
             // Template substitution works even if no variables exist in file
-            const prompt = loadPrompt('tools/search-web', { testVar: 'testValue' });
+            const prompt = loadPrompt('tools/search-web', {testVar: 'testValue'});
             expect(prompt).toContain('Search the web');
         });
 
@@ -43,8 +38,8 @@ describe('prompt-loader', () => {
         it('should handle different variable combinations', () => {
             // Different variable objects produce different cache keys
             // Even if content is the same, the loader handles both calls correctly
-            const prompt1 = loadPrompt('tools/search-web', { a: 1 });
-            const prompt2 = loadPrompt('tools/search-web', { a: 2 });
+            const prompt1 = loadPrompt('tools/search-web', {a: 1});
+            const prompt2 = loadPrompt('tools/search-web', {a: 2});
             // Both should load successfully and contain expected content
             expect(prompt1).toContain('Search the web');
             expect(prompt2).toContain('Search the web');

@@ -1,4 +1,4 @@
-import { ZWaveUIClient } from '../zwave-client.js';
+import {ZWaveUIClient} from '../zwave-client.js';
 
 // Note: Mocking is tricky with ES modules and socket.io-client
 // These tests verify the error message generation logic in checkHealth()

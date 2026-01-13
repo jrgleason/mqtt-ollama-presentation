@@ -53,3 +53,4 @@ recorded_*.wav
 coverage/
 *.lcov
 .nyc_output/
+archive

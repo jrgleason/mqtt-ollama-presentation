@@ -1,4 +1,4 @@
-import { ToolExecutor } from '../services/ToolExecutor.js';
+import {ToolExecutor} from '../services/ToolExecutor.js';
 
 describe('ToolExecutor - Error Translation', () => {
     let toolExecutor;
@@ -12,8 +12,10 @@ describe('ToolExecutor - Error Translation', () => {
         loggedWarnings = [];
 
         mockLogger = {
-            debug: () => {},
-            info: () => {},
+            debug: () => {
+            },
+            info: () => {
+            },
             warn: (...args) => loggedWarnings.push(args),
             error: (...args) => loggedErrors.push(args)
         };
@@ -26,7 +28,7 @@ describe('ToolExecutor - Error Translation', () => {
             toolCount: 2
         };
 
-        toolExecutor = new ToolExecutor(mockToolManager, mockLogger, { timeout: 5000 });
+        toolExecutor = new ToolExecutor(mockToolManager, mockLogger, {timeout: 5000});
     });
 
     describe('formatErrorMessage() - Z-Wave Tool Errors', () => {
@@ -124,12 +126,12 @@ describe('ToolExecutor - Error Translation', () => {
 
     describe('Error message quality standards', () => {
         const zWaveErrors = [
-            { error: new Error('ETIMEDOUT'), toolName: 'list_devices' },
-            { error: new Error('ECONNREFUSED'), toolName: 'control_device' },
-            { error: new Error('ENOTFOUND'), toolName: 'verify_device' }
+            {error: new Error('ETIMEDOUT'), toolName: 'list_devices'},
+            {error: new Error('ECONNREFUSED'), toolName: 'control_device'},
+            {error: new Error('ENOTFOUND'), toolName: 'verify_device'}
         ];
 
-        zWaveErrors.forEach(({ error, toolName }) => {
+        zWaveErrors.forEach(({error, toolName}) => {
             it(`should produce speakable messages for ${error.message}`, () => {
                 const result = toolExecutor.formatErrorMessage(toolName, error);
 

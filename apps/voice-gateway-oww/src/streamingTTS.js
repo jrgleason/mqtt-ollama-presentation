@@ -39,7 +39,8 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
     if (!pcmBuffer || pcmBuffer.length === 0) {
         return {
             promise: Promise.resolve(),
-            cancel: () => {}
+            cancel: () => {
+            }
         };
     }
 
@@ -61,7 +62,10 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
 
         writer.on('finish', () => {
             if (cancelled || abortSignal?.aborted) {
-                try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+                try {
+                    fs.unlinkSync(wavPath);
+                } catch { /* ignore */
+                }
                 reject(new Error('Playback cancelled'));
                 return;
             }
@@ -75,7 +79,10 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
             player.on('close', (code) => {
                 const dur = Date.now() - startedAt;
                 logger.debug('🔊 Player closed', {code, durationMs: dur});
-                try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+                try {
+                    fs.unlinkSync(wavPath);
+                } catch { /* ignore */
+                }
                 if (cancelled || abortSignal?.aborted) {
                     reject(new Error('Playback cancelled'));
                 } else if (code === 0) {
@@ -87,7 +94,10 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
 
             player.on('error', (e) => {
                 logger.error('🔊 Player error', {error: e.message});
-                try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+                try {
+                    fs.unlinkSync(wavPath);
+                } catch { /* ignore */
+                }
                 reject(e);
             });
         });
@@ -104,15 +114,18 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
             player.kill('SIGTERM');
         }
         if (wavPath) {
-            try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+            try {
+                fs.unlinkSync(wavPath);
+            } catch { /* ignore */
+            }
         }
     };
 
-    return { promise, cancel };
+    return {promise, cancel};
 }
 
 export async function streamSpeak(text, options = {}) {
-    const { abortController = null } = options;
+    const {abortController = null} = options;
     const abortSignal = abortController?.signal;
 
     const provider = config.tts.provider || 'ElevenLabs';
@@ -302,7 +315,7 @@ export async function streamSpeak(text, options = {}) {
             try {
                 playback.cancel();
             } catch (err) {
-                logger.warn('Failed to cancel playback', { error: err.message });
+                logger.warn('Failed to cancel playback', {error: err.message});
             }
         }
         activePlayers.length = 0;

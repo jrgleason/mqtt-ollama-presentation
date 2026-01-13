@@ -1,4 +1,4 @@
-import { DeviceRegistryBuilder } from '../device-registry.js';
+import {DeviceRegistryBuilder} from '../device-registry.js';
 
 describe('DeviceRegistryBuilder', () => {
     let builder;
@@ -21,7 +21,7 @@ describe('DeviceRegistryBuilder', () => {
                     ready: true,
                     available: true,
                     values: {
-                        '37-0-currentValue': { commandClass: 37 }
+                        '37-0-currentValue': {commandClass: 37}
                     }
                 }
             };
@@ -41,7 +41,7 @@ describe('DeviceRegistryBuilder', () => {
                     ready: true,
                     available: true,
                     values: {
-                        '38-0-currentValue': { commandClass: 38 }
+                        '38-0-currentValue': {commandClass: 38}
                     }
                 }
             };
@@ -59,7 +59,7 @@ describe('DeviceRegistryBuilder', () => {
                     ready: true,
                     available: true,
                     values: {
-                        '49-0-Air temperature': { commandClass: 49 }
+                        '49-0-Air temperature': {commandClass: 49}
                     }
                 }
             };
@@ -93,9 +93,9 @@ describe('DeviceRegistryBuilder', () => {
 
         it('should return correct count', () => {
             const config = {
-                '2': { name: 'Device 1', values: {} },
-                '3': { name: 'Device 2', values: {} },
-                '4': { name: 'Device 3', values: {} }
+                '2': {name: 'Device 1', values: {}},
+                '3': {name: 'Device 2', values: {}},
+                '4': {name: 'Device 3', values: {}}
             };
 
             const registry = builder.build(config);
@@ -114,7 +114,7 @@ describe('DeviceRegistryBuilder', () => {
                 largeConfig[String(i)] = {
                     name: `Device ${String(i).padStart(2, '0')}`,
                     loc: 'Test Room',
-                    values: { '37-0': { commandClass: 37 } }
+                    values: {'37-0': {commandClass: 37}}
                 };
             }
             largeRegistry = builder.build(largeConfig);
@@ -157,8 +157,8 @@ describe('DeviceRegistryBuilder', () => {
 
         it('should handle limit larger than total', () => {
             const smallConfig = {
-                '1': { name: 'Device A', values: {} },
-                '2': { name: 'Device B', values: {} }
+                '1': {name: 'Device A', values: {}},
+                '2': {name: 'Device B', values: {}}
             };
             const smallRegistry = builder.build(smallConfig);
 
@@ -234,9 +234,9 @@ describe('DeviceRegistryBuilder', () => {
 
         beforeEach(() => {
             registry = builder.build({
-                '2': { name: 'Living Room Light', loc: 'Living Room', values: {} },
-                '3': { name: 'Kitchen Switch', loc: 'Kitchen', values: {} },
-                '4': { name: 'Bedroom Dimmer', loc: 'Bedroom', values: {} }
+                '2': {name: 'Living Room Light', loc: 'Living Room', values: {}},
+                '3': {name: 'Kitchen Switch', loc: 'Kitchen', values: {}},
+                '4': {name: 'Bedroom Dimmer', loc: 'Bedroom', values: {}}
             });
         });
 
@@ -269,11 +269,11 @@ describe('DeviceRegistryBuilder', () => {
 
         beforeEach(() => {
             registry = builder.build({
-                '2': { name: 'Living Room Light', values: {} },
-                '3': { name: 'Living Room Fan', values: {} },
-                '4': { name: 'Kitchen Light', values: {} },
-                '5': { name: 'Bedroom Lamp', values: {} },
-                '6': { name: 'Office Light', values: {} }
+                '2': {name: 'Living Room Light', values: {}},
+                '3': {name: 'Living Room Fan', values: {}},
+                '4': {name: 'Kitchen Light', values: {}},
+                '5': {name: 'Bedroom Lamp', values: {}},
+                '6': {name: 'Office Light', values: {}}
             });
         });
 
@@ -325,8 +325,8 @@ describe('DeviceRegistryBuilder', () => {
         it('should prioritize dimmer over switch', () => {
             const node = {
                 values: {
-                    '37-0': { commandClass: 37 },
-                    '38-0': { commandClass: 38 }
+                    '37-0': {commandClass: 37},
+                    '38-0': {commandClass: 38}
                 }
             };
             const result = builder.detectDeviceType(node);
@@ -337,7 +337,7 @@ describe('DeviceRegistryBuilder', () => {
         it('should detect thermostat', () => {
             const node = {
                 values: {
-                    '64-0': { commandClass: 64 }
+                    '64-0': {commandClass: 64}
                 }
             };
             const result = builder.detectDeviceType(node);
@@ -347,7 +347,7 @@ describe('DeviceRegistryBuilder', () => {
         it('should return unknown for unrecognized command class', () => {
             const node = {
                 values: {
-                    '99-0': { commandClass: 99 }
+                    '99-0': {commandClass: 99}
                 }
             };
             const result = builder.detectDeviceType(node);
