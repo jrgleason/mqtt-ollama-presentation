@@ -1,5 +1,5 @@
 [Unit]
-Description=Voice Gateway OWW - Wake Word Detection and Voice Commands
+Description=Voice Gateway OWW - Wake Word Detection and Voice Commands (Offline Mode)
 After=network.target ollama.service
 Wants=ollama.service
 
@@ -7,12 +7,6 @@ Wants=ollama.service
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww
-
-# Load secrets from separate file (not checked into git)
-# Create this file at: /etc/voice-gateway-oww/secrets.env
-# The '-' prefix means it won't fail if the file doesn't exist
-EnvironmentFile=-/etc/voice-gateway-oww/secrets.env
-
 Environment="NODE_ENV=production"
 Environment="LOG_LEVEL=info"
 Environment="VIRTUAL_ENV=/home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/.venv"
@@ -24,8 +18,8 @@ Environment="OWW_THRESHOLD=0.25"
 Environment="OWW_INFERENCE_FRAMEWORK=onnx"
 
 # Audio Configuration
-Environment="AUDIO_MIC_DEVICE=plughw:2,0"
-Environment="AUDIO_SPEAKER_DEVICE=plughw:3,0"
+Environment="AUDIO_MIC_DEVICE=plughw:3,0"
+Environment="AUDIO_SPEAKER_DEVICE=plughw:2,0"
 Environment="AUDIO_SAMPLE_RATE=16000"
 Environment="AUDIO_CHANNELS=1"
 
@@ -40,47 +34,27 @@ Environment="WHISPER_MODEL_PATH=models/ggml-tiny.bin"
 # MQTT Broker
 Environment="MQTT_BROKER_URL=mqtt://localhost:1883"
 Environment="MQTT_CLIENT_ID=voice-gateway-oww"
-# MQTT_USERNAME and MQTT_PASSWORD should be set in /etc/voice-gateway-oww/secrets.env if needed
+Environment="MQTT_USERNAME="
+Environment="MQTT_PASSWORD="
 
 # ZWave-JS-UI (for MCP server)
 Environment="ZWAVE_UI_URL=http://localhost:8091"
 Environment="ZWAVE_UI_AUTH_ENABLED=false"
-# ZWAVE_UI_USERNAME and ZWAVE_UI_PASSWORD should be set in /etc/voice-gateway-oww/secrets.env if auth is enabled
-
-# MCP Server Retry Configuration
-Environment="MCP_RETRY_ATTEMPTS=3"
-Environment="MCP_RETRY_BASE_DELAY=2000"
 
 # Health Check
 Environment="HEALTHCHECK_PORT=3002"
 
-# AI Provider (anthropic or ollama)
-Environment="AI_PROVIDER=anthropic"
-
-# Custom system prompt (optional) - uncomment and customize if needed
-# Environment="AI_SYSTEM_PROMPT=You are Jarvis. Your favorite food is pizza. Answer in 1 sentence or less. Be direct. English only."
-
-# Anthropic Configuration (if AI_PROVIDER=anthropic)
-# ANTHROPIC_API_KEY must be set in /etc/voice-gateway-oww/secrets.env
-Environment="ANTHROPIC_MODEL=claude-haiku-4-5-20251001"
-
-# Ollama Configuration (if AI_PROVIDER=ollama)
+# AI Configuration
+Environment="AI_PROVIDER=ollama"
 Environment="OLLAMA_BASE_URL=http://localhost:11434"
-Environment="OLLAMA_MODEL=qwen2.5:0.5b"
+Environment="OLLAMA_MODEL=qwen3:0.6b"
 
-# Text-to-Speech Provider (ElevenLabs or Piper)
-Environment="TTS_PROVIDER=ElevenLabs"
+# Text-to-Speech (Piper TTS)
+Environment="TTS_PROVIDER=Piper"
 Environment="TTS_ENABLED=true"
+Environment="TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx"
 Environment="TTS_VOLUME=1.0"
 Environment="TTS_SPEED=3.0"
-
-# ElevenLabs Configuration (if TTS_PROVIDER=ElevenLabs)
-# ELEVENLABS_API_KEY must be set in /etc/voice-gateway-oww/secrets.env
-Environment="ELEVENLABS_VOICE_ID=2i0Vtk39FYVTw6Tx1mC9"
-Environment="ELEVENLABS_MODEL_ID=eleven_multilingual_v2"
-
-# Piper TTS Configuration (if TTS_PROVIDER=Piper)
-Environment="TTS_MODEL_PATH=models/piper/en_US-amy-medium.onnx"
 
 ExecStart=/home/pi/.nvm/versions/node/v24.9.0/bin/node /home/pi/code/mqtt-ollama-presentation/apps/voice-gateway-oww/src/main.js
 Restart=on-failure

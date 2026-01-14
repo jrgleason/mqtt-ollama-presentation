@@ -29,6 +29,12 @@ dev.db
 !*.env.hybrid-a
 !*.env.hybrid-b
 
+# Service files (may contain API keys)
+config/voice-gateway-oww.service
+config/voice-gateway-oww.service.online
+apps/voice-gateway-oww/voice-gateway-oww.service
+apps/voice-gateway-oww/config/voice-gateway-oww.service
+
 # AI Tool Folders
 .claude/
 .amazonq/
