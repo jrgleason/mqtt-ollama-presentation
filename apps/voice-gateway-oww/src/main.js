@@ -301,11 +301,18 @@ function setupMic(voiceService, orchestrator, detector, playbackMachine, onRecor
                         }
                     }
 
-                    voiceService.send({type: 'TRIGGER', ts: Date.now()});
                     safeDetectorReset(detector, 'post-trigger');
 
-                    // Always play wake word beep - user needs this audible cue to start talking
-                    audioPlayer.play(BEEPS.wakeWord).catch(err => logger.debug('Beep failed', {error: errMsg(err)}));
+                    // Play wake word beep FIRST, then start recording after delay
+                    // This prevents the beep from being captured by the microphone
+                    audioPlayer.play(BEEPS.wakeWord)
+                        .catch(err => logger.debug('Beep failed', {error: errMsg(err)}))
+                        .finally(() => {
+                            // Add 300ms delay after beep to ensure mic doesn't capture it
+                            setTimeout(() => {
+                                voiceService.send({type: 'TRIGGER', ts: Date.now()});
+                            }, 300);
+                        });
                 }
             } catch (err) {
                 logger.error('Wake word detection error', {error: errMsg(err)});
