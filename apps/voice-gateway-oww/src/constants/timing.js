@@ -108,10 +108,10 @@ export const MQTT_RECONNECT_INTERVAL_MS = 60000;
  * After this period of inactivity, the conversation context is cleared
  * and the system treats subsequent queries as new conversations.
  *
- * Value: 300000ms (5 minutes)
- * Rationale: Balances context retention with memory management
+ * Value: 120000ms (2 minutes)
+ * Rationale: Allows follow-up questions while preventing stale context
  */
-export const CONVERSATION_TIMEOUT_MS = 5 * 60 * 1000;
+export const CONVERSATION_TIMEOUT_MS = 2 * 60 * 1000;
 
 /**
  * DETECTOR_WARMUP_TIMEOUT_MS - Maximum time to wait for wake word detector warmup

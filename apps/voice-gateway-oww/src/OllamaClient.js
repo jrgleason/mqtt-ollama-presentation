@@ -39,7 +39,8 @@ export class OllamaClient {
                 numCtx: numCtx,
                 keepAlive: keepAlive,
                 // Performance: Limit response length to prevent runaway generation
-                numPredict: 150,
+                // Note: qwen3 models use tokens for <think> blocks, so need higher limit
+                numPredict: 300,
             });
 
             this.logger.debug('✅ ChatOllama client initialized', {
@@ -65,6 +66,9 @@ export class OllamaClient {
         // Remove <think>...</think> blocks (qwen3 reasoning)
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
 
+        // Also remove incomplete <think> blocks (no closing tag - model cut off)
+        cleaned = cleaned.replace(/<think>[\s\S]*/gi, '');
+
         // Remove Chinese/Japanese/Korean characters and punctuation
         cleaned = cleaned.replace(/[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF。，]/g, '');
 
@@ -82,7 +86,9 @@ export class OllamaClient {
         if (!content || typeof content !== 'string') return null;
 
         // First, strip <think>...</think> blocks that qwen3 models add
-        let cleaned = content.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        let cleaned = content.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        // Also remove incomplete <think> blocks (no closing tag)
+        cleaned = cleaned.replace(/<think>[\s\S]*/gi, '').trim();
 
         // Must contain "name" to be a potential tool call
         if (!cleaned.includes('"name"')) return null;
@@ -312,7 +318,13 @@ export class OllamaClient {
                     preview: rawContent.substring(0, 200)
                 });
 
-                const aiResponse = OllamaClient.cleanNonEnglish(rawContent);
+                let aiResponse = OllamaClient.cleanNonEnglish(rawContent);
+
+                // Fallback if response was only <think> tags
+                if (!aiResponse || aiResponse.trim() === '') {
+                    this.logger.warn('⚠️ Response was empty after cleaning (only think tags?), using fallback');
+                    aiResponse = "I processed your request but couldn't generate a response. Please try again.";
+                }
 
                 this.logger.debug('✅ Ollama response (with tools) received', {
                     model,
@@ -324,7 +336,13 @@ export class OllamaClient {
             }
 
             // No tool calls, return direct response
-            const aiResponse = OllamaClient.cleanNonEnglish(response.content);
+            let aiResponse = OllamaClient.cleanNonEnglish(response.content);
+
+            // Fallback if response was only <think> tags
+            if (!aiResponse || aiResponse.trim() === '') {
+                this.logger.warn('⚠️ Response was empty after cleaning (only think tags?), using fallback');
+                aiResponse = "I processed your request but couldn't generate a response. Please try again.";
+            }
 
             const duration = Date.now() - startTime;
             this.logger.debug('✅ Ollama response received', {
