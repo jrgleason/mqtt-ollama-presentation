@@ -476,7 +476,7 @@ async function main() {
             name: searchTool.function.name,
             description: searchTool.function.description,
             schema: searchTool.function.parameters,
-            invoke: async ({input}) => executeSearchTool(input)
+            invoke: async (args) => executeSearchTool(args)
         });
 
         toolManager.addCustomTool({
