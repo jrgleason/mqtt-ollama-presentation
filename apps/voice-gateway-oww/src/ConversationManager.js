@@ -40,6 +40,8 @@ class ConversationManager {
      * @returns {boolean} True if conversation has timed out
      */
     hasTimedOut() {
+        // If timeout is 0, history is disabled - always return true to clear previous messages
+        if (CONVERSATION_TIMEOUT_MS === 0) return true;
         if (!this.lastActivityTime) return true;
         const elapsed = Date.now() - this.lastActivityTime;
         return elapsed >= CONVERSATION_TIMEOUT_MS;
@@ -142,10 +144,8 @@ class ConversationManager {
      * @returns {Array} Array of message objects for Ollama
      */
     getMessages(systemPrompt) {
-        // Check if conversation has timed out
-        if (this.hasTimedOut() && this.messages.length > 0) {
-            this.reset();
-        }
+        // Note: Don't reset here - reset happens in addUserMessage() before adding new message
+        // This ensures the current message is always included
 
         // Build messages array with system prompt
         const messages = [

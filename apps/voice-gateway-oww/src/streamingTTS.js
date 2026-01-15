@@ -70,9 +70,10 @@ function playPcmNow(pcmBuffer, sampleRate = 16000, abortSignal = null) {
                 return;
             }
 
+            const speakerDevice = config.audio.speakerDevice || config.audio.micDevice;
             player = process.platform === 'darwin'
                 ? spawn('afplay', [wavPath])
-                : spawn('aplay', ['-f', 'S16_LE', '-r', String(sampleRate), '-c', '1', wavPath]);
+                : spawn('aplay', ['-D', speakerDevice, '-f', 'S16_LE', '-r', String(sampleRate), '-c', '1', wavPath]);
 
             const startedAt = Date.now();
 

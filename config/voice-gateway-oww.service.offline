@@ -48,6 +48,7 @@ Environment="HEALTHCHECK_PORT=3002"
 Environment="AI_PROVIDER=ollama"
 Environment="OLLAMA_BASE_URL=http://localhost:11434"
 Environment="OLLAMA_MODEL=qwen3:0.6b"
+Environment="OLLAMA_NO_THINK=true"
 
 # Text-to-Speech (Piper TTS)
 Environment="TTS_PROVIDER=Piper"
