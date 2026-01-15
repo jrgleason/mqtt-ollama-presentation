@@ -129,6 +129,10 @@ const config = {
         style: process.env.ELEVENLABS_STYLE ? Number(process.env.ELEVENLABS_STYLE) : 0.0,
         useSpeakerBoost: process.env.ELEVENLABS_USE_SPEAKER_BOOST !== 'false',
     },
+    googleSearch: {
+        apiKey: process.env.GOOGLE_API_KEY,
+        searchEngineId: process.env.GOOGLE_CSE_ID,
+    },
 };
 
 /**
